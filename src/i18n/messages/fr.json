@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "buy": "Acheter",
+    "sell": "Vendre",
+    "professionals": "Professionnels",
+    "login": "Connexion",
+    "publish": "Publier une annonce"
+  },
+  "home": {
+    "title": "Bateaux a vendre en Suisse",
+    "subtitle": "Trouvez des bateaux, voiliers et yachts sur les lacs suisses avec des filtres precis et des vendeurs verifies.",
+    "search": "Rechercher",
+    "featured": "Annonces en vedette",
+    "categories": "Categories",
+    "professionals": "Pour brokers et entreprises nautiques",
+    "sellSteps": "Vendre un bateau en quelques etapes",
+    "popularLakes": "Lacs populaires"
+  },
+  "common": {
+    "priceMax": "Prix maximum",
+    "brand": "Marque",
+    "boatType": "Type de bateau",
+    "location": "Canton ou lac",
+    "results": "resultats",
+    "filters": "Filtres",
+    "save": "Enregistrer",
+    "submit": "Envoyer",
+    "demo": "Demo"
+  }
+}

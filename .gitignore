@@ -1,0 +1,14 @@
+.next
+.open-next
+.wrangler
+node_modules
+.env
+.env*.local
+.dev.vars
+coverage
+dist
+*.tsbuildinfo
+cloudflare-env.d.ts
+npm-debug.log*
+supabase/.branches
+supabase/.temp

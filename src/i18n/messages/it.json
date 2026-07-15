@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "buy": "Comprare",
+    "sell": "Vendere",
+    "professionals": "Professionisti",
+    "login": "Accedi",
+    "publish": "Pubblica annuncio"
+  },
+  "home": {
+    "title": "Barche in vendita in Svizzera",
+    "subtitle": "Trova barche, vele e yacht sui laghi svizzeri con filtri avanzati.",
+    "search": "Cerca",
+    "featured": "Annunci in evidenza",
+    "categories": "Categorie",
+    "professionals": "Per professionisti nautici",
+    "sellSteps": "Vendere una barca",
+    "popularLakes": "Laghi popolari"
+  },
+  "common": {
+    "priceMax": "Prezzo massimo",
+    "brand": "Marca",
+    "boatType": "Tipo barca",
+    "location": "Cantone o lago",
+    "results": "risultati",
+    "filters": "Filtri",
+    "save": "Salva",
+    "submit": "Invia",
+    "demo": "Demo"
+  }
+}

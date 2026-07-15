@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "buy": "Buy",
+    "sell": "Sell",
+    "professionals": "Professionals",
+    "login": "Sign in",
+    "publish": "Place advert"
+  },
+  "home": {
+    "title": "Boats for sale in Switzerland",
+    "subtitle": "Find boats, sailboats, and yachts across Swiss lakes with precise filters and trusted sellers.",
+    "search": "Search",
+    "featured": "Featured listings",
+    "categories": "Categories",
+    "professionals": "For brokers and marine businesses",
+    "sellSteps": "Sell a boat in clear steps",
+    "popularLakes": "Popular lakes"
+  },
+  "common": {
+    "priceMax": "Max price",
+    "brand": "Brand",
+    "boatType": "Boat type",
+    "location": "Canton or lake",
+    "results": "results",
+    "filters": "Filters",
+    "save": "Save",
+    "submit": "Submit",
+    "demo": "Demo"
+  }
+}

@@ -1,0 +1,373 @@
+import type { Locale } from "@/types/domain";
+
+type UiDictionary = {
+  nav: Record<string, string>;
+  common: Record<string, string>;
+  home: Record<string, string>;
+  search: Record<string, string>;
+  listing: Record<string, string>;
+  sell: Record<string, string>;
+  auth: Record<string, string>;
+  dashboard: Record<string, string>;
+  admin: Record<string, string>;
+  legal: Record<string, string>;
+  professionals: Record<string, string>;
+  refs: Record<string, string>;
+};
+
+export function normalizeLocale(locale: string): Locale {
+  return locale === "de" || locale === "it" || locale === "en" ? locale : "fr";
+}
+
+export function ui(locale: string): UiDictionary {
+  const normalized = normalizeLocale(locale);
+  return { ...dictionaries[normalized], refs: toRefs(normalized) };
+}
+
+export function refLabel(locale: string, value: string) {
+  return ui(locale).refs[value] || value;
+}
+
+const dictionaries: Record<Locale, UiDictionary> = {
+  fr: {
+    nav: {
+      buy: "Acheter",
+      sell: "Vendre",
+      professionals: "Professionnels",
+      login: "Connexion",
+      publish: "Publier une annonce",
+      openMenu: "Ouvrir le menu"
+    },
+    common: {
+      demo: "Demo",
+      featured: "En vedette",
+      brand: "Marque",
+      model: "Modele",
+      price: "Prix",
+      status: "Statut",
+      views: "Vues",
+      actions: "Actions",
+      edit: "Modifier",
+      save: "Enregistrer",
+      submit: "Envoyer",
+      all: "Tous",
+      search: "Rechercher",
+      year: "Annee",
+      length: "Longueur",
+      location: "Lieu",
+      canton: "Canton",
+      lake: "Lac",
+      city: "Ville",
+      marina: "Port",
+      description: "Description",
+      equipment: "Equipement",
+      name: "Nom",
+      email: "Email",
+      phone: "Telephone",
+      message: "Message",
+      optionalPhone: "Telephone optionnel",
+      password: "Mot de passe",
+      private: "Particulier",
+      professional: "Professionnel"
+    },
+    home: {
+      title: "Bateaux a vendre en Suisse",
+      subtitle: "Trouvez des bateaux, voiliers et yachts sur les lacs suisses avec des filtres precis et des vendeurs de confiance.",
+      trust: "Marketplace nautique suisse · CHF · FR/DE/IT/EN",
+      categories: "Categories",
+      viewAll: "Tout voir",
+      moreListings: "Plus d'annonces",
+      featured: "Annonces en vedette",
+      professionalsEyebrow: "Pour brokers et entreprises nautiques",
+      professionalsTitle: "Inventaire, visibilite et demandes commerciales.",
+      professionalsText: "Profils d'entreprise, annonces multiples, statistiques de base et architecture prete pour les abonnements professionnels.",
+      createPro: "Creer un profil professionnel",
+      proFeatures: "Logo et page publique|Inventaire multi-annonces|Demandes centralisees|Plans premium futurs",
+      sellEyebrow: "Vendre un bateau en quelques etapes",
+      sellTitle: "Publiez, faites verifier et recevez des contacts d'acheteurs.",
+      sellSteps: "Decrire le bateau|Ajouter des photos|Moderation et publication",
+      sellStepText: "Flux prepare pour brouillons, verification et monetisation future.",
+      popularLakes: "Lacs populaires"
+    },
+    search: {
+      boatType: "Type d'embarcation",
+      clear: "Effacer",
+      makeModel: "Marque et modele",
+      model: "Modele",
+      length: "Longueur",
+      engineType: "Type de moteur",
+      enginePower: "Puissance moteur",
+      moreFilters: "Plus de filtres",
+      resultCta: "Voir les bateaux",
+      motorTab: "Moteur",
+      sailTab: "Voiliers",
+      yachtTab: "Yachts",
+      electricTab: "Electriques",
+      maxPriceChf: "Prix maximum CHF",
+      cantonOrLake: "Canton ou lac",
+      filters: "Filtres",
+      text: "Texte",
+      textPlaceholder: "Marque, modele, lac",
+      category: "Categorie",
+      priceMin: "Prix min.",
+      priceMax: "Prix max.",
+      yearMin: "Annee min.",
+      yearMax: "Annee max.",
+      lengthMin: "Longueur min.",
+      lengthMax: "Longueur max.",
+      fuel: "Carburant",
+      engine: "Moteur",
+      condition: "Etat",
+      material: "Materiau",
+      withPhotos: "Uniquement avec photos",
+      electric: "Bateau electrique",
+      financing: "Financement",
+      apply: "Appliquer les filtres",
+      title: "Embarcations a vendre",
+      resultsIn: "resultats en Suisse",
+      mapFuture: "Carte future",
+      page: "Page",
+      of: "sur",
+      sortDate: "Date recente",
+      sortPriceAsc: "Prix croissant",
+      sortPriceDesc: "Prix decroissant",
+      sortYear: "Annee",
+      sortLength: "Longueur",
+      empty: "Aucune annonce pour ces filtres."
+    },
+    listing: {
+      breadcrumbHome: "Accueil",
+      breadcrumbBoats: "Bateaux",
+      technical: "Caracteristiques techniques",
+      sellerProfessional: "Vendeur professionnel",
+      showPhone: "Afficher le telephone",
+      saveFavorite: "Ajouter aux favoris",
+      share: "Partager",
+      listingId: "ID annonce",
+      published: "Publie",
+      contactSeller: "Contacter le vendeur",
+      defaultMessage: "Bonjour, je suis interesse par l'annonce",
+      privacyConsent: "J'accepte que SwissYacht stocke cette demande afin de l'envoyer au vendeur.",
+      sendInquiry: "Envoyer la demande",
+      fraudTitle: "Prevention de la fraude",
+      fraudText: "N'envoyez pas de paiement avant d'avoir verifie l'embarcation, le vendeur et les documents. SwissYacht ne demande jamais de paiements directs par email.",
+      similar: "Annonces similaires",
+      demoDescription: "Annonce demo creee pour le MVP SwissYacht. Les donnees du bateau sont illustratives et doivent etre remplacees par des informations verifiees du vendeur avant une publication en production.",
+      specs: "Marque|Modele|Carburant|Moteur|Moteurs|Puissance|Heures|Largeur|Poids|Materiau|Lac|Port"
+    },
+    sell: {
+      title: "Publier une annonce",
+      intro: "Processus par etapes avec brouillons, verification prealable et preparation pour les images dans Supabase Storage.",
+      step1: "Etape 1 · Embarcation",
+      step2: "Etape 2 · Prix",
+      step3: "Etape 3 · Moteur et technique",
+      step4: "Etape 4 · Lieu",
+      step5: "Etape 5 · Description et equipement",
+      step6: "Etape 6 · Photos",
+      step7: "Etape 7 · Contact et publication",
+      type: "Type",
+      vat: "TVA incluse",
+      negotiable: "Negociable",
+      financing: "Financement",
+      fuel: "Carburant",
+      engineType: "Type de moteur",
+      powerHp: "Puissance HP",
+      engineCount: "Nombre de moteurs",
+      engineHours: "Heures",
+      beam: "Largeur m",
+      weight: "Poids kg",
+      material: "Materiau",
+      minDescription: "Minimum 80 caracteres.",
+      equipmentPlaceholder: "GPS, taud, echelle de bain...",
+      photoPlaceholder: "Upload multiple prepare pour Supabase Storage. En production, format, taille, compression, ordre et miniatures sont valides.",
+      contactName: "Nom de contact",
+      contactEmail: "Email de contact",
+      saveDraft: "Enregistrer le brouillon",
+      sendModeration: "Envoyer en moderation"
+    },
+    auth: {
+      loginTitle: "Connexion",
+      loginSubmit: "Entrer",
+      loginHelp: "Connectez Supabase Auth pour activer les sessions reelles. Cet ecran est pret pour email/mot de passe.",
+      registerTitle: "Creer un compte",
+      accountType: "Type de compte",
+      registerSubmit: "Creer le compte"
+    },
+    dashboard: {
+      title: "Tableau de bord",
+      intro: "Resume du compte, annonces, messages et configuration.",
+      listings: "Mes annonces",
+      inventory: "Gerer l'inventaire",
+      messages: "Messages",
+      inquiries: "Demandes recues",
+      favorites: "Favoris",
+      savedBoats: "Bateaux sauvegardes",
+      futureSubscription: "Abonnement futur",
+      plansPromotions: "Plans et promotions",
+      demoActivity: "Activite demo",
+      createListing: "Creer une annonce",
+      messagesTitle: "Demandes recues",
+      messagesText: "Les demandes du formulaire de contact sont stockees dans `inquiries` et affichees ici pour chaque vendeur.",
+      profile: "Profil",
+      company: "Entreprise",
+      website: "Site web",
+      publicDescription: "Description publique",
+      saveProfile: "Enregistrer le profil",
+      settingsTitle: "Configuration et abonnement futur",
+      planText: "Prepare pour Stripe, coupons, renouvellements et promotion d'annonces.",
+      basic: "Basique",
+      premium: "Premium"
+    },
+    admin: {
+      title: "Administration",
+      intro: "Panel protege pour moderation, gestion des taxonomies et audit.",
+      sections: "Utilisateurs|Professionnels|Annonces|En attente|Publiees|Rejetees|Signalements|Demandes|Categories|Marques|Lacs|Cantons|Ports|Configuration",
+      adminActions: "Actions admin",
+      approve: "Approuver",
+      reject: "Rejeter",
+      feature: "Mettre en vedette"
+    },
+    legal: {
+      legalNotice: "Mentions legales",
+      terms: "Conditions generales",
+      privacy: "Politique de confidentialite",
+      cookies: "Cookies",
+      fraud: "Securite et prevention de la fraude",
+      contact: "Contact",
+      publishingRules: "Regles de publication",
+      fallback: "Page legale",
+      placeholder1: "Placeholder provisoire. Ce texte doit etre revise et adapte par un conseil juridique qualifie en Suisse avant la mise en production de SwissYacht.",
+      placeholder2: "Cette page documentera les responsabilites, la confidentialite, les cookies, les regles de publication, le contact, la prevention de la fraude et les obligations applicables au marche suisse."
+    },
+    professionals: {
+      title: "SwissYacht pour professionnels",
+      intro: "Profils publics, inventaire centralise, demandes commerciales et base prete pour les abonnements.",
+      included: "Architecture professionnelle incluse",
+      rows: "Profil d'entreprise|Logo, adresse, langues, site web et telephones.|Inventaire|Annonces multiples et statuts de moderation.|Demandes|Contacts centralises par annonce.|Statistiques|Vues et indicateurs de base."
+    },
+    refs: {}
+  },
+  de: {
+    nav: { buy: "Kaufen", sell: "Verkaufen", professionals: "Profis", login: "Anmelden", publish: "Inserat erstellen", openMenu: "Menu oeffnen" },
+    common: { demo: "Demo", featured: "Top", brand: "Marke", model: "Modell", price: "Preis", status: "Status", views: "Aufrufe", actions: "Aktionen", edit: "Bearbeiten", save: "Speichern", submit: "Senden", all: "Alle", search: "Suchen", year: "Jahr", length: "Laenge", location: "Standort", canton: "Kanton", lake: "See", city: "Stadt", marina: "Hafen", description: "Beschreibung", equipment: "Ausstattung", name: "Name", email: "E-Mail", phone: "Telefon", message: "Nachricht", optionalPhone: "Telefon optional", password: "Passwort", private: "Privat", professional: "Professionell" },
+    home: { title: "Boote kaufen in der Schweiz", subtitle: "Finden Sie Boote, Segelboote und Yachten auf Schweizer Seen mit praezisen Filtern und vertrauenswuerdigen Verkaeufern.", trust: "Schweizer Bootsmarktplatz · CHF · FR/DE/IT/EN", categories: "Kategorien", viewAll: "Alle anzeigen", moreListings: "Mehr Inserate", featured: "Top-Inserate", professionalsEyebrow: "Fuer Broker und Marinebetriebe", professionalsTitle: "Inventar, Sichtbarkeit und gewerbliche Anfragen.", professionalsText: "Firmenprofile, mehrere Inserate, Basisstatistiken und eine Architektur fuer kuenftige Profi-Abos.", createPro: "Profi-Profil erstellen", proFeatures: "Logo und oeffentliche Seite|Multi-Inserat-Inventar|Zentrale Anfragen|Kuenftige Premiumplaene", sellEyebrow: "Boot in klaren Schritten verkaufen", sellTitle: "Inserieren, pruefen lassen und Kaufanfragen erhalten.", sellSteps: "Boot beschreiben|Fotos hochladen|Moderation und Veroeffentlichung", sellStepText: "Ablauf vorbereitet fuer Entwuerfe, Pruefung und kuenftige Monetarisierung.", popularLakes: "Beliebte Seen" },
+    search: { boatType: "Bootstyp", clear: "Loeschen", makeModel: "Marke und Modell", model: "Modell", length: "Laenge", engineType: "Motortyp", enginePower: "Motorleistung", moreFilters: "Weitere Filter", resultCta: "Boote anzeigen", motorTab: "Motor", sailTab: "Segelboote", yachtTab: "Yachten", electricTab: "Elektrisch", maxPriceChf: "Maximalpreis CHF", cantonOrLake: "Kanton oder See", filters: "Filter", text: "Text", textPlaceholder: "Marke, Modell, See", category: "Kategorie", priceMin: "Preis min.", priceMax: "Preis max.", yearMin: "Jahr min.", yearMax: "Jahr max.", lengthMin: "Laenge min.", lengthMax: "Laenge max.", fuel: "Kraftstoff", engine: "Motor", condition: "Zustand", material: "Material", withPhotos: "Nur mit Fotos", electric: "Elektroboot", financing: "Finanzierung", apply: "Filter anwenden", title: "Boote zum Verkauf", resultsIn: "Resultate in der Schweiz", mapFuture: "Karte spaeter", page: "Seite", of: "von", sortDate: "Neueste zuerst", sortPriceAsc: "Preis aufsteigend", sortPriceDesc: "Preis absteigend", sortYear: "Jahr", sortLength: "Laenge", empty: "Keine Inserate fuer diese Filter." },
+    listing: { breadcrumbHome: "Start", breadcrumbBoats: "Boote", technical: "Technische Daten", sellerProfessional: "Professioneller Verkaeufer", showPhone: "Telefon anzeigen", saveFavorite: "Favorit speichern", share: "Teilen", listingId: "Inserat-ID", published: "Veroeffentlicht", contactSeller: "Verkaeufer kontaktieren", defaultMessage: "Hallo, ich interessiere mich fuer das Inserat", privacyConsent: "Ich stimme zu, dass SwissYacht diese Anfrage speichert und an den Verkaeufer sendet.", sendInquiry: "Anfrage senden", fraudTitle: "Betrugspraevention", fraudText: "Senden Sie keine Zahlungen, bevor Boot, Verkaeufer und Unterlagen geprueft sind. SwissYacht fordert niemals direkte Zahlungen per E-Mail.", similar: "Aehnliche Inserate", demoDescription: "Demo-Inserat fuer das SwissYacht-MVP. Die Bootsdaten sind illustrativ und muessen vor einer Produktionsveroeffentlichung durch verifizierte Verkaeuferinformationen ersetzt werden.", specs: "Marke|Modell|Kraftstoff|Motor|Motoren|Leistung|Stunden|Breite|Gewicht|Material|See|Hafen" },
+    sell: { title: "Inserat erstellen", intro: "Schrittweiser Prozess mit Entwuerfen, Vorpruefung und Vorbereitung fuer Bilder in Supabase Storage.", step1: "Schritt 1 · Boot", step2: "Schritt 2 · Preis", step3: "Schritt 3 · Motor und Technik", step4: "Schritt 4 · Standort", step5: "Schritt 5 · Beschreibung und Ausstattung", step6: "Schritt 6 · Fotos", step7: "Schritt 7 · Kontakt und Veroeffentlichung", type: "Typ", vat: "MwSt. inklusive", negotiable: "Verhandelbar", financing: "Finanzierung", fuel: "Kraftstoff", engineType: "Motortyp", powerHp: "Leistung PS", engineCount: "Anzahl Motoren", engineHours: "Betriebsstunden", beam: "Breite m", weight: "Gewicht kg", material: "Material", minDescription: "Mindestens 80 Zeichen.", equipmentPlaceholder: "GPS, Persenning, Badeleiter...", photoPlaceholder: "Mehrfach-Upload fuer Supabase Storage vorbereitet. In Produktion werden Format, Groesse, Kompression, Reihenfolge und Thumbnails validiert.", contactName: "Kontaktname", contactEmail: "Kontakt-E-Mail", saveDraft: "Entwurf speichern", sendModeration: "Zur Moderation senden" },
+    auth: { loginTitle: "Anmelden", loginSubmit: "Einloggen", loginHelp: "Supabase Auth verbinden, um echte Sitzungen zu aktivieren. Diese Maske ist fuer E-Mail/Passwort vorbereitet.", registerTitle: "Konto erstellen", accountType: "Kontotyp", registerSubmit: "Konto erstellen" },
+    dashboard: { title: "Benutzerbereich", intro: "Uebersicht ueber Konto, Inserate, Nachrichten und Einstellungen.", listings: "Meine Inserate", inventory: "Inventar verwalten", messages: "Nachrichten", inquiries: "Erhaltene Anfragen", favorites: "Favoriten", savedBoats: "Gespeicherte Boote", futureSubscription: "Kuenftiges Abo", plansPromotions: "Plaene und Aktionen", demoActivity: "Demo-Aktivitaet", createListing: "Inserat erstellen", messagesTitle: "Erhaltene Anfragen", messagesText: "Kontaktformular-Anfragen werden in `inquiries` gespeichert und hier pro Verkaeufer angezeigt.", profile: "Profil", company: "Unternehmen", website: "Website", publicDescription: "Oeffentliche Beschreibung", saveProfile: "Profil speichern", settingsTitle: "Einstellungen und kuenftiges Abo", planText: "Vorbereitet fuer Stripe, Gutscheine, Verlangerungen und Inserat-Promotion.", basic: "Basis", premium: "Premium" },
+    admin: { title: "Administration", intro: "Geschuetztes Panel fuer Moderation, Taxonomien und Audit.", sections: "Benutzer|Profis|Inserate|Ausstehend|Veroeffentlicht|Abgelehnt|Meldungen|Anfragen|Kategorien|Marken|Seen|Kantone|Haefen|Einstellungen", adminActions: "Admin-Aktionen", approve: "Genehmigen", reject: "Ablehnen", feature: "Hervorheben" },
+    legal: { legalNotice: "Impressum", terms: "Allgemeine Bedingungen", privacy: "Datenschutzerklaerung", cookies: "Cookies", fraud: "Sicherheit und Betrugspraevention", contact: "Kontakt", publishingRules: "Inseratsregeln", fallback: "Rechtsseite", placeholder1: "Vorlaeufiger Platzhalter. Dieser Text muss vor der Produktion von SwissYacht durch qualifizierte Schweizer Rechtsberatung geprueft und angepasst werden.", placeholder2: "Hier werden Verantwortlichkeiten, Datenschutz, Cookies, Publikationsregeln, Kontakt, Betrugspraevention und Pflichten fuer den Schweizer Markt dokumentiert." },
+    professionals: { title: "SwissYacht fuer Profis", intro: "Oeffentliche Profile, zentrales Inventar, gewerbliche Anfragen und Grundlage fuer Abonnements.", included: "Professionelle Architektur enthalten", rows: "Firmenprofil|Logo, Adresse, Sprachen, Website und Telefone.|Inventar|Mehrere Inserate und Moderationsstatus.|Anfragen|Zentrale Kontakte pro Inserat.|Statistiken|Aufrufe und Basiskennzahlen." },
+    refs: {}
+  },
+  it: {
+    nav: { buy: "Comprare", sell: "Vendere", professionals: "Professionisti", login: "Accedi", publish: "Pubblica annuncio", openMenu: "Apri menu" },
+    common: { demo: "Demo", featured: "In evidenza", brand: "Marca", model: "Modello", price: "Prezzo", status: "Stato", views: "Visualizzazioni", actions: "Azioni", edit: "Modifica", save: "Salva", submit: "Invia", all: "Tutti", search: "Cerca", year: "Anno", length: "Lunghezza", location: "Luogo", canton: "Cantone", lake: "Lago", city: "Citta", marina: "Porto", description: "Descrizione", equipment: "Equipaggiamento", name: "Nome", email: "Email", phone: "Telefono", message: "Messaggio", optionalPhone: "Telefono opzionale", password: "Password", private: "Privato", professional: "Professionale" },
+    home: { title: "Barche in vendita in Svizzera", subtitle: "Trova barche, vele e yacht sui laghi svizzeri con filtri precisi e venditori affidabili.", trust: "Marketplace nautico svizzero · CHF · FR/DE/IT/EN", categories: "Categorie", viewAll: "Vedi tutto", moreListings: "Altri annunci", featured: "Annunci in evidenza", professionalsEyebrow: "Per broker e aziende nautiche", professionalsTitle: "Inventario, visibilita e richieste commerciali.", professionalsText: "Profili aziendali, annunci multipli, statistiche base e architettura pronta per abbonamenti professionali.", createPro: "Crea profilo professionale", proFeatures: "Logo e pagina pubblica|Inventario multi-annuncio|Richieste centralizzate|Piani premium futuri", sellEyebrow: "Vendere una barca in pochi passaggi", sellTitle: "Pubblica, fai verificare e ricevi contatti di acquirenti.", sellSteps: "Descrivi la barca|Carica foto|Moderazione e pubblicazione", sellStepText: "Flusso pronto per bozze, revisione e monetizzazione futura.", popularLakes: "Laghi popolari" },
+    search: { boatType: "Tipo di barca", clear: "Cancella", makeModel: "Marca e modello", model: "Modello", length: "Lunghezza", engineType: "Tipo motore", enginePower: "Potenza motore", moreFilters: "Altri filtri", resultCta: "Vedi barche", motorTab: "Motore", sailTab: "Vela", yachtTab: "Yacht", electricTab: "Elettriche", maxPriceChf: "Prezzo massimo CHF", cantonOrLake: "Cantone o lago", filters: "Filtri", text: "Testo", textPlaceholder: "Marca, modello, lago", category: "Categoria", priceMin: "Prezzo min.", priceMax: "Prezzo max.", yearMin: "Anno min.", yearMax: "Anno max.", lengthMin: "Lunghezza min.", lengthMax: "Lunghezza max.", fuel: "Carburante", engine: "Motore", condition: "Stato", material: "Materiale", withPhotos: "Solo con foto", electric: "Barca elettrica", financing: "Finanziamento", apply: "Applica filtri", title: "Imbarcazioni in vendita", resultsIn: "risultati in Svizzera", mapFuture: "Mappa futura", page: "Pagina", of: "di", sortDate: "Data recente", sortPriceAsc: "Prezzo crescente", sortPriceDesc: "Prezzo decrescente", sortYear: "Anno", sortLength: "Lunghezza", empty: "Nessun annuncio per questi filtri." },
+    listing: { breadcrumbHome: "Home", breadcrumbBoats: "Barche", technical: "Caratteristiche tecniche", sellerProfessional: "Venditore professionale", showPhone: "Mostra telefono", saveFavorite: "Salva preferito", share: "Condividi", listingId: "ID annuncio", published: "Pubblicato", contactSeller: "Contatta il venditore", defaultMessage: "Ciao, mi interessa l'annuncio", privacyConsent: "Accetto che SwissYacht conservi questa richiesta per inviarla al venditore.", sendInquiry: "Invia richiesta", fraudTitle: "Prevenzione frodi", fraudText: "Non inviare pagamenti prima di verificare barca, venditore e documenti. SwissYacht non richiede mai pagamenti diretti via email.", similar: "Annunci simili", demoDescription: "Annuncio demo creato per l'MVP SwissYacht. I dati della barca sono illustrativi e devono essere sostituiti con informazioni verificate del venditore prima della pubblicazione in produzione.", specs: "Marca|Modello|Carburante|Motore|Motori|Potenza|Ore|Larghezza|Peso|Materiale|Lago|Porto" },
+    sell: { title: "Pubblica annuncio", intro: "Processo a passaggi con bozze, revisione e preparazione immagini in Supabase Storage.", step1: "Passo 1 · Imbarcazione", step2: "Passo 2 · Prezzo", step3: "Passo 3 · Motore e tecnica", step4: "Passo 4 · Luogo", step5: "Passo 5 · Descrizione ed equipaggiamento", step6: "Passo 6 · Foto", step7: "Passo 7 · Contatto e pubblicazione", type: "Tipo", vat: "IVA inclusa", negotiable: "Trattabile", financing: "Finanziamento", fuel: "Carburante", engineType: "Tipo motore", powerHp: "Potenza HP", engineCount: "Numero motori", engineHours: "Ore di utilizzo", beam: "Larghezza m", weight: "Peso kg", material: "Materiale", minDescription: "Minimo 80 caratteri.", equipmentPlaceholder: "GPS, telo, scaletta bagno...", photoPlaceholder: "Upload multiplo pronto per Supabase Storage. In produzione si validano formato, dimensione, compressione, ordine e miniature.", contactName: "Nome contatto", contactEmail: "Email contatto", saveDraft: "Salva bozza", sendModeration: "Invia a moderazione" },
+    auth: { loginTitle: "Accedi", loginSubmit: "Entra", loginHelp: "Collega Supabase Auth per attivare sessioni reali. Questa schermata e pronta per email/password.", registerTitle: "Crea account", accountType: "Tipo di account", registerSubmit: "Crea account" },
+    dashboard: { title: "Area utente", intro: "Riepilogo account, annunci, messaggi e configurazione.", listings: "I miei annunci", inventory: "Gestisci inventario", messages: "Messaggi", inquiries: "Richieste ricevute", favorites: "Preferiti", savedBoats: "Barche salvate", futureSubscription: "Abbonamento futuro", plansPromotions: "Piani e promozioni", demoActivity: "Attivita demo", createListing: "Crea annuncio", messagesTitle: "Richieste ricevute", messagesText: "Le richieste del modulo di contatto vengono salvate in `inquiries` e mostrate qui per ogni venditore.", profile: "Profilo", company: "Azienda", website: "Sito web", publicDescription: "Descrizione pubblica", saveProfile: "Salva profilo", settingsTitle: "Configurazione e abbonamento futuro", planText: "Pronto per Stripe, coupon, rinnovi e promozione annunci.", basic: "Base", premium: "Premium" },
+    admin: { title: "Amministrazione", intro: "Pannello protetto per moderazione, tassonomie e audit.", sections: "Utenti|Professionisti|Annunci|In attesa|Pubblicati|Rifiutati|Segnalazioni|Richieste|Categorie|Marche|Laghi|Cantoni|Porti|Configurazione", adminActions: "Azioni admin", approve: "Approva", reject: "Rifiuta", feature: "Metti in evidenza" },
+    legal: { legalNotice: "Note legali", terms: "Condizioni generali", privacy: "Privacy", cookies: "Cookie", fraud: "Sicurezza e prevenzione frodi", contact: "Contatto", publishingRules: "Regole di pubblicazione", fallback: "Pagina legale", placeholder1: "Placeholder provvisorio. Questo testo deve essere revisionato e adattato da consulenza legale qualificata in Svizzera prima della produzione di SwissYacht.", placeholder2: "Qui saranno documentate responsabilita, privacy, cookie, regole di pubblicazione, contatto, prevenzione frodi e obblighi applicabili al mercato svizzero." },
+    professionals: { title: "SwissYacht per professionisti", intro: "Profili pubblici, inventario centralizzato, richieste commerciali e base pronta per abbonamenti.", included: "Architettura professionale inclusa", rows: "Profilo aziendale|Logo, indirizzo, lingue, sito web e telefoni.|Inventario|Annunci multipli e stati di moderazione.|Richieste|Contatti centralizzati per annuncio.|Statistiche|Visualizzazioni e indicatori base." },
+    refs: {}
+  },
+  en: {
+    nav: { buy: "Buy", sell: "Sell", professionals: "Professionals", login: "Sign in", publish: "Place advert", openMenu: "Open menu" },
+    common: { demo: "Demo", featured: "Featured", brand: "Brand", model: "Model", price: "Price", status: "Status", views: "Views", actions: "Actions", edit: "Edit", save: "Save", submit: "Submit", all: "All", search: "Search", year: "Year", length: "Length", location: "Location", canton: "Canton", lake: "Lake", city: "City", marina: "Marina", description: "Description", equipment: "Equipment", name: "Name", email: "Email", phone: "Phone", message: "Message", optionalPhone: "Optional phone", password: "Password", private: "Private seller", professional: "Professional" },
+    home: { title: "Boats for sale in Switzerland", subtitle: "Find boats, sailboats, and yachts on Swiss lakes with precise filters and trusted sellers.", trust: "Swiss nautical marketplace · CHF · FR/DE/IT/EN", categories: "Categories", viewAll: "View all", moreListings: "More listings", featured: "Featured listings", professionalsEyebrow: "For brokers and marine businesses", professionalsTitle: "Inventory, visibility, and commercial inquiries.", professionalsText: "Company profiles, multiple listings, basic analytics, and architecture ready for professional subscriptions.", createPro: "Create professional profile", proFeatures: "Logo and public page|Multi-listing inventory|Centralized inquiries|Future premium plans", sellEyebrow: "Sell a boat in clear steps", sellTitle: "Publish, review, and receive buyer contacts.", sellSteps: "Describe the boat|Upload photos|Moderation and publication", sellStepText: "Flow prepared for drafts, review, and future monetization.", popularLakes: "Popular lakes" },
+    search: { boatType: "Boat type", clear: "Clear", makeModel: "Make and model", model: "Model", length: "Length", engineType: "Engine type", enginePower: "Engine power", moreFilters: "More filters", resultCta: "View boats", motorTab: "Motor", sailTab: "Sailing", yachtTab: "Yachts", electricTab: "Electric", maxPriceChf: "Max price CHF", cantonOrLake: "Canton or lake", filters: "Filters", text: "Text", textPlaceholder: "Brand, model, lake", category: "Category", priceMin: "Min price", priceMax: "Max price", yearMin: "Min year", yearMax: "Max year", lengthMin: "Min length", lengthMax: "Max length", fuel: "Fuel", engine: "Engine", condition: "Condition", material: "Material", withPhotos: "Only with photos", electric: "Electric boat", financing: "Financing", apply: "Apply filters", title: "Boats for sale", resultsIn: "results in Switzerland", mapFuture: "Future map", page: "Page", of: "of", sortDate: "Newest first", sortPriceAsc: "Price ascending", sortPriceDesc: "Price descending", sortYear: "Year", sortLength: "Length", empty: "No listings match those filters." },
+    listing: { breadcrumbHome: "Home", breadcrumbBoats: "Boats", technical: "Technical characteristics", sellerProfessional: "Professional seller", showPhone: "Show phone", saveFavorite: "Save favorite", share: "Share", listingId: "Listing ID", published: "Published", contactSeller: "Contact seller", defaultMessage: "Hello, I am interested in the listing", privacyConsent: "I agree that SwissYacht stores this inquiry to send it to the seller.", sendInquiry: "Send inquiry", fraudTitle: "Fraud prevention", fraudText: "Do not send payments before verifying the boat, seller, and documents. SwissYacht never asks for direct payments by email.", similar: "Similar listings", demoDescription: "Demo listing created for the SwissYacht MVP. The boat data is illustrative and must be replaced by verified seller information before production publication.", specs: "Brand|Model|Fuel|Engine|Engines|Power|Hours|Beam|Weight|Material|Lake|Marina" },
+    sell: { title: "Place advert", intro: "Step-by-step flow with drafts, pre-review, and image preparation for Supabase Storage.", step1: "Step 1 · Boat", step2: "Step 2 · Price", step3: "Step 3 · Engine and technical data", step4: "Step 4 · Location", step5: "Step 5 · Description and equipment", step6: "Step 6 · Photos", step7: "Step 7 · Contact and publication", type: "Type", vat: "VAT included", negotiable: "Negotiable", financing: "Financing", fuel: "Fuel", engineType: "Engine type", powerHp: "Power HP", engineCount: "Number of engines", engineHours: "Engine hours", beam: "Beam m", weight: "Weight kg", material: "Material", minDescription: "Minimum 80 characters.", equipmentPlaceholder: "GPS, cover, bathing ladder...", photoPlaceholder: "Multiple upload prepared for Supabase Storage. In production, format, size, compression, ordering, and thumbnails are validated.", contactName: "Contact name", contactEmail: "Contact email", saveDraft: "Save draft", sendModeration: "Send to moderation" },
+    auth: { loginTitle: "Sign in", loginSubmit: "Sign in", loginHelp: "Connect Supabase Auth to enable real sessions. This screen is ready for email/password.", registerTitle: "Create account", accountType: "Account type", registerSubmit: "Create account" },
+    dashboard: { title: "User dashboard", intro: "Account, listings, messages, and settings overview.", listings: "My listings", inventory: "Manage inventory", messages: "Messages", inquiries: "Received inquiries", favorites: "Favorites", savedBoats: "Saved boats", futureSubscription: "Future subscription", plansPromotions: "Plans and promotions", demoActivity: "Demo activity", createListing: "Create listing", messagesTitle: "Received inquiries", messagesText: "Contact form inquiries are stored in `inquiries` and shown here for each seller.", profile: "Profile", company: "Company", website: "Website", publicDescription: "Public description", saveProfile: "Save profile", settingsTitle: "Settings and future subscription", planText: "Prepared for Stripe, coupons, renewals, and listing promotion.", basic: "Basic", premium: "Premium" },
+    admin: { title: "Administration", intro: "Protected panel for moderation, taxonomy management, and audit.", sections: "Users|Professionals|Listings|Pending|Published|Rejected|Reports|Inquiries|Categories|Brands|Lakes|Cantons|Marinas|Settings", adminActions: "Admin actions", approve: "Approve", reject: "Reject", feature: "Feature" },
+    legal: { legalNotice: "Legal notice", terms: "Terms and conditions", privacy: "Privacy policy", cookies: "Cookies", fraud: "Security and fraud prevention", contact: "Contact", publishingRules: "Publishing rules", fallback: "Legal page", placeholder1: "Temporary placeholder. This text must be reviewed and adapted by qualified Swiss legal counsel before SwissYacht goes to production.", placeholder2: "This page will document responsibilities, privacy, cookies, publishing rules, contact, fraud prevention, and obligations applicable to the Swiss market." },
+    professionals: { title: "SwissYacht for professionals", intro: "Public profiles, centralized inventory, commercial inquiries, and a base ready for subscriptions.", included: "Professional architecture included", rows: "Company profile|Logo, address, languages, website, and phones.|Inventory|Multiple listings and moderation states.|Inquiries|Centralized contacts per listing.|Statistics|Views and basic indicators." },
+    refs: {}
+  }
+};
+
+const sharedRefs = {
+  "Motor boats": ["Bateaux a moteur", "Motorboote", "Barche a motore", "Motor boats"],
+  "Sailing boats": ["Voiliers", "Segelboote", "Barche a vela", "Sailing boats"],
+  Yachts: ["Yachts", "Yachten", "Yacht", "Yachts"],
+  "Day cruisers": ["Vedettes", "Daycruiser", "Day cruiser", "Day cruisers"],
+  RIBs: ["Semi-rigides", "Schlauchboote", "Gommoni", "RIBs"],
+  Catamarans: ["Catamarans", "Katamarane", "Catamarani", "Catamarans"],
+  "Electric boats": ["Bateaux electriques", "Elektroboote", "Barche elettriche", "Electric boats"],
+  "Jet skis": ["Motos nautiques", "Jetskis", "Moto d'acqua", "Jet skis"],
+  "Fishing boats": ["Bateaux de peche", "Fischerboote", "Barche da pesca", "Fishing boats"],
+  "Classic boats": ["Bateaux classiques", "Klassische Boote", "Barche classiche", "Classic boats"],
+  new: ["Neuf", "Neu", "Nuovo", "New"],
+  used: ["Occasion", "Gebraucht", "Usato", "Used"],
+  parts: ["Pour pieces", "Fuer Teile", "Per pezzi", "For parts"],
+  classic: ["Classique", "Klassisch", "Classico", "Classic"],
+  refit: ["Renove", "Refit", "Refit", "Refit"],
+  Petrol: ["Essence", "Benzin", "Benzina", "Petrol"],
+  Diesel: ["Diesel", "Diesel", "Diesel", "Diesel"],
+  Electric: ["Electrique", "Elektrisch", "Elettrico", "Electric"],
+  Hybrid: ["Hybride", "Hybrid", "Ibrido", "Hybrid"],
+  None: ["Aucun", "Keiner", "Nessuno", "None"],
+  Fiberglass: ["Fibre de verre", "GFK", "Vetroresina", "Fiberglass"],
+  Aluminium: ["Aluminium", "Aluminium", "Alluminio", "Aluminium"],
+  Steel: ["Acier", "Stahl", "Acciaio", "Steel"],
+  Wood: ["Bois", "Holz", "Legno", "Wood"],
+  Carbon: ["Carbone", "Carbon", "Carbonio", "Carbon"],
+  Hypalon: ["Hypalon", "Hypalon", "Hypalon", "Hypalon"],
+  Outboard: ["Hors-bord", "Aussenborder", "Fuoribordo", "Outboard"],
+  Inboard: ["In-bord", "Innenborder", "Entrobordo", "Inboard"],
+  Sterndrive: ["Z-drive", "Z-Antrieb", "Piede poppiero", "Sterndrive"],
+  Saildrive: ["Saildrive", "Saildrive", "Saildrive", "Saildrive"],
+  Jet: ["Jet", "Jet", "Jet", "Jet"],
+  "Lake Geneva": ["Lac Leman", "Genfersee", "Lago Lemano", "Lake Geneva"],
+  "Lake Zurich": ["Lac de Zurich", "Zuerichsee", "Lago di Zurigo", "Lake Zurich"],
+  "Lake Neuchatel": ["Lac de Neuchatel", "Neuenburgersee", "Lago di Neuchatel", "Lake Neuchatel"],
+  "Lake Lucerne": ["Lac des Quatre-Cantons", "Vierwaldstaettersee", "Lago dei Quattro Cantoni", "Lake Lucerne"],
+  "Lake Constance": ["Lac de Constance", "Bodensee", "Lago di Costanza", "Lake Constance"],
+  "Lake Lugano": ["Lac de Lugano", "Luganersee", "Lago di Lugano", "Lake Lugano"],
+  "Lake Maggiore": ["Lac Majeur", "Langensee", "Lago Maggiore", "Lake Maggiore"],
+  "Lake Thun": ["Lac de Thoune", "Thunersee", "Lago di Thun", "Lake Thun"],
+  "Lake Biel": ["Lac de Bienne", "Bielersee", "Lago di Bienne", "Lake Biel"],
+  "Lake Zug": ["Lac de Zoug", "Zugersee", "Lago di Zugo", "Lake Zug"],
+  "Lake Murten": ["Lac de Morat", "Murtensee", "Lago di Morat", "Lake Murten"],
+  "Lake Brienz": ["Lac de Brienz", "Brienzersee", "Lago di Brienz", "Lake Brienz"],
+  "Lake Sempach": ["Lac de Sempach", "Sempachersee", "Lago di Sempach", "Lake Sempach"],
+  "Lake Hallwil": ["Lac de Hallwil", "Hallwilersee", "Lago di Hallwil", "Lake Hallwil"],
+  "Lake Greifen": ["Lac de Greifen", "Greifensee", "Lago di Greifen", "Lake Greifen"],
+  "Lake Pfaffikon": ["Lac de Pfaffikon", "Pfaeffikersee", "Lago di Pfaffikon", "Lake Pfaffikon"],
+  "Lake Sihl": ["Lac de Sihl", "Sihlsee", "Lago di Sihl", "Lake Sihl"],
+  "Lake Walen": ["Lac de Walen", "Walensee", "Lago di Walen", "Lake Walen"],
+  "Lake Aegeri": ["Lac d'Aegeri", "Aegerisee", "Lago di Aegeri", "Lake Aegeri"],
+  "Lake Baldegg": ["Lac de Baldegg", "Baldeggersee", "Lago di Baldegg", "Lake Baldegg"],
+  "Lake Joux": ["Lac de Joux", "Lac de Joux", "Lago di Joux", "Lake Joux"],
+  "Lake Sarnen": ["Lac de Sarnen", "Sarnersee", "Lago di Sarnen", "Lake Sarnen"],
+  "Lake Lungern": ["Lac de Lungern", "Lungerersee", "Lago di Lungern", "Lake Lungern"],
+  "Lake Silvaplana": ["Lac de Silvaplana", "Silvaplanersee", "Lago di Silvaplana", "Lake Silvaplana"],
+  "Lake Sils": ["Lac de Sils", "Silsersee", "Lago di Sils", "Lake Sils"],
+  "Lake Poschiavo": ["Lac de Poschiavo", "Puschlaversee", "Lago di Poschiavo", "Lake Poschiavo"],
+  "Lake Morat": ["Lac de Morat", "Murtensee", "Lago di Morat", "Lake Morat"],
+  "Lake Gruyere": ["Lac de la Gruyere", "Greyerzersee", "Lago della Gruyere", "Lake Gruyere"],
+  "Lake Schiffenen": ["Lac de Schiffenen", "Schiffenensee", "Lago di Schiffenen", "Lake Schiffenen"],
+  White: ["Blanc", "Weiss", "Bianco", "White"],
+  Black: ["Noir", "Schwarz", "Nero", "Black"],
+  Blue: ["Bleu", "Blau", "Blu", "Blue"],
+  "Light blue": ["Bleu clair", "Hellblau", "Azzurro", "Light blue"],
+  Grey: ["Gris", "Grau", "Grigio", "Grey"],
+  Silver: ["Argent", "Silber", "Argento", "Silver"],
+  Red: ["Rouge", "Rot", "Rosso", "Red"],
+  Green: ["Vert", "Gruen", "Verde", "Green"],
+  Beige: ["Beige", "Beige", "Beige", "Beige"],
+  Brown: ["Brun", "Braun", "Marrone", "Brown"],
+  Yellow: ["Jaune", "Gelb", "Giallo", "Yellow"],
+  Orange: ["Orange", "Orange", "Arancione", "Orange"]
+} as const;
+
+const localeIndex: Record<Locale, number> = { fr: 0, de: 1, it: 2, en: 3 };
+
+function toRefs(locale: Locale) {
+  return Object.fromEntries(Object.entries(sharedRefs).map(([key, labels]) => [key, labels[localeIndex[locale]]]));
+}

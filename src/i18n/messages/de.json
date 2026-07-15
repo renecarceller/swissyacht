@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "buy": "Kaufen",
+    "sell": "Verkaufen",
+    "professionals": "Profis",
+    "login": "Anmelden",
+    "publish": "Inserat erstellen"
+  },
+  "home": {
+    "title": "Boote kaufen in der Schweiz",
+    "subtitle": "Finden Sie Boote, Segelboote und Yachten auf Schweizer Seen mit praezisen Filtern.",
+    "search": "Suchen",
+    "featured": "Top-Inserate",
+    "categories": "Kategorien",
+    "professionals": "Fuer nautische Profis",
+    "sellSteps": "Boot einfach verkaufen",
+    "popularLakes": "Beliebte Seen"
+  },
+  "common": {
+    "priceMax": "Maximalpreis",
+    "brand": "Marke",
+    "boatType": "Bootstyp",
+    "location": "Kanton oder See",
+    "results": "Resultate",
+    "filters": "Filter",
+    "save": "Speichern",
+    "submit": "Senden",
+    "demo": "Demo"
+  }
+}
