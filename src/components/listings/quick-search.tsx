@@ -223,42 +223,42 @@ function AdvancedFiltersPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/55 p-0 sm:items-center sm:justify-center sm:p-6" role="dialog" aria-modal="true" aria-label={text.search.moreFilters}>
-      <div className="flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-4xl sm:rounded-3xl">
-        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-5 py-4 sm:px-8 sm:py-5">
-          <div className="flex min-w-0 items-center gap-4">
-            <button type="button" onClick={onClose} className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
-              <X className="size-7" strokeWidth={2.2} />
+      <div className="flex max-h-[88vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-3xl sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-5 py-3 sm:px-7 sm:py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <button type="button" onClick={onClose} className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
+              <X className="size-6" strokeWidth={2.2} />
             </button>
-            <h3 className="truncate text-3xl font-semibold text-[#2f3033] sm:text-4xl">{text.search.moreFilters}</h3>
+            <h3 className="truncate text-2xl font-semibold text-[#2f3033] sm:text-3xl">{text.search.moreFilters}</h3>
           </div>
-          <button type="button" onClick={clear} className="text-xl font-semibold text-[#adadb0] transition hover:text-[#555] sm:text-2xl">
+          <button type="button" onClick={clear} className="text-base font-semibold text-[#adadb0] transition hover:text-[#555] sm:text-xl">
             {labels.reset}
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-2 sm:px-8">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-1 sm:px-7">
           <div className="divide-y divide-[#e1e1e1]">
             {rows.map((row) => (
               <button
                 type="button"
                 key={row.key}
                 onClick={row.onClick}
-                className="grid w-full grid-cols-[44px_1fr_auto_auto] items-center gap-4 py-5 text-left text-[#2f3033] transition hover:text-[#0f6fae] sm:grid-cols-[64px_1fr_auto_auto] sm:gap-6 sm:py-7"
+                className="grid w-full grid-cols-[38px_1fr_auto_auto] items-center gap-3 py-4 text-left text-[#2f3033] transition hover:text-[#0f6fae] sm:grid-cols-[48px_1fr_auto_auto] sm:gap-5 sm:py-5"
               >
-                <span className="[&>svg]:size-9 sm:[&>svg]:size-12">{row.icon}</span>
-                <span className="min-w-0 truncate text-2xl font-semibold sm:text-4xl">{row.label}</span>
-                {row.value ? <span className="max-w-44 truncate rounded-md bg-[#8bd3ff] px-3 py-1 text-lg font-bold text-[#06233f] sm:max-w-64 sm:text-2xl">{row.value}</span> : null}
-                <ChevronRight className="size-7 text-[#999] sm:size-10" />
+                <span className="[&>svg]:size-8 sm:[&>svg]:size-9">{row.icon}</span>
+                <span className="min-w-0 truncate text-xl font-semibold sm:text-2xl">{row.label}</span>
+                {row.value ? <span className="max-w-36 truncate rounded-md bg-[#8bd3ff] px-2.5 py-1 text-base font-bold text-[#06233f] sm:max-w-52 sm:text-lg">{row.value}</span> : null}
+                <ChevronRight className="size-6 text-[#999] sm:size-8" />
               </button>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 border-t border-[#d6d6d6] p-4 sm:p-6">
-          <button type="button" onClick={onClose} className="h-14 rounded-md border-2 border-[#333] bg-white text-lg font-bold text-[#2f3033] sm:h-16 sm:text-2xl">
+        <div className="grid grid-cols-2 gap-3 border-t border-[#d6d6d6] p-4 sm:p-5">
+          <button type="button" onClick={onClose} className="h-12 rounded-md border-2 border-[#333] bg-white text-base font-bold text-[#2f3033] sm:h-14 sm:text-xl">
             {labels.close}
           </button>
-          <button type="submit" className="h-14 rounded-md bg-[#8bd3ff] text-lg font-extrabold text-[#06233f] shadow-[0_5px_0_#58b9e8] transition hover:bg-[#aee2ff] sm:h-16 sm:text-2xl">
+          <button type="submit" className="h-12 rounded-md bg-[#8bd3ff] text-base font-extrabold text-[#06233f] shadow-[0_4px_0_#58b9e8] transition hover:bg-[#aee2ff] sm:h-14 sm:text-xl">
             {text.search.resultCta}
           </button>
         </div>
@@ -348,32 +348,32 @@ function OptionPicker({
 
   return (
     <div className="absolute inset-0 z-10 flex items-end bg-black/20 sm:items-center sm:justify-center" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl">
-        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-5 py-4 sm:px-8">
-          <div className="flex min-w-0 items-center gap-4">
-            <button type="button" onClick={onClose} className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
-              <X className="size-7" strokeWidth={2.2} />
+      <div className="flex max-h-[86vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-2xl sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-5 py-3 sm:px-7">
+          <div className="flex min-w-0 items-center gap-3">
+            <button type="button" onClick={onClose} className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
+              <X className="size-6" strokeWidth={2.2} />
             </button>
-            <h4 className="truncate text-3xl font-semibold text-[#2f3033] sm:text-4xl">{title}</h4>
+            <h4 className="truncate text-2xl font-semibold text-[#2f3033] sm:text-3xl">{title}</h4>
           </div>
-          <button type="button" onClick={() => onSelect("")} className="text-xl font-semibold text-[#adadb0] transition hover:text-[#555] sm:text-2xl">
+          <button type="button" onClick={() => onSelect("")} className="text-base font-semibold text-[#adadb0] transition hover:text-[#555] sm:text-xl">
             {labels.clear}
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-2 sm:px-8">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-1 sm:px-7">
           <div className="divide-y divide-[#e1e1e1]">
             {options.map((option) => (
               <button
                 type="button"
                 key={option.value}
                 onClick={() => onSelect(option.value)}
-                className="grid w-full grid-cols-[1fr_auto] items-center gap-4 py-5 text-left text-[#2f3033] transition hover:text-[#0f6fae] sm:py-6"
+                className="grid w-full grid-cols-[1fr_auto] items-center gap-4 py-4 text-left text-[#2f3033] transition hover:text-[#0f6fae] sm:py-5"
               >
                 <span className="flex min-w-0 items-center gap-4">
-                  {colorMode ? <span className="size-8 shrink-0 rounded-full border border-[#999]" style={{ background: colorSwatch(option.value) }} /> : null}
-                  <span className="truncate text-2xl font-semibold sm:text-4xl">{option.label}</span>
+                  {colorMode ? <span className="size-7 shrink-0 rounded-full border border-[#999]" style={{ background: colorSwatch(option.value) }} /> : null}
+                  <span className="truncate text-xl font-semibold sm:text-2xl">{option.label}</span>
                 </span>
-                {selected === option.value ? <Check className="size-8 text-[#0f6fae] sm:size-10" /> : <ChevronRight className="size-7 text-[#999] sm:size-10" />}
+                {selected === option.value ? <Check className="size-7 text-[#0f6fae] sm:size-8" /> : <ChevronRight className="size-6 text-[#999] sm:size-8" />}
               </button>
             ))}
           </div>
@@ -403,25 +403,25 @@ function NumberChoicePicker({
 
   return (
     <div className="absolute inset-0 z-10 flex items-end bg-black/20 sm:items-center sm:justify-center" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="w-full overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-2xl sm:rounded-3xl">
-        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-5 py-4 sm:px-8">
-          <div className="flex min-w-0 items-center gap-4">
-            <button type="button" onClick={onClose} className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
-              <X className="size-7" strokeWidth={2.2} />
+      <div className="w-full overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-xl sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-5 py-3 sm:px-7">
+          <div className="flex min-w-0 items-center gap-3">
+            <button type="button" onClick={onClose} className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
+              <X className="size-6" strokeWidth={2.2} />
             </button>
-            <h4 className="truncate text-3xl font-semibold text-[#2f3033] sm:text-4xl">{title}</h4>
+            <h4 className="truncate text-2xl font-semibold text-[#2f3033] sm:text-3xl">{title}</h4>
           </div>
-          <button type="button" onClick={() => onSelect("")} className="text-xl font-semibold text-[#adadb0] transition hover:text-[#555] sm:text-2xl">
+          <button type="button" onClick={() => onSelect("")} className="text-base font-semibold text-[#adadb0] transition hover:text-[#555] sm:text-xl">
             {labels.clear}
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-3 p-5 sm:grid-cols-4 sm:gap-4 sm:p-8">
+        <div className="grid grid-cols-3 gap-3 p-5 sm:grid-cols-4 sm:p-6">
           {values.map((value) => (
             <button
               type="button"
               key={value}
               onClick={() => onSelect(value)}
-              className={`h-16 rounded-md border-2 text-2xl font-bold transition sm:h-20 sm:text-3xl ${selected === value ? "border-[#0f6fae] bg-[#8bd3ff] text-[#06233f]" : "border-[#d2d2d2] bg-white text-[#2f3033] hover:border-[#0f6fae]"}`}
+              className={`h-14 rounded-md border-2 text-xl font-bold transition sm:h-16 sm:text-2xl ${selected === value ? "border-[#0f6fae] bg-[#8bd3ff] text-[#06233f]" : "border-[#d2d2d2] bg-white text-[#2f3033] hover:border-[#0f6fae]"}`}
             >
               {value}+
             </button>
