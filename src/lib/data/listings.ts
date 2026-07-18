@@ -1,5 +1,7 @@
 import type { Listing, ListingFilters } from "@/types/domain";
+import { brands } from "./reference";
 import { demoListings } from "./demo";
+import { getUserListings } from "./user-listing-storage";
 
 export const PAGE_SIZE = 9;
 
@@ -157,7 +159,7 @@ export function sortListings(listings: Listing[], sort: ListingFilters["sort"] =
 }
 
 export function getListings(filters: ListingFilters = {}) {
-  const filtered = sortListings(filterListings(demoListings, filters), filters.sort);
+  const filtered = sortListings(filterListings(getPublicListings(), filters), filters.sort);
   const page = Math.max(1, filters.page || 1);
   const offset = (page - 1) * PAGE_SIZE;
 
@@ -171,19 +173,23 @@ export function getListings(filters: ListingFilters = {}) {
 }
 
 export function getFeaturedListings() {
-  return demoListings.filter((listing) => listing.featured).slice(0, 6);
+  return getPublicListings().filter((listing) => listing.featured).slice(0, 6);
 }
 
 export function getBrandCounts() {
-  return demoListings.reduce<Record<string, number>>((counts, listing) => {
+  return getAllListings().reduce<Record<string, number>>((counts, listing) => {
     if (listing.status !== "published") return counts;
     counts[listing.brand] = (counts[listing.brand] || 0) + 1;
     return counts;
   }, {});
 }
 
+export function getAvailableBrands() {
+  return Array.from(new Set([...Object.keys(getBrandCounts()), ...brands])).sort((a, b) => a.localeCompare(b));
+}
+
 export function getCategoryCounts() {
-  return demoListings.reduce<Record<string, number>>((counts, listing) => {
+  return getAllListings().reduce<Record<string, number>>((counts, listing) => {
     if (listing.status !== "published") return counts;
     counts[listing.category] = (counts[listing.category] || 0) + 1;
     return counts;
@@ -191,15 +197,22 @@ export function getCategoryCounts() {
 }
 
 export function getListingBySlug(slug: string) {
-  return demoListings.find((listing) => listing.slug === slug);
+  return getAllListings().find((listing) => listing.slug === slug);
 }
 
 export function getSimilarListings(listing: Listing) {
-  return demoListings
+  return getPublicListings()
     .filter((candidate) => candidate.id !== listing.id && (candidate.category === listing.category || candidate.lake === listing.lake))
     .slice(0, 3);
 }
 
 export function canManageListing(userId: string | undefined, listingOwnerId: string, role?: string) {
   return Boolean(userId && (userId === listingOwnerId || role === "admin"));
+}
+export function getAllListings() {
+  return [...getUserListings(), ...demoListings];
+}
+
+export function getPublicListings() {
+  return getAllListings().filter((listing) => listing.status === "published");
 }

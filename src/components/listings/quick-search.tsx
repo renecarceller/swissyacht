@@ -1045,11 +1045,14 @@ function BrandPicker({
 }) {
   const labels = brandPickerLabels(locale);
   const [query, setQuery] = useState("");
+  const allBrands = useMemo(() => {
+    return Array.from(new Set([...Object.keys(brandCounts), ...brands])).sort((a, b) => a.localeCompare(b));
+  }, [brandCounts]);
   const filteredBrands = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return brands;
-    return brands.filter((brand) => brand.toLowerCase().includes(normalized));
-  }, [query]);
+    if (!normalized) return allBrands;
+    return allBrands.filter((brand) => brand.toLowerCase().includes(normalized));
+  }, [allBrands, query]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/55 p-0 sm:items-center sm:justify-center sm:p-6" role="dialog" aria-modal="true" aria-label={brandLabel}>

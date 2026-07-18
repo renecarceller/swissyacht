@@ -1,9 +1,11 @@
 import { ListingForm } from "@/components/forms/listing-form";
 import { ui } from "@/i18n/ui";
+import { getAvailableBrands } from "@/lib/data/listings";
 
 export default async function SellPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const text = ui(locale);
+  const availableBrands = getAvailableBrands();
   return (
     <main className="container-shell py-8">
       <div className="mb-6">
@@ -12,7 +14,7 @@ export default async function SellPage({ params }: { params: Promise<{ locale: s
           {text.sell.intro}
         </p>
       </div>
-      <ListingForm locale={locale} />
+      <ListingForm locale={locale} availableBrands={availableBrands} />
     </main>
   );
 }

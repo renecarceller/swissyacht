@@ -4,7 +4,7 @@ import { Link } from "@/i18n/routing";
 import { ListingCard } from "@/components/listings/listing-card";
 import { SearchFilters } from "@/components/listings/search-filters";
 import { SortPicker } from "@/components/listings/sort-picker";
-import { getListings, parseFilters } from "@/lib/data/listings";
+import { getAvailableBrands, getListings, parseFilters } from "@/lib/data/listings";
 import { ui } from "@/i18n/ui";
 
 export const metadata: Metadata = {
@@ -28,6 +28,7 @@ export default async function BoatsPage({
   });
   const filters = parseFilters(urlSearchParams);
   const result = getListings(filters);
+  const availableBrands = getAvailableBrands();
   const text = ui(locale);
 
   return (
@@ -44,7 +45,7 @@ export default async function BoatsPage({
         </div>
       </div>
       <form action={`/${locale}/boats`} className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <SearchFilters filters={filters} locale={locale} />
+        <SearchFilters filters={filters} locale={locale} availableBrands={availableBrands} />
         <section>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#d9e2ec] bg-white p-3">
             <span className="text-sm text-[#607085]">{text.search.page} {result.page} {text.search.of} {result.pages}</span>

@@ -103,7 +103,7 @@ const photoSets: Record<string, string[]> = {
   ]
 };
 
-function demoBoatImages(category: string) {
+export function demoBoatImages(category: string) {
   return photoSets[category] || photoSets["Motor boats"];
 }
 

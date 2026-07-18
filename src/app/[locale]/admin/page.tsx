@@ -1,4 +1,4 @@
-import { demoListings } from "@/lib/data/demo";
+import { getAllListings } from "@/lib/data/listings";
 import { formatChf } from "@/lib/utils";
 import { ui } from "@/i18n/ui";
 
@@ -6,6 +6,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const { locale } = await params;
   const text = ui(locale);
   const sections = text.admin.sections.split("|");
+  const listings = getAllListings();
 
   return (
     <main className="container-shell py-8">
@@ -20,7 +21,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
             <tr><th className="p-3">{text.dashboard.listings}</th><th className="p-3">{text.common.price}</th><th className="p-3">{text.common.status}</th><th className="p-3">{text.admin.adminActions}</th></tr>
           </thead>
           <tbody>
-            {demoListings.slice(0, 10).map((listing) => (
+            {listings.slice(0, 10).map((listing) => (
               <tr key={listing.id} className="border-t border-[#edf2f7]">
                 <td className="p-3 font-semibold">{listing.title}</td>
                 <td className="p-3">{formatChf(listing.priceChf)}</td>

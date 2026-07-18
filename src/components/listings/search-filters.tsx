@@ -3,7 +3,7 @@ import { brands, cantons, categories, conditions, engineTypes, fuelTypes, hullMa
 import type { ListingFilters } from "@/types/domain";
 import { refLabel, ui } from "@/i18n/ui";
 
-export function SearchFilters({ filters, locale }: { filters: ListingFilters; locale: string }) {
+export function SearchFilters({ filters, locale, availableBrands = brands }: { filters: ListingFilters; locale: string; availableBrands?: readonly string[] }) {
   const text = ui(locale);
   const select = (name: string, label: string, values: readonly string[]) => (
     <label className="grid gap-1 text-sm font-medium">
@@ -27,7 +27,7 @@ export function SearchFilters({ filters, locale }: { filters: ListingFilters; lo
           <input name="q" defaultValue={filters.q} className="h-10 rounded-md border border-[#cbd7e4] px-3" placeholder={text.search.textPlaceholder} />
         </label>
         {select("category", text.search.category, categories)}
-        {select("brand", text.common.brand, brands)}
+        {select("brand", text.common.brand, availableBrands)}
         <div className="grid grid-cols-2 gap-2">
           <input name="priceMin" defaultValue={filters.priceMin} type="number" placeholder={text.search.priceMin} className="h-10 rounded-md border border-[#cbd7e4] px-3" />
           <input name="priceMax" defaultValue={filters.priceMax} type="number" placeholder={text.search.priceMax} className="h-10 rounded-md border border-[#cbd7e4] px-3" />
