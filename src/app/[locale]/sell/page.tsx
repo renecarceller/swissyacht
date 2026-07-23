@@ -9,7 +9,7 @@ export default async function SellPage({ params }: { params: Promise<{ locale: s
   const supabase = await createSupabaseServerClient();
   const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   if (!data.user) {
-    redirect({ href: "/register", locale });
+    redirect({ href: "/account", locale });
   }
 
   const text = ui(locale);

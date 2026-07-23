@@ -56,8 +56,8 @@ export function SiteHeader({ locale }: { locale: string }) {
               </Link>
             ))}
           </div>
-          <Link href="/login" locale={locale} className="rounded-md px-3 py-2 text-sm font-semibold text-navy hover:bg-[#e8f3fb]">
-            {text.nav.login}
+          <Link href="/account" locale={locale} className="rounded-md px-3 py-2 text-sm font-semibold text-navy hover:bg-[#e8f3fb]">
+            {text.nav.account}
           </Link>
           <Link href="/sell" locale={locale} className="inline-flex h-10 items-center gap-2 rounded-md bg-[#8bd3ff] px-4 text-sm font-semibold text-[#06233f] shadow-[0_3px_0_#58b9e8] transition hover:bg-[#aee2ff]">
             <ShipWheel size={16} />
@@ -76,8 +76,8 @@ export function SiteHeader({ locale }: { locale: string }) {
                 {item.label}
               </Link>
             ))}
-            <Link href="/login" locale={locale} className="py-2 font-semibold">
-              {text.nav.login}
+            <Link href="/account" locale={locale} className="py-2 font-semibold">
+              {text.nav.account}
             </Link>
             <Link href="/sell" locale={locale} className="rounded-md bg-[#8bd3ff] px-4 py-3 text-center font-semibold text-[#06233f] shadow-[0_3px_0_#58b9e8] transition hover:bg-[#aee2ff]">
               {text.nav.publish}

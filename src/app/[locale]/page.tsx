@@ -2,7 +2,6 @@ import { Building2, CheckCircle2, MapPin, ShieldCheck, Sparkles } from "lucide-r
 import Image from "next/image";
 import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/routing";
-import { RegisterAccountForm } from "@/components/forms/register-account-form";
 import { ListingCard } from "@/components/listings/listing-card";
 import { QuickSearch } from "@/components/listings/quick-search";
 import { getBrandCounts, getCategoryCounts, getFeaturedListings } from "@/lib/data/listings";
@@ -29,12 +28,6 @@ export default async function HomePage({
 
   return (
     <main>
-      <section className="grid min-h-[calc(100vh-4rem)] place-items-center bg-[#f6f8fb] py-10">
-        <div className="container-shell w-full">
-          <RegisterAccountForm locale={locale} />
-        </div>
-      </section>
-
       <section className="relative min-h-[620px] overflow-hidden bg-navy text-white">
         <Image
           src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=85"
