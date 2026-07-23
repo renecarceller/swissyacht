@@ -5,6 +5,7 @@ import { Globe2, Menu, ShipWheel } from "lucide-react";
 import { useState } from "react";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
+import { openAccountModal } from "@/components/forms/welcome-account-modal";
 import { ui } from "@/i18n/ui";
 
 export function SiteHeader({ locale }: { locale: string }) {
@@ -56,9 +57,9 @@ export function SiteHeader({ locale }: { locale: string }) {
               </Link>
             ))}
           </div>
-          <Link href="/account" locale={locale} className="rounded-md px-3 py-2 text-sm font-semibold text-navy hover:bg-[#e8f3fb]">
+          <button type="button" onClick={openAccountModal} className="rounded-md px-3 py-2 text-sm font-semibold text-navy hover:bg-[#e8f3fb]">
             {text.nav.account}
-          </Link>
+          </button>
           <Link href="/sell" locale={locale} className="inline-flex h-10 items-center gap-2 rounded-md bg-[#8bd3ff] px-4 text-sm font-semibold text-[#06233f] shadow-[0_3px_0_#58b9e8] transition hover:bg-[#aee2ff]">
             <ShipWheel size={16} />
             {text.nav.publish}
@@ -76,9 +77,9 @@ export function SiteHeader({ locale }: { locale: string }) {
                 {item.label}
               </Link>
             ))}
-            <Link href="/account" locale={locale} className="py-2 font-semibold">
+            <button type="button" onClick={() => { openAccountModal(); setOpen(false); }} className="py-2 text-left font-semibold">
               {text.nav.account}
-            </Link>
+            </button>
             <Link href="/sell" locale={locale} className="rounded-md bg-[#8bd3ff] px-4 py-3 text-center font-semibold text-[#06233f] shadow-[0_3px_0_#58b9e8] transition hover:bg-[#aee2ff]">
               {text.nav.publish}
             </Link>

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { WelcomeAccountModal } from "@/components/forms/welcome-account-modal";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -37,6 +38,7 @@ export default async function LocaleLayout({
       <SiteHeader locale={locale} />
       {children}
       <SiteFooter locale={locale} />
+      <WelcomeAccountModal locale={locale} />
     </NextIntlClientProvider>
   );
 }

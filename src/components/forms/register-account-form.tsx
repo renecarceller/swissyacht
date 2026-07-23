@@ -6,6 +6,7 @@ import { registerPrivateAccountAction, registerProfessionalAccountAction } from 
 import { cantons } from "@/lib/data/reference";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { cn } from "@/lib/utils";
 import { ui } from "@/i18n/ui";
 
 const brokerServices = [
@@ -23,16 +24,17 @@ const brokerServices = [
   "Amarres"
 ];
 
-export function RegisterAccountForm({ locale }: { locale: string }) {
+export function RegisterAccountForm({ locale, compact = false }: { locale: string; compact?: boolean }) {
   const [accountType, setAccountType] = useState<"private" | "professional" | null>(null);
   const text = ui(locale);
   const labels = registerLabels(locale);
 
   if (!accountType) {
     return (
-      <section className="mx-auto grid max-w-5xl gap-6">
+      <section className={cn("mx-auto grid gap-6", compact ? "max-w-4xl" : "max-w-5xl")}>
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-navy">{labels.choiceTitle}</h1>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-[#0f6fae]">SwissYacht</p>
+          <h1 className={cn("font-bold text-navy", compact ? "text-2xl md:text-3xl" : "text-3xl")}>{labels.choiceTitle}</h1>
           <p className="mt-2 text-[#607085]">{labels.choiceIntro}</p>
         </div>
         <div className="grid gap-5 md:grid-cols-2">
@@ -63,7 +65,7 @@ export function RegisterAccountForm({ locale }: { locale: string }) {
         {labels.changeType}
       </button>
       {accountType === "private" ? (
-        <form action={registerPrivateAccountAction} className="rounded-md border border-[#d9e2ec] bg-white p-6">
+        <form action={registerPrivateAccountAction} className={cn("rounded-md border border-[#d9e2ec] bg-white", compact ? "p-4 md:p-5" : "p-6")}>
           <input type="hidden" name="locale" value={locale} />
           <h1 className="mb-5 flex items-center gap-2 text-2xl font-bold text-navy"><UserRound />{labels.privateRegister}</h1>
           <div className="grid gap-4 md:grid-cols-2">
@@ -76,7 +78,7 @@ export function RegisterAccountForm({ locale }: { locale: string }) {
           <Button className="mt-6 bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">{labels.createPrivate}</Button>
         </form>
       ) : (
-        <form action={registerProfessionalAccountAction} className="grid gap-5">
+        <form action={registerProfessionalAccountAction} className={cn("grid", compact ? "gap-3" : "gap-5")}>
           <input type="hidden" name="locale" value={locale} />
           <Step title={labels.accessData}>
             <div className="grid gap-4 md:grid-cols-2">
@@ -149,7 +151,7 @@ export function RegisterAccountForm({ locale }: { locale: string }) {
 
 function ChoiceCard({ icon, title, text, features, button, onClick }: { icon: React.ReactNode; title: string; text: string; features: string[]; button: string; onClick: () => void }) {
   return (
-    <article className="rounded-md border border-[#d9e2ec] bg-white p-6 shadow-sm">
+    <article className="rounded-md border border-[#d9e2ec] bg-white/95 p-5 shadow-sm ring-1 ring-white/80 backdrop-blur">
       <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-[#e8f6ff] text-[#0b6fae] [&>svg]:size-7">{icon}</div>
       <h2 className="text-2xl font-bold text-navy">{title}</h2>
       <p className="mt-2 text-[#607085]">{text}</p>
@@ -168,7 +170,7 @@ function ChoiceCard({ icon, title, text, features, button, onClick }: { icon: Re
 
 function Step({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-md border border-[#d9e2ec] bg-white p-6">
+    <section className="rounded-md border border-[#d9e2ec] bg-white p-5">
       <h2 className="mb-5 text-xl font-bold text-navy">{title}</h2>
       {children}
     </section>
