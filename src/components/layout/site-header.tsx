@@ -12,8 +12,7 @@ export function SiteHeader({ locale }: { locale: string }) {
   const [open, setOpen] = useState(false);
   const nav = [
     { href: "/boats", label: text.nav.buy },
-    { href: "/sell", label: text.nav.sell },
-    { href: "/professionals", label: text.nav.professionals }
+    { href: "/sell", label: text.nav.sell }
   ];
 
   return (

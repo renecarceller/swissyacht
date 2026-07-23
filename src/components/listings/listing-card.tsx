@@ -39,7 +39,13 @@ export function ListingCard({ listing, locale, view = "cards" }: { listing: List
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf2f7] pt-4 text-sm">
           <span className="flex items-center gap-2 text-[#607085]">
             {listing.seller.verified ? <ShieldCheck size={16} className="text-[#0f6fae]" /> : null}
-            {listing.seller.companyName || listing.seller.name}
+            {listing.seller.professionalSlug ? (
+              <Link href={`/brokers/${listing.seller.professionalSlug}`} locale={locale} className="font-semibold hover:text-navy hover:underline">
+                {listing.seller.companyName || listing.seller.name}
+              </Link>
+            ) : (
+              listing.seller.companyName || listing.seller.name
+            )}
           </span>
           <span className="text-[#607085]">{listing.city}, {listing.canton}</span>
         </div>

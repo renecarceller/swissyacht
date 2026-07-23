@@ -1,9 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Calendar, Eye, Heart, MapPin, Phone, Ruler, Share2, ShieldAlert } from "lucide-react";
+import { Building2, Calendar, Eye, Heart, Mail, MapPin, Phone, Ruler, Share2, ShieldAlert, ShipWheel } from "lucide-react";
 import { InquiryForm } from "@/components/forms/inquiry-form";
 import { ListingCard } from "@/components/listings/listing-card";
+import { Link } from "@/i18n/routing";
 import { getListingBySlug, getSimilarListings } from "@/lib/data/listings";
 import { listingJsonLd } from "@/lib/seo/json-ld";
 import { formatChf } from "@/lib/utils";
@@ -99,13 +100,37 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
         </section>
         <aside className="grid content-start gap-4">
           <div className="rounded-md border border-[#d9e2ec] bg-white p-5">
-            <h2 className="text-lg font-bold text-navy">{listing.seller.companyName || listing.seller.name}</h2>
-            <p className="mt-1 text-sm text-[#607085]">{listing.seller.type === "professional" ? text.listing.sellerProfessional : text.common.private}</p>
+            <div className="flex items-start gap-3">
+              {listing.seller.logoUrl ? (
+                <img src={listing.seller.logoUrl} alt="" className="size-12 rounded-md border border-[#d9e2ec] object-contain p-1" />
+              ) : (
+                <span className="grid size-12 place-items-center rounded-md bg-[#e8f3fb] text-[#0f6fae]"><Building2 size={24} /></span>
+              )}
+              <div>
+                {listing.seller.professionalSlug ? (
+                  <Link href={`/brokers/${listing.seller.professionalSlug}`} locale={locale} className="text-lg font-bold text-navy hover:underline">
+                    {listing.seller.companyName || listing.seller.name}
+                  </Link>
+                ) : (
+                  <h2 className="text-lg font-bold text-navy">{listing.seller.companyName || listing.seller.name}</h2>
+                )}
+                <p className="mt-1 text-sm text-[#607085]">{listing.seller.type === "professional" ? text.listing.sellerProfessional : text.common.private}</p>
+                <p className="mt-1 text-sm text-[#607085]">{[listing.seller.city || listing.city, listing.seller.canton || listing.canton].filter(Boolean).join(", ")}</p>
+              </div>
+            </div>
             <div className="mt-4 grid gap-2">
               <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />{text.listing.showPhone}</button>
+              <a href={`mailto:${listing.seller.email}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Mail size={17} />{text.listing.contactSeller}</a>
               <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Heart size={17} />{text.listing.saveFavorite}</button>
               <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Share2 size={17} />{text.listing.share}</button>
+              {listing.seller.professionalSlug ? (
+                <>
+                  <Link href={`/brokers/${listing.seller.professionalSlug}`} locale={locale} className="flex h-11 items-center justify-center gap-2 rounded-md bg-[#8bd3ff] font-bold text-[#06233f] shadow-[0_3px_0_#58b9e8]"><Building2 size={17} />{sellerLabels(locale).profile}</Link>
+                  <Link href={`/brokers/${listing.seller.professionalSlug}`} locale={locale} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><ShipWheel size={17} />{sellerLabels(locale).allBoats}</Link>
+                </>
+              ) : null}
             </div>
+            {listing.seller.activeListingsCount ? <p className="mt-3 text-sm font-semibold text-[#607085]">{listing.seller.activeListingsCount} {sellerLabels(locale).activeBoats}</p> : null}
             <p className="mt-4 font-mono text-xs text-[#607085]">{text.listing.listingId}: {listing.id}</p>
             <p className="mt-1 text-xs text-[#607085]">{text.listing.published}: {new Date(listing.publishedAt).toLocaleDateString(`${locale}-CH`)}</p>
           </div>
@@ -133,4 +158,14 @@ function Spec({ icon, label, value }: { icon: React.ReactNode; label: string; va
       <span><span className="block text-xs font-bold uppercase text-[#607085]">{label}</span><span className="font-semibold">{value}</span></span>
     </div>
   );
+}
+
+function sellerLabels(locale: string) {
+  const dictionaries = {
+    fr: { profile: "Voir le profil professionnel", allBoats: "Voir tous ses bateaux", activeBoats: "bateaux disponibles" },
+    de: { profile: "Profil ansehen", allBoats: "Alle Boote ansehen", activeBoats: "verfuegbare Boote" },
+    it: { profile: "Vedi profilo professionale", allBoats: "Vedi tutte le barche", activeBoats: "barche disponibili" },
+    en: { profile: "View professional profile", allBoats: "View all boats", activeBoats: "boats available" }
+  };
+  return dictionaries[locale as keyof typeof dictionaries] ?? dictionaries.fr;
 }

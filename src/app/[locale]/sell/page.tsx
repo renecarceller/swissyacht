@@ -1,9 +1,17 @@
 import { ListingForm } from "@/components/forms/listing-form";
 import { ui } from "@/i18n/ui";
 import { getAvailableBrands } from "@/lib/data/listings";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "@/i18n/routing";
 
 export default async function SellPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  const supabase = await createSupabaseServerClient();
+  const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+  if (!data.user) {
+    redirect({ href: "/register", locale });
+  }
+
   const text = ui(locale);
   const availableBrands = getAvailableBrands();
   return (

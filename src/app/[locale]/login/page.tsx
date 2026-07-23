@@ -1,6 +1,7 @@
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { Link } from "@/i18n/routing";
 import { ui } from "@/i18n/ui";
 
 export default async function LoginPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -16,6 +17,9 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
           <Button type="submit">{text.auth.loginSubmit}</Button>
         </div>
         <p className="mt-4 text-sm text-[#607085]">{text.auth.loginHelp}</p>
+        <Link href="/register" locale={locale} className="mt-4 inline-flex text-sm font-bold text-[#0f6fae] hover:underline">
+          {text.auth.registerTitle}
+        </Link>
       </form>
     </main>
   );
