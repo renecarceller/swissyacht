@@ -27,8 +27,8 @@ export default async function HomePage({
   const categoryCounts = getCategoryCounts();
 
   return (
-    <main className="pb-24 lg:pb-0">
-      <section className="bg-white lg:hidden">
+    <main className="pb-24 md:pb-0">
+      <section className="bg-white md:hidden">
         <div className="relative h-36 overflow-hidden">
           <Image
             src="https://images.unsplash.com/photo-1520242279429-1f64b18816ef?auto=format&fit=crop&w=1100&q=80"
@@ -51,24 +51,24 @@ export default async function HomePage({
         </Link>
       </section>
 
-      <section className="relative hidden min-h-[620px] overflow-hidden bg-navy text-white lg:block">
+      <section className="relative hidden min-h-[620px] overflow-hidden bg-navy text-white md:block">
         <Image
-          src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=85"
-          alt="Swiss lake marina"
+          src="https://images.unsplash.com/photo-1520242279429-1f64b18816ef?auto=format&fit=crop&w=2200&q=85"
+          alt="Swiss nautical coastline"
           fill
           priority
-          className="absolute inset-0 h-full w-full object-cover opacity-45"
+          className="absolute inset-0 h-full w-full object-cover opacity-55"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#061b31]/40 via-[#061b31]/65 to-[#061b31]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#061b31]/80 via-[#061b31]/55 to-[#061b31]/20" />
         <div className="container-shell relative flex min-h-[620px] flex-col justify-center pb-16 pt-20">
-          <div className="max-w-3xl">
+          <div className="max-w-4xl">
             <div className="mb-4 inline-flex items-center gap-2 rounded-md bg-white/12 px-3 py-2 text-sm font-semibold backdrop-blur">
               <ShieldCheck size={17} />
               {text.home.trust}
             </div>
-            <h1 className="text-4xl font-bold leading-tight md:text-6xl">{text.home.title}</h1>
-            <p className="mt-5 max-w-2xl text-2xl font-semibold leading-9 text-white">{text.home.subtitle}</p>
-            <p className="mt-4 max-w-3xl text-lg leading-8 text-[#d6e4f2]">{text.home.description}</p>
+            <h1 className="text-5xl font-bold leading-[1.08] md:text-6xl xl:text-7xl">{text.home.title}</h1>
+            <p className="mt-6 max-w-3xl text-2xl font-semibold leading-10 text-white xl:text-3xl xl:leading-[1.35]">{text.home.subtitle}</p>
+            <p className="mt-5 max-w-3xl text-lg leading-9 text-[#d6e4f2] xl:text-xl xl:leading-10">{text.home.description}</p>
           </div>
           <div className="mt-10">
             <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} initialValues={initialValues} />
@@ -155,7 +155,7 @@ function MobileBottomNav({ locale }: { locale: string }) {
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.25rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.25rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] md:hidden">
       {items.map((item, index) => {
         const Icon = item.icon;
         return (
