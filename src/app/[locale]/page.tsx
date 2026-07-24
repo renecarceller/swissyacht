@@ -40,7 +40,8 @@ export default async function HomePage({
           <div className="absolute inset-0 bg-gradient-to-r from-[#06233f]/70 via-[#06233f]/35 to-transparent" />
           <div className="absolute inset-0 flex flex-col justify-center px-4 text-white">
             <p className="max-w-[18rem] text-3xl font-semibold leading-tight">{text.home.title}</p>
-            <p className="mt-1 max-w-[17rem] text-sm leading-5 text-white/85">{text.home.subtitle}</p>
+            <p className="mt-1 max-w-[18rem] text-base font-semibold leading-5 text-white/90">{text.home.subtitle}</p>
+            <p className="mt-1 max-w-[20rem] text-xs leading-4 text-white/80">{text.home.description}</p>
           </div>
         </div>
         <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} initialValues={initialValues} />
@@ -66,7 +67,8 @@ export default async function HomePage({
               {text.home.trust}
             </div>
             <h1 className="text-4xl font-bold leading-tight md:text-6xl">{text.home.title}</h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-[#d6e4f2]">{text.home.subtitle}</p>
+            <p className="mt-5 max-w-2xl text-2xl font-semibold leading-9 text-white">{text.home.subtitle}</p>
+            <p className="mt-4 max-w-3xl text-lg leading-8 text-[#d6e4f2]">{text.home.description}</p>
           </div>
           <div className="mt-10">
             <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} initialValues={initialValues} />
