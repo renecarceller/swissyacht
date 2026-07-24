@@ -37,28 +37,28 @@ export function QuickSearch({
   });
 
   return (
-    <form action={`/${locale}/boats`} className="overflow-hidden rounded-md border border-[#d8d8d8] bg-white text-[#2f3033] shadow-2xl lg:rounded-lg">
-      <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8 sm:pt-7 lg:hidden">
-        <h2 className="text-4xl font-bold tracking-normal sm:text-6xl">{text.common.search}</h2>
-        <a href={`/${locale}`} className="text-3xl font-bold text-[#adadb0] transition hover:text-[#555] sm:text-5xl">
+    <form action={`/${locale}/boats`} className="overflow-hidden bg-white text-[#2f3033] lg:rounded-lg lg:border lg:border-[#d8d8d8] lg:shadow-2xl">
+      <div className="flex items-center justify-between px-4 pb-2 pt-6 sm:px-8 sm:pt-7 lg:hidden">
+        <h2 className="text-4xl font-semibold tracking-normal sm:text-6xl">{text.common.search}</h2>
+        <a href={`/${locale}`} className="text-2xl font-semibold text-[#0f6fae] transition hover:text-[#06233f] sm:text-5xl">
           {text.search.clear}
         </a>
       </div>
 
-      <div className="flex gap-8 overflow-x-auto border-b border-[#cfcfcf] px-5 sm:px-8 lg:hidden">
+      <div className="flex gap-7 overflow-x-auto border-b border-[#cfcfcf] px-4 sm:px-8 lg:hidden">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
-            <label key={tab.value} className={`flex shrink-0 cursor-pointer items-center gap-3 border-b-[6px] py-5 text-2xl font-bold sm:text-4xl ${tab.active ? "border-[#333] text-[#333]" : "border-transparent text-[#777]"}`}>
+            <label key={tab.value} className={`flex shrink-0 cursor-pointer items-center gap-2 border-b-[4px] py-4 text-xl font-semibold sm:gap-3 sm:border-b-[6px] sm:py-5 sm:text-4xl ${tab.active ? "border-[#333] text-[#333]" : "border-transparent text-[#777]"}`}>
               <input type="radio" name="categoryTab" value={tab.value} defaultChecked={tab.active} className="sr-only" />
-              <Icon size={42} strokeWidth={2.2} />
+              <Icon className="size-7 sm:size-10" strokeWidth={2.2} />
               {tab.label}
             </label>
           );
         })}
       </div>
 
-      <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-3 lg:p-3 xl:gap-3 xl:p-4">
+      <div className="grid grid-cols-2 gap-2 p-4 sm:gap-3 lg:grid-cols-4 lg:gap-3 lg:p-3 xl:gap-3 xl:p-4">
         <MakeModelField locale={locale} label={text.search.makeModel} modelLabel={text.search.model} brandLabel={text.common.brand} brandCounts={brandCounts} initialBrand={initialValues.brand || ""} initialModel={initialValues.model || ""} />
         <YearRangeField locale={locale} label={text.common.year} initialMin={numberParam(initialValues, "yearMin", 1900)} initialMax={numberParam(initialValues, "yearMax", 2026)} />
         <LengthRangeField locale={locale} label={text.search.length} initialMin={numberParam(initialValues, "lengthMin", 0)} initialMax={numberParam(initialValues, "lengthMax", 40)} />
@@ -81,11 +81,11 @@ export function QuickSearch({
 
       <div className="grid gap-3 px-4 pb-4 sm:px-5 sm:pb-5 lg:grid-cols-2 lg:px-3 lg:pb-3 xl:px-4 xl:pb-4">
         {advancedFilterInputs(advancedFilters)}
-        <button type="button" onClick={() => setAdvancedOpen(true)} className="flex h-16 items-center justify-center gap-3 rounded-md border-2 border-[#333] bg-white text-xl font-bold transition hover:bg-[#f4f4f4] sm:h-20 sm:text-3xl lg:h-14 lg:text-xl xl:h-16 xl:text-xl">
+        <button type="button" onClick={() => setAdvancedOpen(true)} className="flex h-14 items-center justify-center gap-3 rounded-md border-2 border-[#333] bg-white text-xl font-semibold transition hover:bg-[#f4f4f4] sm:h-20 sm:text-3xl lg:h-14 lg:text-xl xl:h-16 xl:text-xl">
           <SlidersHorizontal className="size-7 sm:size-9 lg:size-7" />
           {text.search.moreFilters}
         </button>
-        <button className="h-20 rounded-md bg-[#8bd3ff] text-2xl font-extrabold text-[#06233f] shadow-[0_5px_0_#58b9e8] transition hover:bg-[#aee2ff] sm:h-24 sm:text-5xl lg:h-14 lg:text-xl xl:h-16 xl:text-xl">
+        <button className="h-16 rounded-md bg-[#8bd3ff] text-xl font-extrabold text-[#06233f] shadow-[0_5px_0_#58b9e8] transition hover:bg-[#aee2ff] sm:h-24 sm:text-5xl lg:h-14 lg:text-xl xl:h-16 xl:text-xl">
           {text.search.resultCta}
         </button>
       </div>
@@ -625,35 +625,35 @@ function BoatTypePicker({
 
 function filterFieldClass(active: boolean) {
   return [
-    "flex min-h-20 items-center gap-4 rounded-md px-4 sm:min-h-24 lg:min-h-14 lg:gap-3 lg:px-3 xl:min-h-16",
+    "flex min-h-14 items-center gap-2 rounded-md px-3 sm:min-h-24 sm:gap-4 sm:px-4 lg:min-h-14 lg:gap-3 lg:px-3 xl:min-h-16",
     active ? "bg-[#3f3f3f] text-white" : "bg-[#e8e8e8] text-[#626468]"
   ].join(" ");
 }
 
 function filterIconClass(active: boolean) {
   return [
-    "[&>svg]:size-8 sm:[&>svg]:size-10 lg:[&>svg]:size-6 xl:[&>svg]:size-7",
+    "[&>svg]:size-6 sm:[&>svg]:size-10 lg:[&>svg]:size-6 xl:[&>svg]:size-7",
     active ? "text-[#bdbdbd]" : "text-[#999]"
   ].join(" ");
 }
 
 function filterInputClass(active: boolean) {
   return [
-    "min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none sm:text-3xl lg:text-base xl:text-lg",
+    "min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none sm:text-3xl lg:text-base xl:text-lg",
     active ? "text-white placeholder:text-white/80" : "text-[#626468] placeholder:text-[#626468]"
   ].join(" ");
 }
 
 function filterSelectClass(active: boolean) {
   return [
-    "min-w-0 flex-1 appearance-none bg-transparent text-2xl font-semibold outline-none sm:text-3xl lg:text-base xl:text-lg [&>option]:text-[#2f3033]",
+    "min-w-0 flex-1 appearance-none bg-transparent text-lg font-semibold outline-none sm:text-3xl lg:text-base xl:text-lg [&>option]:text-[#2f3033]",
     active ? "text-white" : "text-[#626468]"
   ].join(" ");
 }
 
 function filterButtonTextClass(active: boolean) {
   return [
-    "min-w-0 flex-1 truncate bg-transparent text-left text-2xl font-semibold outline-none transition sm:text-3xl lg:text-base xl:text-lg",
+    "min-w-0 flex-1 truncate bg-transparent text-left text-lg font-semibold outline-none transition sm:text-3xl lg:text-base xl:text-lg",
     active ? "text-white hover:text-white" : "text-[#626468] hover:text-[#1b8ed1]"
   ].join(" ");
 }
@@ -663,10 +663,10 @@ function ClearFilterButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="grid size-11 shrink-0 place-items-center rounded-full bg-[#adadb0] text-[#3f3f3f] transition hover:bg-white sm:size-12 lg:size-9 xl:size-10"
+      className="grid size-8 shrink-0 place-items-center rounded-full bg-[#adadb0] text-[#3f3f3f] transition hover:bg-white sm:size-12 lg:size-9 xl:size-10"
       aria-label="Clear filter"
     >
-      <X className="size-8 sm:size-9 lg:size-6 xl:size-7" strokeWidth={3} />
+      <X className="size-6 sm:size-9 lg:size-6 xl:size-7" strokeWidth={3} />
     </button>
   );
 }

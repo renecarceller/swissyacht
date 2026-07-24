@@ -1,4 +1,4 @@
-import { Building2, CheckCircle2, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { Bell, Building2, CheckCircle2, ClipboardList, MapPin, Pencil, Search, ShieldCheck, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/routing";
@@ -27,8 +27,30 @@ export default async function HomePage({
   const categoryCounts = getCategoryCounts();
 
   return (
-    <main>
-      <section className="relative min-h-[620px] overflow-hidden bg-navy text-white">
+    <main className="pb-24 lg:pb-0">
+      <section className="bg-white lg:hidden">
+        <div className="relative h-36 overflow-hidden">
+          <Image
+            src="https://images.unsplash.com/photo-1520242279429-1f64b18816ef?auto=format&fit=crop&w=1100&q=80"
+            alt="Swiss marina"
+            fill
+            priority
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06233f]/70 via-[#06233f]/35 to-transparent" />
+          <div className="absolute inset-0 flex flex-col justify-center px-4 text-white">
+            <p className="max-w-[18rem] text-3xl font-semibold leading-tight">{text.home.title}</p>
+            <p className="mt-1 max-w-[17rem] text-sm leading-5 text-white/85">{text.home.subtitle}</p>
+          </div>
+        </div>
+        <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} initialValues={initialValues} />
+        <Link href="/boats?sort=date_desc" locale={locale} className="mx-4 mb-2 mt-4 flex items-center justify-between border-t border-[#d6d6d6] pt-4 text-2xl font-semibold text-[#0f6fae]">
+          <span>{text.search.savedSearches}</span>
+          <span className="text-4xl leading-none">›</span>
+        </Link>
+      </section>
+
+      <section className="relative hidden min-h-[620px] overflow-hidden bg-navy text-white lg:block">
         <Image
           src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=85"
           alt="Swiss lake marina"
@@ -110,6 +132,40 @@ export default async function HomePage({
           ))}
         </div>
       </section>
+      <MobileBottomNav locale={locale} />
     </main>
+  );
+}
+
+function MobileBottomNav({ locale }: { locale: string }) {
+  const labels = {
+    fr: ["Rechercher", "Recherches enregistrees", "Listes", "Vendre"],
+    de: ["Suchen", "Gespeichert", "Listen", "Verkaufen"],
+    it: ["Cerca", "Ricerche salvate", "Liste", "Vendere"],
+    en: ["Search", "Saved searches", "Lists", "Sell"]
+  }[locale as "fr" | "de" | "it" | "en"] ?? ["Rechercher", "Recherches enregistrees", "Listes", "Vendre"];
+
+  const items = [
+    { href: "/", label: labels[0], icon: Search, active: true },
+    { href: "/boats", label: labels[1], icon: Bell },
+    { href: "/dashboard/favorites", label: labels[2], icon: ClipboardList },
+    { href: "/sell", label: labels[3], icon: Pencil }
+  ];
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.25rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] lg:hidden">
+      {items.map((item, index) => {
+        const Icon = item.icon;
+        return (
+          <Link key={item.href} href={item.href} locale={locale} className={`relative flex min-h-16 flex-col items-center justify-start gap-1 px-1 text-center text-sm font-semibold leading-tight ${item.active ? "text-[#2f3033]" : "text-[#666]"}`}>
+            <span className="relative">
+              <Icon className="size-7" strokeWidth={2.4} />
+              {index === 1 ? <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-[#e11d2e]" /> : null}
+            </span>
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

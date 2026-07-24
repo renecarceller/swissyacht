@@ -1,16 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { Globe2, Menu, ShipWheel } from "lucide-react";
-import { useState } from "react";
+import { CircleUserRound, Globe2, ShipWheel } from "lucide-react";
 import { Link } from "@/i18n/routing";
-import { Button } from "@/components/ui/button";
 import { openAccountModal } from "@/components/forms/welcome-account-modal";
 import { ui } from "@/i18n/ui";
 
 export function SiteHeader({ locale }: { locale: string }) {
   const text = ui(locale);
-  const [open, setOpen] = useState(false);
   const nav = [
     { href: "/boats", label: text.nav.buy },
     { href: "/sell", label: text.nav.sell }
@@ -18,28 +15,28 @@ export function SiteHeader({ locale }: { locale: string }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#d9e2ec] bg-white/95 backdrop-blur">
-      <div className="container-shell flex h-16 items-center justify-between gap-4">
+      <div className="container-shell flex h-24 items-center justify-between gap-4 md:h-16">
         <Link
           href="/"
           locale={locale}
-          className="flex items-center gap-2 font-bold text-navy"
+          className="flex items-center gap-3 font-bold text-navy md:gap-2"
           onClick={(event) => {
             if (!window.location.search) return;
             event.preventDefault();
             window.location.href = `/${locale}${window.location.search}`;
           }}
         >
-          <span className="relative size-9 overflow-hidden rounded-md border border-[#d9e2ec] bg-white">
+          <span className="relative size-12 overflow-hidden rounded-md border border-[#d9e2ec] bg-white md:size-9">
             <Image
               src="/images/swissyacht-sw-logo.jpg"
               alt=""
               fill
-              sizes="36px"
+              sizes="(max-width: 767px) 48px, 36px"
               className="object-cover"
               priority
             />
           </span>
-          <span className="text-lg">SwissYacht</span>
+          <span className="text-2xl md:text-lg">SwissYacht</span>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-[#324963] md:flex">
           {nav.map((item) => (
@@ -65,27 +62,10 @@ export function SiteHeader({ locale }: { locale: string }) {
             {text.nav.publish}
           </Link>
         </div>
-        <Button variant="ghost" className="md:hidden" aria-label={text.nav.openMenu} onClick={() => setOpen((value) => !value)}>
-          <Menu size={20} />
-        </Button>
+        <button type="button" onClick={openAccountModal} className="grid size-12 place-items-center rounded-full text-[#2f3033] transition hover:bg-[#eef6fc] md:hidden" aria-label={text.nav.account}>
+          <CircleUserRound className="size-10" strokeWidth={2.1} />
+        </button>
       </div>
-      {open ? (
-        <div className="border-t border-[#d9e2ec] bg-white p-4 md:hidden">
-          <div className="container-shell grid gap-3">
-            {nav.map((item) => (
-              <Link key={item.href} href={item.href} locale={locale} className="py-2 font-semibold">
-                {item.label}
-              </Link>
-            ))}
-            <button type="button" onClick={() => { openAccountModal(); setOpen(false); }} className="py-2 text-left font-semibold">
-              {text.nav.account}
-            </button>
-            <Link href="/sell" locale={locale} className="rounded-md bg-[#8bd3ff] px-4 py-3 text-center font-semibold text-[#06233f] shadow-[0_3px_0_#58b9e8] transition hover:bg-[#aee2ff]">
-              {text.nav.publish}
-            </Link>
-          </div>
-        </div>
-      ) : null}
     </header>
   );
 }
