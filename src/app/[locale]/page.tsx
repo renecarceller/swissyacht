@@ -27,9 +27,9 @@ export default async function HomePage({
   const categoryCounts = getCategoryCounts();
 
   return (
-    <main className="pb-24 md:pb-0">
-      <section className="bg-white md:hidden">
-        <div className="relative h-36 overflow-hidden">
+    <main className="pb-24 min-[520px]:pb-0">
+      <section className="bg-white min-[520px]:hidden">
+        <div className="relative h-56 overflow-hidden">
           <Image
             src="https://images.unsplash.com/photo-1520242279429-1f64b18816ef?auto=format&fit=crop&w=1100&q=80"
             alt="Swiss marina"
@@ -38,10 +38,10 @@ export default async function HomePage({
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#06233f]/70 via-[#06233f]/35 to-transparent" />
-          <div className="absolute inset-0 flex flex-col justify-center px-4 text-white">
-            <p className="max-w-[18rem] text-3xl font-semibold leading-tight">{text.home.title}</p>
-            <p className="mt-1 max-w-[18rem] text-base font-semibold leading-5 text-white/90">{text.home.subtitle}</p>
-            <p className="mt-1 max-w-[20rem] text-xs leading-4 text-white/80">{text.home.description}</p>
+          <div className="absolute inset-0 flex flex-col justify-center px-4 py-5 text-white">
+            <p className="max-w-[18rem] text-3xl font-semibold leading-[1.1]">{text.home.title}</p>
+            <p className="mt-3 max-w-[19rem] text-base font-semibold leading-6 text-white/90">{text.home.subtitle}</p>
+            <p className="mt-3 max-w-[21rem] text-sm leading-6 text-white/82">{text.home.description}</p>
           </div>
         </div>
         <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} initialValues={initialValues} />
@@ -51,15 +51,16 @@ export default async function HomePage({
         </Link>
       </section>
 
-      <section className="relative hidden min-h-[620px] overflow-hidden bg-navy text-white md:block">
+      <section className="relative hidden min-h-[620px] overflow-hidden bg-white text-white min-[520px]:block">
         <Image
           src="https://images.unsplash.com/photo-1520242279429-1f64b18816ef?auto=format&fit=crop&w=2200&q=85"
           alt="Swiss nautical coastline"
           fill
           priority
-          className="absolute inset-0 h-full w-full object-cover opacity-55"
+          className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#061b31]/80 via-[#061b31]/55 to-[#061b31]/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
         <div className="container-shell relative flex min-h-[620px] flex-col justify-center pb-16 pt-20">
           <div className="max-w-4xl">
             <div className="mb-4 inline-flex items-center gap-2 rounded-md bg-white/12 px-3 py-2 text-sm font-semibold backdrop-blur">
@@ -155,7 +156,7 @@ function MobileBottomNav({ locale }: { locale: string }) {
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.25rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.25rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] min-[520px]:hidden">
       {items.map((item, index) => {
         const Icon = item.icon;
         return (
