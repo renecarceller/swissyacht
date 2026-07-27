@@ -458,6 +458,15 @@ function numberParam(values: Record<string, string | undefined>, key: string, fa
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function isHistogramBarSelected(index: number, total: number, minPercent: number, maxPercent: number) {
+  if (total <= 1) {
+    return true;
+  }
+
+  const barPercent = (index / (total - 1)) * 100;
+  return barPercent >= minPercent && barPercent <= maxPercent;
+}
+
 function SearchInput({
   icon,
   label,
@@ -781,9 +790,17 @@ function LengthRangePicker({
 
           <div className="relative mt-12 h-52 border-b border-[#d6d6d6] sm:mt-16 sm:h-64">
             <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
-              {lengthHistogram.map((height, index) => (
-                <span key={index} className="flex-1 bg-[#333]" style={{ height: `${height}%`, opacity: index > 28 ? 0.55 : 1 }} />
-              ))}
+              {lengthHistogram.map((height, index) => {
+                const selected = isHistogramBarSelected(index, lengthHistogram.length, minPercent, maxPercent);
+
+                return (
+                  <span
+                    key={index}
+                    className={`flex-1 transition-colors ${selected ? "bg-[#333]" : "bg-[#c8c8c8]"}`}
+                    style={{ height: `${height}%` }}
+                  />
+                );
+              })}
             </div>
             <div className="absolute inset-x-8 bottom-16 h-px bg-[#aaa] sm:inset-x-14" />
             <div className="absolute inset-x-8 bottom-16 h-1 bg-[#333] sm:inset-x-14" style={{ left: `calc(2rem + ${minPercent * 0.01} * (100% - 4rem))`, right: `calc(2rem + ${(100 - maxPercent) * 0.01} * (100% - 4rem))` }} />
@@ -865,9 +882,17 @@ function YearRangePicker({
 
           <div className="relative mt-12 h-52 sm:mt-16 sm:h-64">
             <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
-              {yearHistogram.map((height, index) => (
-                <span key={index} className="flex-1 bg-[#333]" style={{ height: `${height}%`, opacity: index < 8 ? 0.35 : 1 }} />
-              ))}
+              {yearHistogram.map((height, index) => {
+                const selected = isHistogramBarSelected(index, yearHistogram.length, minPercent, maxPercent);
+
+                return (
+                  <span
+                    key={index}
+                    className={`flex-1 transition-colors ${selected ? "bg-[#333]" : "bg-[#c8c8c8]"}`}
+                    style={{ height: `${height}%` }}
+                  />
+                );
+              })}
             </div>
             <div className="absolute inset-x-8 bottom-16 h-px bg-[#aaa] sm:inset-x-14" />
             <div className="absolute inset-x-8 bottom-16 h-1 bg-[#333] sm:inset-x-14" style={{ left: `calc(2rem + ${minPercent * 0.01} * (100% - 4rem))`, right: `calc(2rem + ${(100 - maxPercent) * 0.01} * (100% - 4rem))` }} />
