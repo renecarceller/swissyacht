@@ -306,6 +306,37 @@ export async function getCategoryCountsAsync() {
   }, {});
 }
 
+export async function getSearchRangeHistogramsAsync() {
+  const listings = await getPublicListingsAsync();
+
+  return {
+    year: buildHistogram(listings.map((listing) => listing.year), 1900, 2026, 41),
+    length: buildHistogram(listings.map((listing) => listing.lengthM), 0, 40, 36)
+  };
+}
+
+function buildHistogram(values: number[], min: number, max: number, bins: number) {
+  const counts = Array.from({ length: bins }, () => 0);
+  const span = max - min;
+
+  values.forEach((value) => {
+    if (!Number.isFinite(value)) return;
+    const clamped = Math.min(max, Math.max(min, value));
+    const index = Math.min(bins - 1, Math.max(0, Math.floor(((clamped - min) / span) * bins)));
+    counts[index] += 1;
+  });
+
+  const largestCount = Math.max(...counts);
+  if (largestCount === 0) {
+    return counts.map(() => 2);
+  }
+
+  return counts.map((count) => {
+    if (count === 0) return 3;
+    return Math.max(8, Math.round((count / largestCount) * 100));
+  });
+}
+
 export function getListingBySlug(slug: string) {
   return getAllListings().find((listing) => listing.slug === slug);
 }

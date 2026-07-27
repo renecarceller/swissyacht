@@ -4,7 +4,7 @@ import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import { ListingCard } from "@/components/listings/listing-card";
 import { QuickSearch } from "@/components/listings/quick-search";
-import { getBrandCountsAsync, getCategoryCountsAsync, getFeaturedListingsAsync } from "@/lib/data/listings";
+import { getBrandCountsAsync, getCategoryCountsAsync, getFeaturedListingsAsync, getSearchRangeHistogramsAsync } from "@/lib/data/listings";
 import { lakes } from "@/lib/data/reference";
 import { refLabel, ui } from "@/i18n/ui";
 
@@ -25,6 +25,7 @@ export default async function HomePage({
   const featured = await getFeaturedListingsAsync();
   const brandCounts = await getBrandCountsAsync();
   const categoryCounts = await getCategoryCountsAsync();
+  const rangeHistograms = await getSearchRangeHistogramsAsync();
 
   return (
     <main className="pb-24 min-[520px]:pb-0">
@@ -44,7 +45,7 @@ export default async function HomePage({
             <p className="mt-3 max-w-[21rem] text-sm leading-6 text-white/82">{text.home.description}</p>
           </div>
         </div>
-        <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} initialValues={initialValues} />
+        <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} rangeHistograms={rangeHistograms} initialValues={initialValues} />
         <Link href="/boats?sort=date_desc" locale={locale} className="mx-4 mb-2 mt-4 flex items-center justify-between border-t border-[#d6d6d6] pt-4 text-2xl font-semibold text-[#0f6fae]">
           <span>{text.search.savedSearches}</span>
           <span className="text-4xl leading-none">›</span>
@@ -72,7 +73,7 @@ export default async function HomePage({
             <p className="mt-5 max-w-3xl text-lg leading-9 text-[#d6e4f2] xl:text-xl xl:leading-10">{text.home.description}</p>
           </div>
           <div className="mt-10">
-            <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} initialValues={initialValues} />
+            <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} rangeHistograms={rangeHistograms} initialValues={initialValues} />
           </div>
         </div>
       </section>

@@ -9,11 +9,13 @@ export function QuickSearch({
   locale,
   brandCounts = {},
   categoryCounts = {},
+  rangeHistograms = defaultRangeHistograms,
   initialValues = {}
 }: {
   locale: string;
   brandCounts?: Record<string, number>;
   categoryCounts?: Record<string, number>;
+  rangeHistograms?: RangeHistograms;
   initialValues?: Record<string, string | undefined>;
 }) {
   const text = ui(locale);
@@ -60,8 +62,8 @@ export function QuickSearch({
 
       <div className="grid grid-cols-2 gap-2 p-4 min-[520px]:grid-cols-4 min-[520px]:gap-3 min-[520px]:p-3 xl:gap-3 xl:p-4">
         <MakeModelField locale={locale} label={text.search.makeModel} modelLabel={text.search.model} brandLabel={text.common.brand} brandCounts={brandCounts} initialBrand={initialValues.brand || ""} initialModel={initialValues.model || ""} />
-        <YearRangeField locale={locale} label={text.common.year} initialMin={numberParam(initialValues, "yearMin", 1900)} initialMax={numberParam(initialValues, "yearMax", 2026)} />
-        <LengthRangeField locale={locale} label={text.search.length} initialMin={numberParam(initialValues, "lengthMin", 0)} initialMax={numberParam(initialValues, "lengthMax", 40)} />
+        <YearRangeField locale={locale} label={text.common.year} histogram={rangeHistograms.year} initialMin={numberParam(initialValues, "yearMin", 1900)} initialMax={numberParam(initialValues, "yearMax", 2026)} />
+        <LengthRangeField locale={locale} label={text.search.length} histogram={rangeHistograms.length} initialMin={numberParam(initialValues, "lengthMin", 0)} initialMax={numberParam(initialValues, "lengthMax", 40)} />
         <SearchInput icon={<Tag />} label={text.common.price} name="priceMax" type="number" step="1000" min="0" initialValue={initialValues.priceMax || ""} />
 
         <BoatTypeField locale={locale} label={text.search.boatType} categoryCounts={categoryCounts} initialCategory={initialValues.category || ""} />
@@ -111,6 +113,11 @@ type AdvancedFilterValues = {
   kitchen: boolean;
   color: string;
   overnightAccommodation: boolean;
+};
+
+type RangeHistograms = {
+  year: number[];
+  length: number[];
 };
 
 function advancedFilterInputs(values: AdvancedFilterValues) {
@@ -680,7 +687,7 @@ function ClearFilterButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function YearRangeField({ locale, label, initialMin = 1900, initialMax = 2026 }: { locale: string; label: string; initialMin?: number; initialMax?: number }) {
+function YearRangeField({ locale, label, histogram, initialMin = 1900, initialMax = 2026 }: { locale: string; label: string; histogram: number[]; initialMin?: number; initialMax?: number }) {
   const [open, setOpen] = useState(false);
   const [range, setRange] = useState({ min: initialMin, max: initialMax });
   const defaultRange = range.min === 1900 && range.max === 2026;
@@ -705,6 +712,7 @@ function YearRangeField({ locale, label, initialMin = 1900, initialMax = 2026 }:
         <YearRangePicker
           locale={locale}
           label={label}
+          histogram={histogram}
           range={range}
           onChange={setRange}
           onClose={() => setOpen(false)}
@@ -714,7 +722,7 @@ function YearRangeField({ locale, label, initialMin = 1900, initialMax = 2026 }:
   );
 }
 
-function LengthRangeField({ locale, label, initialMin = 0, initialMax = 40 }: { locale: string; label: string; initialMin?: number; initialMax?: number }) {
+function LengthRangeField({ locale, label, histogram, initialMin = 0, initialMax = 40 }: { locale: string; label: string; histogram: number[]; initialMin?: number; initialMax?: number }) {
   const [open, setOpen] = useState(false);
   const [range, setRange] = useState({ min: initialMin, max: initialMax });
   const defaultRange = range.min === 0 && range.max === 40;
@@ -735,6 +743,7 @@ function LengthRangeField({ locale, label, initialMin = 0, initialMax = 40 }: { 
         <LengthRangePicker
           locale={locale}
           label={label}
+          histogram={histogram}
           range={range}
           onChange={setRange}
           onClose={() => setOpen(false)}
@@ -747,12 +756,14 @@ function LengthRangeField({ locale, label, initialMin = 0, initialMax = 40 }: { 
 function LengthRangePicker({
   locale,
   label,
+  histogram,
   range,
   onChange,
   onClose
 }: {
   locale: string;
   label: string;
+  histogram: number[];
   range: { min: number; max: number };
   onChange: (range: { min: number; max: number }) => void;
   onClose: () => void;
@@ -790,8 +801,8 @@ function LengthRangePicker({
 
           <div className="relative mt-12 h-52 border-b border-[#d6d6d6] sm:mt-16 sm:h-64">
             <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
-              {lengthHistogram.map((height, index) => {
-                const selected = isHistogramBarSelected(index, lengthHistogram.length, minPercent, maxPercent);
+              {histogram.map((height, index) => {
+                const selected = isHistogramBarSelected(index, histogram.length, minPercent, maxPercent);
 
                 return (
                   <span
@@ -839,12 +850,14 @@ function LengthRangePicker({
 function YearRangePicker({
   locale,
   label,
+  histogram,
   range,
   onChange,
   onClose
 }: {
   locale: string;
   label: string;
+  histogram: number[];
   range: { min: number; max: number };
   onChange: (range: { min: number; max: number }) => void;
   onClose: () => void;
@@ -882,8 +895,8 @@ function YearRangePicker({
 
           <div className="relative mt-12 h-52 sm:mt-16 sm:h-64">
             <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
-              {yearHistogram.map((height, index) => {
-                const selected = isHistogramBarSelected(index, yearHistogram.length, minPercent, maxPercent);
+              {histogram.map((height, index) => {
+                const selected = isHistogramBarSelected(index, histogram.length, minPercent, maxPercent);
 
                 return (
                   <span
@@ -1161,13 +1174,18 @@ function BrandPicker({
   );
 }
 
-const yearHistogram = [
+const fallbackYearHistogram = [
   1, 1, 1, 1, 2, 4, 5, 3, 4, 5, 7, 3, 3, 4, 4, 5, 6, 8, 10, 11, 12, 14, 17, 20, 22, 23, 25, 28, 36, 31, 40, 48, 62, 52, 58, 70, 58, 60, 64, 86, 100
 ];
 
-const lengthHistogram = [
+const fallbackLengthHistogram = [
   92, 12, 11, 13, 9, 14, 13, 10, 9, 10, 11, 48, 40, 34, 29, 27, 28, 28, 26, 28, 22, 21, 20, 18, 17, 15, 13, 10, 8, 7, 18, 10, 6, 4, 4, 2
 ];
+
+const defaultRangeHistograms: RangeHistograms = {
+  year: fallbackYearHistogram,
+  length: fallbackLengthHistogram
+};
 
 function BoatCategoryDrawing({ category }: { category: string }) {
   const sail = category === "Sailing boats" || category === "Catamarans";
