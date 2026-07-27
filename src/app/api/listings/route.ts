@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getListings, parseFilters } from "@/lib/data/listings";
+import { getListingsAsync, parseFilters } from "@/lib/data/listings";
 import { listingFormSchema } from "@/lib/validation/listing";
 
 export async function GET(request: Request) {
   const filters = parseFilters(new URL(request.url).searchParams);
-  return NextResponse.json(getListings(filters));
+  return NextResponse.json(await getListingsAsync(filters));
 }
 
 export async function POST(request: Request) {

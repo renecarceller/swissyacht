@@ -4,7 +4,7 @@ import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import { ListingCard } from "@/components/listings/listing-card";
 import { QuickSearch } from "@/components/listings/quick-search";
-import { getBrandCounts, getCategoryCounts, getFeaturedListings } from "@/lib/data/listings";
+import { getBrandCountsAsync, getCategoryCountsAsync, getFeaturedListingsAsync } from "@/lib/data/listings";
 import { lakes } from "@/lib/data/reference";
 import { refLabel, ui } from "@/i18n/ui";
 
@@ -22,9 +22,9 @@ export default async function HomePage({
   );
   setRequestLocale(locale);
   const text = ui(locale);
-  const featured = getFeaturedListings();
-  const brandCounts = getBrandCounts();
-  const categoryCounts = getCategoryCounts();
+  const featured = await getFeaturedListingsAsync();
+  const brandCounts = await getBrandCountsAsync();
+  const categoryCounts = await getCategoryCountsAsync();
 
   return (
     <main className="pb-24 min-[520px]:pb-0">

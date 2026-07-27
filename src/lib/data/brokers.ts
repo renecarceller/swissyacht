@@ -1,7 +1,7 @@
 import type { BrokerBadge, BrokerService, Listing, ListingFilters, Locale, ProfessionalProfile, ProfessionalType } from "@/types/domain";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { demoProfessionalProfiles } from "@/lib/data/demo";
-import { getPublicListings, sortListings } from "@/lib/data/listings";
+import { getPublicListingsAsync, sortListings } from "@/lib/data/listings";
 
 type BrokerSort = "date_desc" | "price_asc" | "price_desc" | "year_desc" | "year_asc";
 
@@ -106,7 +106,7 @@ async function getSupabaseProfessionalProfiles() {
 
 export async function getProfessionalProfiles() {
   const supabaseProfiles = await getSupabaseProfessionalProfiles();
-  const listings = getPublicListings();
+  const listings = await getPublicListingsAsync();
   const profiles = [...supabaseProfiles, ...demoProfessionalProfiles];
 
   return profiles.map((profile) => ({
@@ -120,8 +120,8 @@ export async function getProfessionalProfileBySlug(slug: string) {
   return profiles.find((profile) => profile.slug === slug);
 }
 
-export function getBrokerListings(profile: ProfessionalProfile, sort: BrokerSort = "date_desc") {
-  const brokerListings = getPublicListings().filter((listing) => listing.professionalProfile?.id === profile.id || listing.seller.professionalSlug === profile.slug);
+export async function getBrokerListings(profile: ProfessionalProfile, sort: BrokerSort = "date_desc") {
+  const brokerListings = (await getPublicListingsAsync()).filter((listing) => listing.professionalProfile?.id === profile.id || listing.seller.professionalSlug === profile.slug);
   const sortMap: Record<BrokerSort, ListingFilters["sort"]> = {
     date_desc: "date_desc",
     price_asc: "price_asc",

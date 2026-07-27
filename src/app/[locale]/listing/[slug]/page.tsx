@@ -5,7 +5,7 @@ import { Building2, Calendar, Eye, Heart, Mail, MapPin, Phone, Ruler, Share2, Sh
 import { InquiryForm } from "@/components/forms/inquiry-form";
 import { ListingCard } from "@/components/listings/listing-card";
 import { Link } from "@/i18n/routing";
-import { getListingBySlug, getSimilarListings } from "@/lib/data/listings";
+import { getListingBySlugAsync, getSimilarListingsAsync } from "@/lib/data/listings";
 import { listingJsonLd } from "@/lib/seo/json-ld";
 import { formatChf } from "@/lib/utils";
 import { refLabel, ui } from "@/i18n/ui";
@@ -16,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const listing = getListingBySlug(slug);
+  const listing = await getListingBySlugAsync(slug);
   if (!listing) return {};
 
   return {
@@ -31,9 +31,9 @@ export async function generateMetadata({
 
 export default async function ListingPage({ params }: { params: Promise<{ locale: string; slug: string }> }) {
   const { locale, slug } = await params;
-  const listing = getListingBySlug(slug);
+  const listing = await getListingBySlugAsync(slug);
   if (!listing) notFound();
-  const similar = getSimilarListings(listing);
+  const similar = await getSimilarListingsAsync(listing);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const text = ui(locale);
   const specLabels = text.listing.specs.split("|");

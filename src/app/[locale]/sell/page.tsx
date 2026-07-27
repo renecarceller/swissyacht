@@ -1,6 +1,6 @@
 import { ListingForm } from "@/components/forms/listing-form";
 import { ui } from "@/i18n/ui";
-import { getAvailableBrands } from "@/lib/data/listings";
+import { getAvailableBrandsAsync } from "@/lib/data/listings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "@/i18n/routing";
 
@@ -13,7 +13,7 @@ export default async function SellPage({ params }: { params: Promise<{ locale: s
   }
 
   const text = ui(locale);
-  const availableBrands = getAvailableBrands();
+  const availableBrands = await getAvailableBrandsAsync();
   return (
     <main className="container-shell py-8">
       <div className="mb-6">

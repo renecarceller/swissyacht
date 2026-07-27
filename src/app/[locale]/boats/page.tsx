@@ -4,7 +4,7 @@ import { Link } from "@/i18n/routing";
 import { ListingCard } from "@/components/listings/listing-card";
 import { SearchFilters } from "@/components/listings/search-filters";
 import { SortPicker } from "@/components/listings/sort-picker";
-import { getAvailableBrands, getListings, parseFilters } from "@/lib/data/listings";
+import { getAvailableBrandsAsync, getListingsAsync, parseFilters } from "@/lib/data/listings";
 import { ui } from "@/i18n/ui";
 
 export const metadata: Metadata = {
@@ -27,8 +27,8 @@ export default async function BoatsPage({
     else if (value) urlSearchParams.set(key, value);
   });
   const filters = parseFilters(urlSearchParams);
-  const result = getListings(filters);
-  const availableBrands = getAvailableBrands();
+  const result = await getListingsAsync(filters);
+  const availableBrands = await getAvailableBrandsAsync();
   const text = ui(locale);
 
   return (

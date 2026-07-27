@@ -34,7 +34,7 @@ export default async function BrokerPage({
   const broker = await getProfessionalProfileBySlug(slug);
   if (!broker) notFound();
   const currentSort = brokerSortValue(sort || null);
-  const listings = getBrokerListings(broker, currentSort);
+  const listings = await getBrokerListings(broker, currentSort);
   const labels = brokerLabels(locale);
 
   return (
