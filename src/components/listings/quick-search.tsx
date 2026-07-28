@@ -1265,8 +1265,8 @@ function BoatCategoryDrawing({ category }: { category: string }) {
 
 function boatTypePickerLabels(locale: string) {
   const dictionary = {
-    fr: { close: "Fermer", selectAll: "Tout selectionner" },
-    de: { close: "Schliessen", selectAll: "Alle auswaehlen" },
+    fr: { close: "Fermer", selectAll: "Tout sélectionner" },
+    de: { close: "Schließen", selectAll: "Alle auswählen" },
     it: { close: "Chiudi", selectAll: "Seleziona tutto" },
     en: { close: "Close", selectAll: "Select all" }
   };
@@ -1279,29 +1279,29 @@ function advancedFilterLabels(locale: string) {
     fr: {
       close: "Fermer",
       clear: "Effacer",
-      reset: "Reinitialiser",
+      reset: "Réinitialiser",
       location: "Lieu / lac",
       people: "Nombre de personnes",
       cabins: "Nombre de cabines",
       berths: "Nombre de couchettes",
       bathrooms: "Salles de bain",
       kitchen: "Cuisine",
-      exteriorColor: "Couleur exterieure",
-      overnight: "Hebergement de nuit",
+      exteriorColor: "Couleur extérieure",
+      overnight: "Hébergement de nuit",
       yes: "Oui"
     },
     de: {
-      close: "Schliessen",
-      clear: "Loeschen",
-      reset: "Zuruecksetzen",
+      close: "Schließen",
+      clear: "Löschen",
+      reset: "Zurücksetzen",
       location: "Ort / See",
       people: "Anzahl Personen",
       cabins: "Anzahl Kabinen",
       berths: "Anzahl Kojen",
-      bathrooms: "Baeder",
-      kitchen: "Kueche",
-      exteriorColor: "Aussenfarbe",
-      overnight: "Uebernachtung",
+      bathrooms: "Bäder",
+      kitchen: "Küche",
+      exteriorColor: "Außenfarbe",
+      overnight: "Übernachtung",
       yes: "Ja"
     },
     it: {
@@ -1316,7 +1316,7 @@ function advancedFilterLabels(locale: string) {
       kitchen: "Cucina",
       exteriorColor: "Colore esterno",
       overnight: "Pernottamento",
-      yes: "Si"
+      yes: "Sì"
     },
     en: {
       close: "Close",
@@ -1343,13 +1343,13 @@ function lengthPickerLabels(locale: string) {
       clear: "Effacer",
       close: "Fermer",
       from: "De",
-      to: "A",
+      to: "À",
       boats: "bateaux",
       apply: "Appliquer"
     },
     de: {
-      clear: "Loeschen",
-      close: "Schliessen",
+      clear: "Löschen",
+      close: "Schließen",
       from: "Von",
       to: "Bis",
       boats: "Boote",
@@ -1382,16 +1382,16 @@ function yearPickerLabels(locale: string) {
       clear: "Effacer",
       close: "Fermer",
       from: "De",
-      to: "A",
-      recent: "Dernieres recherches",
+      to: "À",
+      recent: "Dernières recherches",
       from1980: "depuis 1980",
-      until2026: "jusqu'a 2026",
+      until2026: "jusqu’à 2026",
       boats: "bateaux",
       apply: "Appliquer"
     },
     de: {
-      clear: "Loeschen",
-      close: "Schliessen",
+      clear: "Löschen",
+      close: "Schließen",
       from: "Von",
       to: "Bis",
       recent: "Zuletzt gesucht",
@@ -1434,19 +1434,19 @@ function brandPickerLabels(locale: string) {
       searchMake: "Rechercher une marque",
       popularMakes: "Marques populaires",
       allMakes: "Toutes les marques",
-      selected: "Selectionnee",
+      selected: "Sélectionnée",
       remove: "retirer",
       close: "Fermer",
-      empty: "Aucune marque ne correspond a cette recherche."
+      empty: "Aucune marque ne correspond à cette recherche."
     },
     de: {
-      addMake: "Marke hinzufuegen",
+      addMake: "Marke hinzufügen",
       searchMake: "Marke suchen",
       popularMakes: "Beliebte Marken",
       allMakes: "Alle Marken",
-      selected: "Ausgewaehlt",
+      selected: "Ausgewählt",
       remove: "entfernen",
-      close: "Schliessen",
+      close: "Schließen",
       empty: "Keine Marke passt zu dieser Suche."
     },
     it: {

@@ -13,17 +13,17 @@ const sortOptions: {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: Record<string, string>;
 }[] = [
-  { value: "date_desc", icon: Speaker, label: { fr: "Recommande", de: "Empfohlen", it: "Consigliato", en: "Recommended" } },
+  { value: "date_desc", icon: Speaker, label: { fr: "Recommandé", de: "Empfohlen", it: "Consigliato", en: "Recommended" } },
   { value: "price_asc", icon: Tag, label: { fr: "Prix: bas", de: "Preis: niedrig", it: "Prezzo: basso", en: "Price: low" } },
-  { value: "price_desc", icon: Tag, label: { fr: "Prix: eleve", de: "Preis: hoch", it: "Prezzo: alto", en: "Price: high" } },
-  { value: "length_asc", icon: Ruler, label: { fr: "Longueur: courte", de: "Laenge: kurz", it: "Lunghezza: corta", en: "Length: short" } },
-  { value: "length_desc", icon: Ruler, label: { fr: "Longueur: longue", de: "Laenge: lang", it: "Lunghezza: lunga", en: "Length: long" } },
-  { value: "year_asc", icon: CalendarDays, label: { fr: "Annee: ancienne", de: "Jahr: alt", it: "Anno: vecchia", en: "Year: old" } },
-  { value: "year_desc", icon: CalendarDays, label: { fr: "Annee: nouvelle", de: "Jahr: neu", it: "Anno: nuova", en: "Year: new" } },
-  { value: "brand_asc", icon: Anchor, label: { fr: "Marque, modele: A-Z", de: "Marke, Modell: A-Z", it: "Marca, modello: A-Z", en: "Make, model: A-Z" } },
-  { value: "brand_desc", icon: Anchor, label: { fr: "Marque, modele: Z-A", de: "Marke, Modell: Z-A", it: "Marca, modello: Z-A", en: "Make, model: Z-A" } },
+  { value: "price_desc", icon: Tag, label: { fr: "Prix: élevé", de: "Preis: hoch", it: "Prezzo: alto", en: "Price: high" } },
+  { value: "length_asc", icon: Ruler, label: { fr: "Longueur: courte", de: "Länge: kurz", it: "Lunghezza: corta", en: "Length: short" } },
+  { value: "length_desc", icon: Ruler, label: { fr: "Longueur: longue", de: "Länge: lang", it: "Lunghezza: lunga", en: "Length: long" } },
+  { value: "year_asc", icon: CalendarDays, label: { fr: "Année: ancienne", de: "Jahr: alt", it: "Anno: vecchio", en: "Year: old" } },
+  { value: "year_desc", icon: CalendarDays, label: { fr: "Année: nouvelle", de: "Jahr: neu", it: "Anno: nuovo", en: "Year: new" } },
+  { value: "brand_asc", icon: Anchor, label: { fr: "Marque, modèle: A-Z", de: "Marke, Modell: A-Z", it: "Marca, modello: A-Z", en: "Make, model: A-Z" } },
+  { value: "brand_desc", icon: Anchor, label: { fr: "Marque, modèle: Z-A", de: "Marke, Modell: Z-A", it: "Marca, modello: Z-A", en: "Make, model: Z-A" } },
   { value: "power_asc", icon: CircleGauge, label: { fr: "Puissance: faible", de: "Leistung: niedrig", it: "Potenza: bassa", en: "Power: low" } },
-  { value: "power_desc", icon: CircleGauge, label: { fr: "Puissance: elevee", de: "Leistung: hoch", it: "Potenza: high", en: "Power: high" } }
+  { value: "power_desc", icon: CircleGauge, label: { fr: "Puissance: élevée", de: "Leistung: hoch", it: "Potenza: alta", en: "Power: high" } }
 ];
 
 export function SortPicker({ locale, value }: { locale: string; value: SortValue }) {
@@ -95,8 +95,8 @@ export function SortPicker({ locale, value }: { locale: string; value: SortValue
 
 function sortLabels(locale: string) {
   const dictionary = {
-    fr: { title: "Trier par", reset: "Reinitialiser", close: "Fermer" },
-    de: { title: "Sortieren nach", reset: "Zuruecksetzen", close: "Schliessen" },
+    fr: { title: "Trier par", reset: "Réinitialiser", close: "Fermer" },
+    de: { title: "Sortieren nach", reset: "Zurücksetzen", close: "Schließen" },
     it: { title: "Ordina per", reset: "Reimposta", close: "Chiudi" },
     en: { title: "Sort by", reset: "Reset", close: "Close" }
   };
