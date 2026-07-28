@@ -311,7 +311,8 @@ export async function getSearchRangeHistogramsAsync() {
 
   return {
     year: buildHistogram(listings.map((listing) => listing.year), 1900, 2026, 41),
-    length: buildHistogram(listings.map((listing) => listing.lengthM), 0, 40, 36)
+    length: buildHistogram(listings.map((listing) => listing.lengthM), 0, 40, 36),
+    price: buildHistogram(listings.map((listing) => listing.priceChf), 0, 1000000, 40)
   };
 }
 

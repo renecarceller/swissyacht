@@ -64,7 +64,7 @@ export function QuickSearch({
         <MakeModelField locale={locale} label={text.search.makeModel} modelLabel={text.search.model} brandLabel={text.common.brand} brandCounts={brandCounts} initialBrand={initialValues.brand || ""} initialModel={initialValues.model || ""} />
         <YearRangeField locale={locale} label={text.common.year} histogram={rangeHistograms.year} initialMin={numberParam(initialValues, "yearMin", 1900)} initialMax={numberParam(initialValues, "yearMax", 2026)} />
         <LengthRangeField locale={locale} label={text.search.length} histogram={rangeHistograms.length} initialMin={numberParam(initialValues, "lengthMin", 0)} initialMax={numberParam(initialValues, "lengthMax", 40)} />
-        <SearchInput icon={<Tag />} label={text.common.price} name="priceMax" type="number" step="1000" min="0" initialValue={initialValues.priceMax || ""} />
+        <PriceRangeField locale={locale} label={text.common.price} histogram={rangeHistograms.price} initialMin={numberParam(initialValues, "priceMin", 0)} initialMax={numberParam(initialValues, "priceMax", 1000000)} />
 
         <BoatTypeField locale={locale} label={text.search.boatType} categoryCounts={categoryCounts} initialCategory={initialValues.category || ""} />
 
@@ -124,6 +124,7 @@ type RangeHistogram = {
 type RangeHistograms = {
   year: RangeHistogram;
   length: RangeHistogram;
+  price: RangeHistogram;
 };
 
 function advancedFilterInputs(values: AdvancedFilterValues) {
@@ -498,6 +499,10 @@ function formatBoatCount(value: number, locale: string) {
   return new Intl.NumberFormat(`${locale}-CH`).format(value);
 }
 
+function formatChf(value: number, locale: string) {
+  return new Intl.NumberFormat(`${locale}-CH`).format(value);
+}
+
 function SearchInput({
   icon,
   label,
@@ -777,6 +782,165 @@ function LengthRangeField({ locale, label, histogram, initialMin = 0, initialMax
   );
 }
 
+function PriceRangeField({ locale, label, histogram, initialMin = 0, initialMax = 1000000 }: { locale: string; label: string; histogram: RangeHistogram; initialMin?: number; initialMax?: number }) {
+  const [open, setOpen] = useState(false);
+  const [range, setRange] = useState({ min: initialMin, max: initialMax });
+  const defaultRange = range.min === 0 && range.max === 1000000;
+  const display = defaultRange ? label : `CHF ${formatChf(range.min, locale)} - ${formatChf(range.max, locale)}`;
+
+  return (
+    <div className={filterFieldClass(!defaultRange)}>
+      <span className={filterIconClass(!defaultRange)}>
+        <Tag />
+      </span>
+      <input type="hidden" name="priceMin" value={defaultRange ? "" : range.min} />
+      <input type="hidden" name="priceMax" value={defaultRange ? "" : range.max} />
+      <button type="button" onClick={() => setOpen(true)} className={filterButtonTextClass(!defaultRange)}>
+        {display}
+      </button>
+      {!defaultRange ? <ClearFilterButton onClick={() => setRange({ min: 0, max: 1000000 })} /> : null}
+      {open ? (
+        <PriceRangePicker
+          locale={locale}
+          label={label}
+          histogram={histogram}
+          range={range}
+          onChange={setRange}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function PriceRangePicker({
+  locale,
+  label,
+  histogram,
+  range,
+  onChange,
+  onClose
+}: {
+  locale: string;
+  label: string;
+  histogram: RangeHistogram;
+  range: { min: number; max: number };
+  onChange: (range: { min: number; max: number }) => void;
+  onClose: () => void;
+}) {
+  const labels = pricePickerLabels(locale);
+  const minPrice = 0;
+  const maxPrice = 1000000;
+  const step = 5000;
+  const minPercent = ((range.min - minPrice) / (maxPrice - minPrice)) * 100;
+  const maxPercent = ((range.max - minPrice) / (maxPrice - minPrice)) * 100;
+  const matchingBoats = histogram.values.length ? exactRangeCount(histogram.values, range.min, range.max) : selectedHistogramCount(histogram.counts, minPercent, maxPercent);
+
+  const updateMin = (value: number) => {
+    const rounded = Math.round(value / step) * step;
+    onChange({ min: Math.min(rounded, range.max - step), max: range.max });
+  };
+  const updateMax = (value: number) => {
+    const rounded = Math.round(value / step) * step;
+    onChange({ min: range.min, max: Math.max(rounded, range.min + step) });
+  };
+  const clear = () => onChange({ min: minPrice, max: maxPrice });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/55 p-0 sm:items-center sm:justify-center sm:p-6" role="dialog" aria-modal="true" aria-label={label}>
+      <div className="max-h-[92vh] w-full overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-4xl sm:rounded-3xl">
+        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-6 py-6 sm:px-10">
+          <div className="flex items-center gap-5">
+            <button type="button" onClick={onClose} className="grid size-12 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
+              <X className="size-9" strokeWidth={2.4} />
+            </button>
+            <h3 className="text-3xl font-bold text-[#2f3033] sm:text-5xl">{label}</h3>
+          </div>
+          <button type="button" onClick={clear} className="text-2xl font-bold text-[#adadb0] transition hover:text-[#555] sm:text-5xl">
+            {labels.clear}
+          </button>
+        </div>
+
+        <div className="px-6 py-7 sm:px-10">
+          <div className="grid grid-cols-2 gap-4 sm:gap-8">
+            <NumberBox value={range.min} label={labels.from} onChange={updateMin} min={minPrice} max={range.max - step} step={step} />
+            <NumberBox value={range.max} label={labels.to} onChange={updateMax} min={range.min + step} max={maxPrice} step={step} />
+          </div>
+
+          <div className="relative mt-12 h-52 border-b border-[#d6d6d6] sm:mt-16 sm:h-64">
+            <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
+              {histogram.bars.map((height, index) => {
+                const selected = isHistogramBarSelected(index, histogram.bars.length, minPercent, maxPercent);
+
+                return (
+                  <span
+                    key={index}
+                    className={`flex-1 transition-colors ${selected ? "bg-[#333]" : "bg-[#c8c8c8]"}`}
+                    style={{ height: `${height}%` }}
+                  />
+                );
+              })}
+            </div>
+            <div className="absolute inset-x-8 bottom-16 h-px bg-[#aaa] sm:inset-x-14" />
+            <div className="absolute inset-x-8 bottom-16 h-1 bg-[#333] sm:inset-x-14" style={{ left: `calc(2rem + ${minPercent * 0.01} * (100% - 4rem))`, right: `calc(2rem + ${(100 - maxPercent) * 0.01} * (100% - 4rem))` }} />
+            <input
+              type="range"
+              min={minPrice}
+              max={maxPrice}
+              step={step}
+              value={range.min}
+              onChange={(event) => updateMin(Number(event.target.value))}
+              aria-label={labels.from}
+              className="year-range absolute inset-x-0 bottom-10 z-20 w-full"
+            />
+            <input
+              type="range"
+              min={minPrice}
+              max={maxPrice}
+              step={step}
+              value={range.max}
+              onChange={(event) => updateMax(Number(event.target.value))}
+              aria-label={labels.to}
+              className="year-range absolute inset-x-0 bottom-10 z-30 w-full"
+            />
+          </div>
+
+          <div className="mt-2">
+            <h4 className="mb-5 text-2xl font-bold text-[#2f3033] sm:text-4xl">{labels.recent}</h4>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {[
+                { label: labels.until100k, min: minPrice, max: 100000 },
+                { label: "100’000 - 250’000", min: 100000, max: 250000 },
+                { label: "250’000 - 500’000", min: 250000, max: 500000 },
+                { label: labels.from500k, min: 500000, max: maxPrice }
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => onChange({ min: preset.min, max: preset.max })}
+                  className="shrink-0 rounded-full border-2 border-[#d2d2d2] px-6 py-3 text-xl font-bold text-[#555] transition hover:border-[#1b8ed1] hover:text-[#1b8ed1] sm:text-3xl"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-[1fr_1fr] items-center gap-4 border-t border-[#d6d6d6] px-6 py-5 sm:px-10">
+          <div>
+            <p className="text-3xl font-bold text-[#2f3033] sm:text-5xl">{formatBoatCount(matchingBoats, locale)} {labels.boats}</p>
+            <p className="mt-1 text-sm font-semibold text-[#6f6f72] sm:text-xl">CHF {formatChf(range.min, locale)} - {formatChf(range.max, locale)}</p>
+          </div>
+          <button type="button" onClick={onClose} className="h-16 rounded-md bg-[#8bd3ff] text-3xl font-extrabold text-[#06233f] shadow-[0_5px_0_#58b9e8] transition hover:bg-[#aee2ff] sm:h-24 sm:text-5xl">
+            {labels.apply}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LengthRangePicker({
   locale,
   label,
@@ -997,7 +1161,8 @@ function NumberBox({
   min,
   max,
   onChange,
-  suffix
+  suffix,
+  step = 1
 }: {
   value: number;
   label: string;
@@ -1005,6 +1170,7 @@ function NumberBox({
   max: number;
   onChange: (value: number) => void;
   suffix?: string;
+  step?: number;
 }) {
   return (
     <label className="relative block">
@@ -1014,6 +1180,7 @@ function NumberBox({
         value={value}
         min={min}
         max={max}
+        step={step}
         onChange={(event) => onChange(Number(event.target.value))}
         className="h-24 w-full rounded-md border-2 border-[#999] bg-white px-7 text-4xl font-bold text-[#999] outline-none focus:border-[#1b8ed1] sm:h-36 sm:text-6xl"
       />
@@ -1211,9 +1378,14 @@ const fallbackLengthHistogram = [
   92, 12, 11, 13, 9, 14, 13, 10, 9, 10, 11, 48, 40, 34, 29, 27, 28, 28, 26, 28, 22, 21, 20, 18, 17, 15, 13, 10, 8, 7, 18, 10, 6, 4, 4, 2
 ];
 
+const fallbackPriceHistogram = [
+  32, 36, 40, 34, 30, 26, 22, 18, 16, 14, 12, 10, 9, 8, 7, 6, 10, 14, 19, 12, 9, 8, 7, 6, 5, 4, 5, 7, 9, 13, 18, 24, 30, 38, 52, 70, 88, 100, 42, 24
+];
+
 const defaultRangeHistograms: RangeHistograms = {
   year: { bars: fallbackYearHistogram, counts: fallbackYearHistogram.map(() => 0), values: [] },
-  length: { bars: fallbackLengthHistogram, counts: fallbackLengthHistogram.map(() => 0), values: [] }
+  length: { bars: fallbackLengthHistogram, counts: fallbackLengthHistogram.map(() => 0), values: [] },
+  price: { bars: fallbackPriceHistogram, counts: fallbackPriceHistogram.map(() => 0), values: [] }
 };
 
 function BoatCategoryDrawing({ category }: { category: string }) {
@@ -1373,6 +1545,57 @@ function lengthPickerLabels(locale: string) {
       close: "Close",
       from: "From",
       to: "To",
+      boats: "boats",
+      apply: "Apply"
+    }
+  };
+
+  return dictionary[locale as keyof typeof dictionary] ?? dictionary.fr;
+}
+
+function pricePickerLabels(locale: string) {
+  const dictionary = {
+    fr: {
+      clear: "Effacer",
+      close: "Fermer",
+      from: "De",
+      to: "À",
+      recent: "Dernières recherches",
+      until100k: "jusqu’à 100’000",
+      from500k: "depuis 500’000",
+      boats: "bateaux",
+      apply: "Appliquer"
+    },
+    de: {
+      clear: "Löschen",
+      close: "Schließen",
+      from: "Von",
+      to: "Bis",
+      recent: "Zuletzt gesucht",
+      until100k: "bis 100’000",
+      from500k: "ab 500’000",
+      boats: "Boote",
+      apply: "Anwenden"
+    },
+    it: {
+      clear: "Cancella",
+      close: "Chiudi",
+      from: "Da",
+      to: "A",
+      recent: "Ultime ricerche",
+      until100k: "fino a 100’000",
+      from500k: "da 500’000",
+      boats: "barche",
+      apply: "Applica"
+    },
+    en: {
+      clear: "Clear",
+      close: "Close",
+      from: "From",
+      to: "To",
+      recent: "Last searched by you",
+      until100k: "up to 100,000",
+      from500k: "from 500,000",
       boats: "boats",
       apply: "Apply"
     }
