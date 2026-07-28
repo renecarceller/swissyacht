@@ -128,7 +128,7 @@ const baseListings = [
   ["princess-v40-lucerne-12352", "Princess V40", "Yachts", "Motor yacht", "Princess", "V40", 2017, 475000, "Lucerne", "Lake Lucerne", "Lucerne", "Alpenquai", 12.98, 3.81, "Diesel", "Sterndrive", 660],
   ["bayliner-vr5-biel-12353", "Bayliner VR5 Bowrider", "Motor boats", "Bowrider", "Bayliner", "VR5", 2021, 52900, "Bern", "Lake Biel", "Biel", "Port de Bienne", 6.2, 2.43, "Petrol", "Sterndrive", 200],
   ["nimbus-305-coupe-constance-12354", "Nimbus 305 Coupe", "Motor boats", "Cabin cruiser", "Nimbus", "305 Coupe", 2019, 248000, "Thurgau", "Lake Constance", "Romanshorn", "Romanshorn Hafen", 10.07, 3.25, "Diesel", "Inboard", 220],
-  ["classic-riva-style-maggiore-12355", "Classic Mahogany Runabout", "Classic boats", "Classic runabout", "Custom", "Mahogany 620", 1978, 89000, "Ticino", "Lake Maggiore", "Locarno", "Porto Regionale", 6.2, 2.1, "Petrol", "Inboard", 180],
+  ["riva-aquarama-maggiore-12355", "Riva Aquarama Super", "Classic boats", "Classic runabout", "Riva", "Aquarama Super", 1978, 89000, "Ticino", "Lake Maggiore", "Locarno", "Porto Regionale", 8.78, 2.6, "Petrol", "Inboard", 370],
   ["sunseeker-portofino-40-leman-12356", "Sunseeker Portofino 40", "Yachts", "Sport yacht", "Sunseeker", "Portofino 40", 2015, 390000, "Vaud", "Lake Geneva", "Nyon", "Port de Nyon", 12.9, 3.87, "Diesel", "Inboard", 740],
   ["axopar-28-zurich-demo-12357", "Axopar 28 Cabin", "Motor boats", "Cabin boat", "Axopar", "28 Cabin", 2023, 169000, "Zurich", "Lake Zurich", "Horgen", "Horgen Marina", 8.75, 2.95, "Petrol", "Outboard", 300],
   ["catamaran-lagoon-380-lugano-12358", "Lagoon 380", "Catamarans", "Catamaran", "Lagoon", "380", 2014, 285000, "Ticino", "Lake Lugano", "Melide", "Melide", 11.55, 6.53, "Diesel", "Inboard", 58],

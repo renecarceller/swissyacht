@@ -27,7 +27,8 @@ on conflict (slug) do nothing;
 
 insert into public.brands (slug, name) values
 ('jeanneau','Jeanneau'),('beneteau','Beneteau'),('bavaria','Bavaria'),('quicksilver','Quicksilver'),('cranchi','Cranchi'),('sunseeker','Sunseeker'),
-('princess','Princess'),('axopar','Axopar'),('zodiac','Zodiac'),('bayliner','Bayliner'),('nimbus','Nimbus'),('frauscher','Frauscher'),('candela','Candela'),('correct-craft','Correct Craft')
+('princess','Princess'),('axopar','Axopar'),('zodiac','Zodiac'),('bayliner','Bayliner'),('nimbus','Nimbus'),('frauscher','Frauscher'),('candela','Candela'),('correct-craft','Correct Craft'),
+('riva','Riva'),('lagoon','Lagoon'),('sea-ray','Sea Ray'),('brabus-marine','Brabus Marine'),('azimut','Azimut'),('prestige','Prestige'),('alumacraft','Alumacraft')
 on conflict (slug) do nothing;
 
 -- Demo listings are intentionally inserted by the app demo layer until real Supabase users exist.
