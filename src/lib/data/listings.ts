@@ -318,9 +318,9 @@ export async function getSearchRangeHistogramsAsync() {
 function buildHistogram(values: number[], min: number, max: number, bins: number) {
   const counts = Array.from({ length: bins }, () => 0);
   const span = max - min;
+  const finiteValues = values.filter(Number.isFinite);
 
-  values.forEach((value) => {
-    if (!Number.isFinite(value)) return;
+  finiteValues.forEach((value) => {
     const clamped = Math.min(max, Math.max(min, value));
     const index = Math.min(bins - 1, Math.max(0, Math.floor(((clamped - min) / span) * bins)));
     counts[index] += 1;
@@ -330,7 +330,8 @@ function buildHistogram(values: number[], min: number, max: number, bins: number
   if (largestCount === 0) {
     return {
       bars: counts.map(() => 2),
-      counts
+      counts,
+      values: finiteValues
     };
   }
 
@@ -339,7 +340,8 @@ function buildHistogram(values: number[], min: number, max: number, bins: number
       if (count === 0) return 3;
       return Math.max(8, Math.round((count / largestCount) * 100));
     }),
-    counts
+    counts,
+    values: finiteValues
   };
 }
 

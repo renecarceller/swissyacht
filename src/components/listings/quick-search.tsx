@@ -118,6 +118,7 @@ type AdvancedFilterValues = {
 type RangeHistogram = {
   bars: number[];
   counts: number[];
+  values: number[];
 };
 
 type RangeHistograms = {
@@ -489,6 +490,10 @@ function selectedHistogramCount(counts: number[], minPercent: number, maxPercent
   }, 0);
 }
 
+function exactRangeCount(values: number[], min: number, max: number) {
+  return values.filter((value) => value >= min && value <= max).length;
+}
+
 function formatBoatCount(value: number, locale: string) {
   return new Intl.NumberFormat(`${locale}-CH`).format(value);
 }
@@ -792,7 +797,7 @@ function LengthRangePicker({
   const maxLength = 40;
   const minPercent = ((range.min - minLength) / (maxLength - minLength)) * 100;
   const maxPercent = ((range.max - minLength) / (maxLength - minLength)) * 100;
-  const matchingBoats = selectedHistogramCount(histogram.counts, minPercent, maxPercent);
+  const matchingBoats = histogram.values.length ? exactRangeCount(histogram.values, range.min, range.max) : selectedHistogramCount(histogram.counts, minPercent, maxPercent);
 
   const updateMin = (value: number) => onChange({ min: Math.min(value, range.max - 1), max: range.max });
   const updateMax = (value: number) => onChange({ min: range.min, max: Math.max(value, range.min + 1) });
@@ -890,7 +895,7 @@ function YearRangePicker({
   const maxYear = 2026;
   const minPercent = ((range.min - minYear) / (maxYear - minYear)) * 100;
   const maxPercent = ((range.max - minYear) / (maxYear - minYear)) * 100;
-  const matchingBoats = selectedHistogramCount(histogram.counts, minPercent, maxPercent);
+  const matchingBoats = histogram.values.length ? exactRangeCount(histogram.values, range.min, range.max) : selectedHistogramCount(histogram.counts, minPercent, maxPercent);
 
   const updateMin = (value: number) => onChange({ min: Math.min(value, range.max - 1), max: range.max });
   const updateMax = (value: number) => onChange({ min: range.min, max: Math.max(value, range.min + 1) });
@@ -1207,8 +1212,8 @@ const fallbackLengthHistogram = [
 ];
 
 const defaultRangeHistograms: RangeHistograms = {
-  year: { bars: fallbackYearHistogram, counts: fallbackYearHistogram.map(() => 0) },
-  length: { bars: fallbackLengthHistogram, counts: fallbackLengthHistogram.map(() => 0) }
+  year: { bars: fallbackYearHistogram, counts: fallbackYearHistogram.map(() => 0), values: [] },
+  length: { bars: fallbackLengthHistogram, counts: fallbackLengthHistogram.map(() => 0), values: [] }
 };
 
 function BoatCategoryDrawing({ category }: { category: string }) {
