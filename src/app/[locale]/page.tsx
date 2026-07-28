@@ -28,8 +28,8 @@ export default async function HomePage({
   const rangeHistograms = await getSearchRangeHistogramsAsync();
 
   return (
-    <main className="pb-24 min-[520px]:pb-0">
-      <section className="bg-white min-[520px]:hidden">
+    <main className="w-full max-w-full overflow-x-hidden pb-24 min-[520px]:pb-0">
+      <section className="w-full max-w-full overflow-x-hidden bg-white min-[520px]:hidden">
         <div className="relative h-56 overflow-hidden">
           <Image
             src="https://images.unsplash.com/photo-1520242279429-1f64b18816ef?auto=format&fit=crop&w=1100&q=80"
@@ -46,8 +46,8 @@ export default async function HomePage({
           </div>
         </div>
         <QuickSearch locale={locale} brandCounts={brandCounts} categoryCounts={categoryCounts} rangeHistograms={rangeHistograms} initialValues={initialValues} />
-        <Link href="/boats?sort=date_desc" locale={locale} className="mx-4 mb-2 mt-4 flex items-center justify-between border-t border-[#d6d6d6] pt-4 text-2xl font-semibold text-[#0f6fae]">
-          <span>{text.search.savedSearches}</span>
+        <Link href="/boats?sort=date_desc" locale={locale} className="mx-4 mb-2 mt-4 flex min-w-0 items-center justify-between gap-3 border-t border-[#d6d6d6] pt-4 text-2xl font-semibold text-[#0f6fae]">
+          <span className="min-w-0 truncate">{text.search.savedSearches}</span>
           <span className="text-4xl leading-none">›</span>
         </Link>
       </section>
@@ -157,16 +157,16 @@ function MobileBottomNav({ locale }: { locale: string }) {
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.25rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] min-[520px]:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid w-full max-w-full grid-cols-4 overflow-hidden border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.25rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] min-[520px]:hidden">
       {items.map((item, index) => {
         const Icon = item.icon;
         return (
-          <Link key={item.href} href={item.href} locale={locale} className={`relative flex min-h-16 flex-col items-center justify-start gap-1 px-1 text-center text-sm font-semibold leading-tight ${item.active ? "text-[#2f3033]" : "text-[#666]"}`}>
+          <Link key={item.href} href={item.href} locale={locale} className={`relative flex min-h-16 min-w-0 flex-col items-center justify-start gap-1 overflow-hidden px-1 text-center text-sm font-semibold leading-tight ${item.active ? "text-[#2f3033]" : "text-[#666]"}`}>
             <span className="relative">
               <Icon className="size-7" strokeWidth={2.4} />
               {index === 1 ? <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-[#e11d2e]" /> : null}
             </span>
-            <span>{item.label}</span>
+            <span className="max-w-full break-words">{item.label}</span>
           </Link>
         );
       })}

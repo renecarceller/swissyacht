@@ -39,7 +39,7 @@ export function QuickSearch({
   });
 
   return (
-    <form action={`/${locale}/boats`} className="overflow-hidden bg-white text-[#2f3033] min-[520px]:rounded-lg min-[520px]:border min-[520px]:border-[#d8d8d8] min-[520px]:shadow-2xl">
+    <form action={`/${locale}/boats`} className="w-full max-w-full overflow-hidden bg-white text-[#2f3033] min-[520px]:rounded-lg min-[520px]:border min-[520px]:border-[#d8d8d8] min-[520px]:shadow-2xl">
       <div className="flex items-center justify-between px-4 pb-2 pt-6 min-[520px]:hidden">
         <h2 className="text-4xl font-semibold tracking-normal">{text.common.search}</h2>
         <a href={`/${locale}`} className="text-2xl font-semibold text-[#0f6fae] transition hover:text-[#06233f]">
@@ -47,7 +47,7 @@ export function QuickSearch({
         </a>
       </div>
 
-      <div className="flex gap-7 overflow-x-auto border-b border-[#cfcfcf] px-4 min-[520px]:hidden">
+      <div className="flex max-w-full gap-7 overflow-x-auto border-b border-[#cfcfcf] px-4 min-[520px]:hidden">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -60,7 +60,7 @@ export function QuickSearch({
         })}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 p-4 min-[520px]:grid-cols-4 min-[520px]:gap-3 min-[520px]:p-3 xl:gap-3 xl:p-4">
+      <div className="grid w-full max-w-full grid-cols-2 gap-2 p-4 min-[520px]:grid-cols-4 min-[520px]:gap-3 min-[520px]:p-3 xl:gap-3 xl:p-4 [&>*]:min-w-0">
         <MakeModelField locale={locale} label={text.search.makeModel} modelLabel={text.search.model} brandLabel={text.common.brand} brandCounts={brandCounts} initialBrand={initialValues.brand || ""} initialModel={initialValues.model || ""} />
         <YearRangeField locale={locale} label={text.common.year} histogram={rangeHistograms.year} initialMin={numberParam(initialValues, "yearMin", 1900)} initialMax={numberParam(initialValues, "yearMax", 2026)} />
         <LengthRangeField locale={locale} label={text.search.length} histogram={rangeHistograms.length} initialMin={numberParam(initialValues, "lengthMin", 0)} initialMax={numberParam(initialValues, "lengthMax", 40)} />
@@ -81,14 +81,14 @@ export function QuickSearch({
         <SearchInput icon={<CircleGauge />} label={text.search.enginePower} name="powerMin" type="number" min="0" initialValue={initialValues.powerMin || ""} />
       </div>
 
-      <div className="grid gap-3 px-4 pb-4 min-[520px]:grid-cols-2 min-[520px]:px-3 min-[520px]:pb-3 xl:px-4 xl:pb-4">
+      <div className="grid w-full max-w-full gap-3 px-4 pb-4 min-[520px]:grid-cols-2 min-[520px]:px-3 min-[520px]:pb-3 xl:px-4 xl:pb-4 [&>*]:min-w-0">
         {advancedFilterInputs(advancedFilters)}
-        <button type="button" onClick={() => setAdvancedOpen(true)} className="flex h-14 items-center justify-center gap-3 rounded-md border-2 border-[#333] bg-white text-xl font-semibold transition hover:bg-[#f4f4f4] min-[520px]:h-14 min-[520px]:text-xl xl:h-16 xl:text-xl">
+        <button type="button" onClick={() => setAdvancedOpen(true)} className="flex h-14 max-w-full items-center justify-center gap-3 overflow-hidden rounded-md border-2 border-[#333] bg-white px-2 text-xl font-semibold transition hover:bg-[#f4f4f4] min-[520px]:h-14 min-[520px]:text-xl xl:h-16 xl:text-xl">
           <SlidersHorizontal className="size-7" />
-          {text.search.moreFilters}
+          <span className="min-w-0 truncate">{text.search.moreFilters}</span>
         </button>
-        <button className="h-16 rounded-md bg-[#8bd3ff] text-xl font-extrabold text-[#06233f] shadow-[0_5px_0_#58b9e8] transition hover:bg-[#aee2ff] min-[520px]:h-14 min-[520px]:text-xl xl:h-16 xl:text-xl">
-          {text.search.resultCta}
+        <button className="h-16 max-w-full overflow-hidden rounded-md bg-[#8bd3ff] px-2 text-xl font-extrabold text-[#06233f] shadow-[0_5px_0_#58b9e8] transition hover:bg-[#aee2ff] min-[520px]:h-14 min-[520px]:text-xl xl:h-16 xl:text-xl">
+          <span className="truncate">{text.search.resultCta}</span>
         </button>
       </div>
       {advancedOpen ? (
@@ -670,7 +670,7 @@ function BoatTypePicker({
 
 function filterFieldClass(active: boolean) {
   return [
-    "flex min-h-14 items-center gap-2 rounded-md px-3 min-[520px]:min-h-14 min-[520px]:gap-3 min-[520px]:px-3 xl:min-h-16",
+    "flex min-h-14 min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-md px-3 min-[520px]:min-h-14 min-[520px]:gap-3 min-[520px]:px-3 xl:min-h-16",
     active ? "bg-[#3f3f3f] text-white" : "bg-[#e8e8e8] text-[#626468]"
   ].join(" ");
 }

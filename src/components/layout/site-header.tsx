@@ -14,12 +14,12 @@ export function SiteHeader({ locale }: { locale: string }) {
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#d9e2ec] bg-white/95 backdrop-blur">
-      <div className="container-shell flex h-24 items-center justify-between gap-4 min-[520px]:h-16">
+    <header className="sticky top-0 z-50 w-full max-w-full overflow-x-hidden border-b border-[#d9e2ec] bg-white/95 backdrop-blur">
+      <div className="container-shell flex h-24 min-w-0 items-center justify-between gap-4 min-[520px]:h-16">
         <Link
           href="/"
           locale={locale}
-          className="flex items-center gap-3 font-bold text-navy min-[520px]:gap-2"
+          className="flex min-w-0 items-center gap-3 font-bold text-navy min-[520px]:gap-2"
           onClick={(event) => {
             if (!window.location.search) return;
             event.preventDefault();
@@ -36,7 +36,7 @@ export function SiteHeader({ locale }: { locale: string }) {
               priority
             />
           </span>
-          <span className="text-2xl min-[520px]:text-lg">SwissYacht</span>
+          <span className="min-w-0 truncate text-2xl min-[520px]:text-lg">SwissYacht</span>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-[#324963] min-[520px]:flex">
           {nav.map((item) => (
