@@ -115,9 +115,14 @@ type AdvancedFilterValues = {
   overnightAccommodation: boolean;
 };
 
+type RangeHistogram = {
+  bars: number[];
+  counts: number[];
+};
+
 type RangeHistograms = {
-  year: number[];
-  length: number[];
+  year: RangeHistogram;
+  length: RangeHistogram;
 };
 
 function advancedFilterInputs(values: AdvancedFilterValues) {
@@ -474,6 +479,20 @@ function isHistogramBarSelected(index: number, total: number, minPercent: number
   return barPercent >= minPercent && barPercent <= maxPercent;
 }
 
+function selectedHistogramCount(counts: number[], minPercent: number, maxPercent: number) {
+  return counts.reduce((total, count, index) => {
+    if (!isHistogramBarSelected(index, counts.length, minPercent, maxPercent)) {
+      return total;
+    }
+
+    return total + count;
+  }, 0);
+}
+
+function formatBoatCount(value: number, locale: string) {
+  return new Intl.NumberFormat(`${locale}-CH`).format(value);
+}
+
 function SearchInput({
   icon,
   label,
@@ -687,7 +706,7 @@ function ClearFilterButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function YearRangeField({ locale, label, histogram, initialMin = 1900, initialMax = 2026 }: { locale: string; label: string; histogram: number[]; initialMin?: number; initialMax?: number }) {
+function YearRangeField({ locale, label, histogram, initialMin = 1900, initialMax = 2026 }: { locale: string; label: string; histogram: RangeHistogram; initialMin?: number; initialMax?: number }) {
   const [open, setOpen] = useState(false);
   const [range, setRange] = useState({ min: initialMin, max: initialMax });
   const defaultRange = range.min === 1900 && range.max === 2026;
@@ -722,7 +741,7 @@ function YearRangeField({ locale, label, histogram, initialMin = 1900, initialMa
   );
 }
 
-function LengthRangeField({ locale, label, histogram, initialMin = 0, initialMax = 40 }: { locale: string; label: string; histogram: number[]; initialMin?: number; initialMax?: number }) {
+function LengthRangeField({ locale, label, histogram, initialMin = 0, initialMax = 40 }: { locale: string; label: string; histogram: RangeHistogram; initialMin?: number; initialMax?: number }) {
   const [open, setOpen] = useState(false);
   const [range, setRange] = useState({ min: initialMin, max: initialMax });
   const defaultRange = range.min === 0 && range.max === 40;
@@ -763,7 +782,7 @@ function LengthRangePicker({
 }: {
   locale: string;
   label: string;
-  histogram: number[];
+  histogram: RangeHistogram;
   range: { min: number; max: number };
   onChange: (range: { min: number; max: number }) => void;
   onClose: () => void;
@@ -773,6 +792,7 @@ function LengthRangePicker({
   const maxLength = 40;
   const minPercent = ((range.min - minLength) / (maxLength - minLength)) * 100;
   const maxPercent = ((range.max - minLength) / (maxLength - minLength)) * 100;
+  const matchingBoats = selectedHistogramCount(histogram.counts, minPercent, maxPercent);
 
   const updateMin = (value: number) => onChange({ min: Math.min(value, range.max - 1), max: range.max });
   const updateMax = (value: number) => onChange({ min: range.min, max: Math.max(value, range.min + 1) });
@@ -801,8 +821,8 @@ function LengthRangePicker({
 
           <div className="relative mt-12 h-52 border-b border-[#d6d6d6] sm:mt-16 sm:h-64">
             <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
-              {histogram.map((height, index) => {
-                const selected = isHistogramBarSelected(index, histogram.length, minPercent, maxPercent);
+              {histogram.bars.map((height, index) => {
+                const selected = isHistogramBarSelected(index, histogram.bars.length, minPercent, maxPercent);
 
                 return (
                   <span
@@ -837,7 +857,10 @@ function LengthRangePicker({
         </div>
 
         <div className="grid grid-cols-[1fr_1fr] items-center gap-4 border-t border-[#d6d6d6] px-6 py-5 sm:px-10">
-          <p className="text-3xl font-bold text-[#2f3033] sm:text-5xl">{range.min} - {range.max} m</p>
+          <div>
+            <p className="text-3xl font-bold text-[#2f3033] sm:text-5xl">{formatBoatCount(matchingBoats, locale)} {labels.boats}</p>
+            <p className="mt-1 text-sm font-semibold text-[#6f6f72] sm:text-xl">{range.min} - {range.max} m</p>
+          </div>
           <button type="button" onClick={onClose} className="h-16 rounded-md bg-[#8bd3ff] text-3xl font-extrabold text-[#06233f] shadow-[0_5px_0_#58b9e8] transition hover:bg-[#aee2ff] sm:h-24 sm:text-5xl">
             {labels.apply}
           </button>
@@ -857,7 +880,7 @@ function YearRangePicker({
 }: {
   locale: string;
   label: string;
-  histogram: number[];
+  histogram: RangeHistogram;
   range: { min: number; max: number };
   onChange: (range: { min: number; max: number }) => void;
   onClose: () => void;
@@ -867,6 +890,7 @@ function YearRangePicker({
   const maxYear = 2026;
   const minPercent = ((range.min - minYear) / (maxYear - minYear)) * 100;
   const maxPercent = ((range.max - minYear) / (maxYear - minYear)) * 100;
+  const matchingBoats = selectedHistogramCount(histogram.counts, minPercent, maxPercent);
 
   const updateMin = (value: number) => onChange({ min: Math.min(value, range.max - 1), max: range.max });
   const updateMax = (value: number) => onChange({ min: range.min, max: Math.max(value, range.min + 1) });
@@ -895,8 +919,8 @@ function YearRangePicker({
 
           <div className="relative mt-12 h-52 sm:mt-16 sm:h-64">
             <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
-              {histogram.map((height, index) => {
-                const selected = isHistogramBarSelected(index, histogram.length, minPercent, maxPercent);
+              {histogram.bars.map((height, index) => {
+                const selected = isHistogramBarSelected(index, histogram.bars.length, minPercent, maxPercent);
 
                 return (
                   <span
@@ -952,7 +976,7 @@ function YearRangePicker({
         </div>
 
         <div className="grid grid-cols-[1fr_1fr] items-center gap-4 border-t border-[#d6d6d6] px-6 py-5 sm:px-10">
-          <p className="text-3xl font-bold text-[#2f3033] sm:text-5xl">162,468 {labels.boats}</p>
+          <p className="text-3xl font-bold text-[#2f3033] sm:text-5xl">{formatBoatCount(matchingBoats, locale)} {labels.boats}</p>
           <button type="button" onClick={onClose} className="h-16 rounded-md bg-[#8bd3ff] text-3xl font-extrabold text-[#06233f] shadow-[0_5px_0_#58b9e8] transition hover:bg-[#aee2ff] sm:h-24 sm:text-5xl">
             {labels.apply}
           </button>
@@ -1183,8 +1207,8 @@ const fallbackLengthHistogram = [
 ];
 
 const defaultRangeHistograms: RangeHistograms = {
-  year: fallbackYearHistogram,
-  length: fallbackLengthHistogram
+  year: { bars: fallbackYearHistogram, counts: fallbackYearHistogram.map(() => 0) },
+  length: { bars: fallbackLengthHistogram, counts: fallbackLengthHistogram.map(() => 0) }
 };
 
 function BoatCategoryDrawing({ category }: { category: string }) {
@@ -1320,6 +1344,7 @@ function lengthPickerLabels(locale: string) {
       close: "Fermer",
       from: "De",
       to: "A",
+      boats: "bateaux",
       apply: "Appliquer"
     },
     de: {
@@ -1327,6 +1352,7 @@ function lengthPickerLabels(locale: string) {
       close: "Schliessen",
       from: "Von",
       to: "Bis",
+      boats: "Boote",
       apply: "Anwenden"
     },
     it: {
@@ -1334,6 +1360,7 @@ function lengthPickerLabels(locale: string) {
       close: "Chiudi",
       from: "Da",
       to: "A",
+      boats: "barche",
       apply: "Applica"
     },
     en: {
@@ -1341,6 +1368,7 @@ function lengthPickerLabels(locale: string) {
       close: "Close",
       from: "From",
       to: "To",
+      boats: "boats",
       apply: "Apply"
     }
   };

@@ -328,13 +328,19 @@ function buildHistogram(values: number[], min: number, max: number, bins: number
 
   const largestCount = Math.max(...counts);
   if (largestCount === 0) {
-    return counts.map(() => 2);
+    return {
+      bars: counts.map(() => 2),
+      counts
+    };
   }
 
-  return counts.map((count) => {
-    if (count === 0) return 3;
-    return Math.max(8, Math.round((count / largestCount) * 100));
-  });
+  return {
+    bars: counts.map((count) => {
+      if (count === 0) return 3;
+      return Math.max(8, Math.round((count / largestCount) * 100));
+    }),
+    counts
+  };
 }
 
 export function getListingBySlug(slug: string) {
