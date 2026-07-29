@@ -54,8 +54,8 @@ export function SiteHeader({ locale }: { locale: string }) {
               </Link>
             ))}
           </div>
-          <button type="button" onClick={openAccountModal} className="rounded-md px-3 py-2 text-sm font-semibold text-navy hover:bg-[#e8f3fb]">
-            {text.nav.account}
+          <button type="button" onClick={openAccountModal} className="grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={text.nav.account}>
+            <CircleUserRound size={25} strokeWidth={2.1} />
           </button>
           <Link href="/dashboard/favorites" locale={locale} className="grid size-10 place-items-center rounded-md text-[#8bd3ff] transition hover:bg-[#eef9ff]" aria-label={text.dashboard.favorites}>
             <Heart size={23} fill="currentColor" strokeWidth={2.2} />
