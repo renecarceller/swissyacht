@@ -10,10 +10,6 @@ import { ui } from "@/i18n/ui";
 export function SiteHeader({ locale }: { locale: string }) {
   const text = ui(locale);
   const [languageOpen, setLanguageOpen] = useState(false);
-  const nav = [
-    { href: "/boats", label: text.nav.buy },
-    { href: "/sell", label: text.nav.sell }
-  ];
 
   return (
     <header className="sticky top-0 z-50 w-full max-w-full border-b border-[#d9e2ec] bg-white/95 backdrop-blur">
@@ -40,13 +36,6 @@ export function SiteHeader({ locale }: { locale: string }) {
           </span>
           <span className="min-w-0 truncate text-2xl min-[520px]:text-lg">SwissYacht</span>
         </Link>
-        <nav className="hidden items-center gap-6 text-sm font-medium text-[#324963] min-[520px]:flex">
-          {nav.map((item) => (
-            <Link key={item.href} href={item.href} locale={locale} className="hover:text-navy">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
         <div className="hidden items-center gap-2 min-[520px]:flex">
           <div className="relative">
             <button
