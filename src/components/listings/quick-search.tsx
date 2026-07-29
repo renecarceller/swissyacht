@@ -477,8 +477,10 @@ function isHistogramBarSelected(index: number, total: number, minPercent: number
     return true;
   }
 
-  const barPercent = (index / (total - 1)) * 100;
-  return barPercent >= minPercent && barPercent <= maxPercent;
+  const barStart = (index / total) * 100;
+  const barEnd = ((index + 1) / total) * 100;
+
+  return barEnd >= minPercent && barStart <= maxPercent;
 }
 
 function selectedHistogramCount(counts: number[], minPercent: number, maxPercent: number) {
