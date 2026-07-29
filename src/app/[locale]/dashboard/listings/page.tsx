@@ -11,7 +11,7 @@ export default async function DashboardListingsPage({ params }: { params: Promis
     <main className="container-shell py-8">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-navy">{text.dashboard.listings}</h1>
-        <Link href="/sell" locale={locale} className="rounded-md bg-swiss-red px-4 py-3 font-bold text-white">{text.dashboard.createListing}</Link>
+        <Link href="/sell" locale={locale} className="rounded-md bg-[#8bd3ff] px-4 py-3 font-bold text-[#06233f] shadow-[0_4px_0_#58b9e8] transition hover:bg-[#aee2ff]">{text.dashboard.createListing}</Link>
       </div>
       <div className="overflow-hidden rounded-md border border-[#d9e2ec] bg-white">
         <table className="w-full border-collapse text-left text-sm">
