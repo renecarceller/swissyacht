@@ -110,31 +110,6 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
     <form action={submitListingAction} className="grid gap-5">
       <HiddenDraftInputs draft={draft} />
       <input type="hidden" name="locale" value={locale} />
-      <div className="rounded-md border border-[#d9e2ec] bg-white p-4">
-        <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {stepTitles.map((title, index) => (
-            <button
-              key={title}
-              type="button"
-              onClick={() => setStep(index)}
-              className={`min-h-12 rounded-md border px-3 py-2 text-left text-sm font-semibold transition ${
-                index === step
-                  ? "border-[#58b9e8] bg-[#8bd3ff] text-[#06233f] shadow-[0_3px_0_#58b9e8]"
-                  : "border-[#d9e2ec] bg-white text-[#607085] hover:border-[#8bd3ff] hover:bg-[#eef9ff] hover:text-navy"
-              }`}
-            >
-              {title}
-            </button>
-          ))}
-        </div>
-        <div className="mb-3 flex items-center justify-between gap-3 text-sm font-semibold text-[#607085]">
-          <span>{labels.step} {step + 1} / {totalSteps}</span>
-          <span>{progress}%</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-[#e8f3fb]">
-          <div className="h-full rounded-full bg-[#8bd3ff] transition-all" style={{ width: `${progress}%` }} />
-        </div>
-      </div>
 
       {step === 0 ? (
         <StepCard title={text.sell.step1}>
@@ -233,20 +208,31 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
         </StepCard>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#d9e2ec] bg-white p-4">
-        <Button type="button" variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0}>
-          {labels.back}
-        </Button>
-        {step < totalSteps - 1 ? (
-          <Button type="button" className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]" onClick={() => setStep((current) => Math.min(totalSteps - 1, current + 1))}>
-            {labels.continue}
-          </Button>
-        ) : (
-          <div className="flex flex-wrap gap-3">
-            <Button name="saveAsDraft" value="true" variant="secondary">{text.sell.saveDraft}</Button>
-            <Button name="saveAsDraft" value="false" className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">{text.sell.sendModeration}</Button>
+      <div className="rounded-md border border-[#d9e2ec] bg-white p-4">
+        <div className="mb-5">
+          <div className="mb-3 flex items-center justify-between gap-3 text-sm font-semibold text-[#607085]">
+            <span>{labels.step} {step + 1} / {totalSteps}</span>
+            <span>{progress}%</span>
           </div>
-        )}
+          <div className="h-2 overflow-hidden rounded-full bg-[#e8f3fb]">
+            <div className="h-full rounded-full bg-[#8bd3ff] transition-all" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button type="button" variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))} disabled={step === 0}>
+            {labels.back}
+          </Button>
+          {step < totalSteps - 1 ? (
+            <Button type="button" className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]" onClick={() => setStep((current) => Math.min(totalSteps - 1, current + 1))}>
+              {labels.continue}
+            </Button>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              <Button name="saveAsDraft" value="true" variant="secondary">{text.sell.saveDraft}</Button>
+              <Button name="saveAsDraft" value="false" className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">{text.sell.sendModeration}</Button>
+            </div>
+          )}
+        </div>
       </div>
     </form>
   );
