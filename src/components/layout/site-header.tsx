@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { CircleUserRound, Globe2, ShipWheel } from "lucide-react";
+import { CircleUserRound, Globe2, Heart, ShipWheel } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { openAccountModal } from "@/components/forms/welcome-account-modal";
 import { ui } from "@/i18n/ui";
@@ -57,6 +57,9 @@ export function SiteHeader({ locale }: { locale: string }) {
           <button type="button" onClick={openAccountModal} className="rounded-md px-3 py-2 text-sm font-semibold text-navy hover:bg-[#e8f3fb]">
             {text.nav.account}
           </button>
+          <Link href="/dashboard/favorites" locale={locale} className="grid size-10 place-items-center rounded-md text-[#8bd3ff] transition hover:bg-[#eef9ff]" aria-label={text.dashboard.favorites}>
+            <Heart size={23} fill="currentColor" strokeWidth={2.2} />
+          </Link>
           <Link href="/sell" locale={locale} className="inline-flex h-10 items-center gap-2 rounded-md bg-[#8bd3ff] px-4 text-sm font-semibold text-[#06233f] shadow-[0_3px_0_#58b9e8] transition hover:bg-[#aee2ff]">
             <ShipWheel size={16} />
             {text.nav.publish}

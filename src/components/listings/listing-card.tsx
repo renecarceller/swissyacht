@@ -1,7 +1,10 @@
+"use client";
+
 /* eslint-disable @next/next/no-img-element */
 import { Calendar, Gauge, MapPin, Ruler, ShieldCheck } from "lucide-react";
 import type { Listing } from "@/types/domain";
 import { Link } from "@/i18n/routing";
+import { FavoriteButton } from "@/components/listings/favorite-button";
 import { formatChf } from "@/lib/utils";
 import { refLabel, ui } from "@/i18n/ui";
 
@@ -10,7 +13,8 @@ export function ListingCard({ listing, locale, view = "cards" }: { listing: List
   const primary = listing.images.find((image) => image.isPrimary) || listing.images[0];
 
   return (
-    <article className={view === "list" ? "grid overflow-hidden rounded-md border border-[#d9e2ec] bg-white md:grid-cols-[280px_1fr]" : "overflow-hidden rounded-md border border-[#d9e2ec] bg-white"}>
+    <article className={view === "list" ? "relative grid overflow-hidden rounded-md border border-[#d9e2ec] bg-white md:grid-cols-[280px_1fr]" : "relative overflow-hidden rounded-md border border-[#d9e2ec] bg-white"}>
+      <FavoriteButton listingId={listing.id} label={text.listing.saveFavorite} className="absolute right-3 top-3 z-10" />
       <Link href={`/listing/${listing.slug}`} locale={locale} className="block">
         <img src={primary.url} alt={primary.alt} className={view === "list" ? "h-56 w-full object-cover md:h-full" : "h-52 w-full object-cover"} />
       </Link>

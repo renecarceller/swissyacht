@@ -1,9 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Building2, Calendar, Eye, Heart, Mail, MapPin, Phone, Ruler, Share2, ShieldAlert, ShipWheel } from "lucide-react";
+import { Building2, Calendar, Eye, Mail, MapPin, Phone, Ruler, Share2, ShieldAlert, ShipWheel } from "lucide-react";
 import { InquiryForm } from "@/components/forms/inquiry-form";
 import { ListingCard } from "@/components/listings/listing-card";
+import { FavoriteButton } from "@/components/listings/favorite-button";
 import { Link } from "@/i18n/routing";
 import { getListingBySlugAsync, getSimilarListingsAsync } from "@/lib/data/listings";
 import { listingJsonLd } from "@/lib/seo/json-ld";
@@ -121,7 +122,7 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
             <div className="mt-4 grid gap-2">
               <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />{text.listing.showPhone}</button>
               <a href={`mailto:${listing.seller.email}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Mail size={17} />{text.listing.contactSeller}</a>
-              <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Heart size={17} />{text.listing.saveFavorite}</button>
+              <FavoriteButton listingId={listing.id} label={text.listing.saveFavorite} variant="action" />
               <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Share2 size={17} />{text.listing.share}</button>
               {listing.seller.professionalSlug ? (
                 <>
