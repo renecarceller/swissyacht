@@ -1,4 +1,4 @@
-import { Bell, Building2, CheckCircle2, ClipboardList, MapPin, Pencil, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { Building2, CheckCircle2, ClipboardList, Heart, MapPin, Search, ShieldCheck, ShipWheel, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/routing";
@@ -143,30 +143,35 @@ export default async function HomePage({
 
 function MobileBottomNav({ locale }: { locale: string }) {
   const labels = {
-    fr: ["Rechercher", "Recherches enregistrees", "Listes", "Vendre"],
-    de: ["Suchen", "Gespeichert", "Listen", "Verkaufen"],
-    it: ["Cerca", "Ricerche salvate", "Liste", "Vendere"],
-    en: ["Search", "Saved searches", "Lists", "Sell"]
-  }[locale as "fr" | "de" | "it" | "en"] ?? ["Rechercher", "Recherches enregistrees", "Listes", "Vendre"];
+    fr: ["Rechercher", "Favoris", "Listes", "Vendre"],
+    de: ["Suchen", "Favoriten", "Listen", "Verkaufen"],
+    it: ["Cerca", "Preferiti", "Liste", "Vendere"],
+    en: ["Search", "Favorites", "Lists", "Sell"]
+  }[locale as "fr" | "de" | "it" | "en"] ?? ["Rechercher", "Favoris", "Listes", "Vendre"];
 
   const items = [
     { href: "/", label: labels[0], icon: Search, active: true },
-    { href: "/boats", label: labels[1], icon: Bell },
-    { href: "/dashboard/favorites", label: labels[2], icon: ClipboardList },
-    { href: "/sell", label: labels[3], icon: Pencil }
+    { href: "/dashboard/favorites", label: labels[1], icon: Heart, favorite: true },
+    { href: "/dashboard/listings", label: labels[2], icon: ClipboardList },
+    { href: "/sell", label: labels[3], icon: ShipWheel, sell: true }
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 grid w-full max-w-full grid-cols-4 overflow-hidden border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.25rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] min-[520px]:hidden">
-      {items.map((item, index) => {
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid w-full max-w-full grid-cols-4 overflow-hidden border-t border-[#d2d2d2] bg-white pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-2 shadow-[0_-10px_24px_rgba(0,0,0,0.08)] min-[520px]:hidden">
+      {items.map((item) => {
         const Icon = item.icon;
         return (
-          <Link key={item.href} href={item.href} locale={locale} className={`relative flex min-h-16 min-w-0 flex-col items-center justify-start gap-1 overflow-hidden px-1 text-center text-sm font-semibold leading-tight ${item.active ? "text-[#2f3033]" : "text-[#666]"}`}>
-            <span className="relative">
-              <Icon className="size-7" strokeWidth={2.4} />
-              {index === 1 ? <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-[#e11d2e]" /> : null}
+          <Link
+            key={item.href}
+            href={item.href}
+            locale={locale}
+            aria-label={item.label}
+            title={item.label}
+            className={`relative grid min-h-16 min-w-0 place-items-center overflow-hidden px-1 transition ${item.active ? "text-navy" : "text-[#666]"} ${item.favorite ? "text-[#8bd3ff]" : ""} ${item.sell ? "text-navy" : ""}`}
+          >
+            <span className="grid size-12 place-items-center rounded-full transition hover:bg-[#eef9ff]">
+              <Icon className="size-8" fill={item.favorite ? "currentColor" : "none"} strokeWidth={item.sell ? 2.2 : 2.5} />
             </span>
-            <span className="max-w-full break-words">{item.label}</span>
           </Link>
         );
       })}
