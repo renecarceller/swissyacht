@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { CircleUserRound, Globe2, Heart, ShipWheel } from "lucide-react";
+import { CircleUserRound, Heart, Menu, ShipWheel } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { openAccountModal } from "@/components/forms/welcome-account-modal";
 import { ui } from "@/i18n/ui";
 
 export function SiteHeader({ locale }: { locale: string }) {
   const text = ui(locale);
+  const [languageOpen, setLanguageOpen] = useState(false);
   const nav = [
     { href: "/boats", label: text.nav.buy },
     { href: "/sell", label: text.nav.sell }
@@ -46,13 +48,31 @@ export function SiteHeader({ locale }: { locale: string }) {
           ))}
         </nav>
         <div className="hidden items-center gap-2 min-[520px]:flex">
-          <div className="flex items-center gap-1 rounded-md border border-[#d9e2ec] px-2 py-2 text-sm">
-            <Globe2 size={15} />
-            {["fr", "de", "it", "en"].map((item) => (
-              <Link key={item} href="/" locale={item} className={item === locale ? "font-bold text-navy" : "text-[#607085]"}>
-                {item.toUpperCase()}
-              </Link>
-            ))}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setLanguageOpen((open) => !open)}
+              className="grid size-10 place-items-center rounded-md border border-[#d9e2ec] bg-white text-navy transition hover:bg-[#e8f3fb]"
+              aria-label={text.nav.openMenu}
+              aria-expanded={languageOpen}
+            >
+              <Menu size={25} strokeWidth={2.1} />
+            </button>
+            {languageOpen ? (
+              <div className="absolute right-0 top-12 z-50 w-24 overflow-hidden rounded-md border border-[#d9e2ec] bg-white shadow-xl">
+                {["fr", "de", "it", "en"].map((item) => (
+                  <Link
+                    key={item}
+                    href="/"
+                    locale={item}
+                    onClick={() => setLanguageOpen(false)}
+                    className={`block border-b border-[#d9e2ec] px-4 py-3 text-center text-sm font-bold last:border-b-0 ${item === locale ? "bg-[#eef9ff] text-navy" : "text-[#607085] hover:bg-[#f6fbff] hover:text-navy"}`}
+                  >
+                    {item.toUpperCase()}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
           </div>
           <button type="button" onClick={openAccountModal} className="grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={text.nav.account}>
             <CircleUserRound size={25} strokeWidth={2.1} />
