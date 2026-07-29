@@ -16,7 +16,7 @@ export function SiteHeader({ locale }: { locale: string }) {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full max-w-full overflow-x-hidden border-b border-[#d9e2ec] bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full max-w-full border-b border-[#d9e2ec] bg-white/95 backdrop-blur">
       <div className="container-shell flex h-24 min-w-0 items-center justify-between gap-4 min-[520px]:h-16">
         <Link
           href="/"
@@ -59,7 +59,7 @@ export function SiteHeader({ locale }: { locale: string }) {
               <Menu size={25} strokeWidth={2.1} />
             </button>
             {languageOpen ? (
-              <div className="absolute right-0 top-12 z-50 w-24 overflow-hidden rounded-md border border-[#d9e2ec] bg-white shadow-xl">
+              <div className="absolute right-0 top-12 z-[90] w-24 overflow-hidden rounded-md border border-[#d9e2ec] bg-white shadow-xl">
                 {["fr", "de", "it", "en"].map((item) => (
                   <Link
                     key={item}
