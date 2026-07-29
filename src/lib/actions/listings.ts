@@ -9,6 +9,11 @@ import { slugify } from "@/lib/utils";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+type ProfessionalProfileOwner = {
+  id: string;
+  company_name: string | null;
+};
+
 export async function submitListingAction(formData: FormData) {
   const parsed = listingFormSchema.safeParse(Object.fromEntries(formData.entries()));
   const rawLocale = String(formData.get("locale") || "fr");
@@ -43,7 +48,7 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
   const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
   if (!data.user) {
-    redirect(`/${locale}/?account=1` as never);
+    redirect(`/${locale}/?account=1&publishError=auth_required` as never);
   }
 
   try {
@@ -214,14 +219,37 @@ async function ensureMarina(name: string, cityId: string | null, lakeId: string 
   return data.id as string;
 }
 
-async function getProfessionalProfileForUser(userId: string) {
+async function getProfessionalProfileForUser(userId: string): Promise<ProfessionalProfileOwner | null> {
   const admin = createSupabaseAdminClient();
   const { data } = await admin
     .from("professional_profiles")
     .select("id, company_name")
     .eq("user_id", userId)
     .is("deleted_at", null)
+    .is("suspended_at", null)
     .maybeSingle();
 
-  return data;
+  if (data) return data as ProfessionalProfileOwner;
+
+  const { data: membership } = await admin
+    .from("professional_members")
+    .select("professional_profile_id")
+    .eq("user_id", userId)
+    .not("accepted_at", "is", null)
+    .in("role", ["owner", "admin", "editor"])
+    .limit(1)
+    .maybeSingle();
+
+  const professionalProfileId = typeof membership?.professional_profile_id === "string" ? membership.professional_profile_id : null;
+  if (!professionalProfileId) return null;
+
+  const { data: memberProfile } = await admin
+    .from("professional_profiles")
+    .select("id, company_name")
+    .eq("id", professionalProfileId)
+    .is("deleted_at", null)
+    .is("suspended_at", null)
+    .maybeSingle();
+
+  return (memberProfile as ProfessionalProfileOwner | null) ?? null;
 }
