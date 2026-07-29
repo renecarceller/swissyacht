@@ -170,7 +170,12 @@ function MobileBottomNav({ locale }: { locale: string }) {
             className={`relative grid min-h-16 min-w-0 place-items-center overflow-hidden px-1 transition ${item.active ? "text-navy" : "text-[#666]"} ${item.favorite ? "text-[#8bd3ff]" : ""} ${item.sell ? "text-navy" : ""}`}
           >
             <span className="grid size-12 place-items-center rounded-full transition hover:bg-[#eef9ff]">
-              <Icon className="size-8" fill={item.favorite ? "currentColor" : "none"} strokeWidth={item.sell ? 2.2 : 2.5} />
+              <Icon
+                className={`size-8 ${item.favorite ? "text-[#8bd3ff]" : ""}`}
+                fill={item.favorite ? "#8bd3ff" : "none"}
+                stroke={item.favorite ? "#8bd3ff" : "currentColor"}
+                strokeWidth={item.sell ? 2.2 : 2.5}
+              />
             </span>
           </Link>
         );

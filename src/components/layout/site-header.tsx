@@ -78,7 +78,7 @@ export function SiteHeader({ locale }: { locale: string }) {
             <CircleUserRound size={25} strokeWidth={2.1} />
           </button>
           <Link href="/dashboard/favorites" locale={locale} className="grid size-10 place-items-center rounded-md text-[#8bd3ff] transition hover:bg-[#eef9ff]" aria-label={text.dashboard.favorites}>
-            <Heart size={23} fill="currentColor" strokeWidth={2.2} />
+            <Heart size={23} className="text-[#8bd3ff]" fill="#8bd3ff" stroke="#8bd3ff" strokeWidth={2.2} />
           </Link>
           <Link href="/sell" locale={locale} className="inline-flex h-10 items-center gap-2 rounded-md bg-[#8bd3ff] px-4 text-sm font-semibold text-[#06233f] shadow-[0_3px_0_#58b9e8] transition hover:bg-[#aee2ff]">
             <ShipWheel size={16} />
