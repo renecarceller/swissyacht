@@ -33,7 +33,7 @@ export default async function BoatsPage({
 
   return (
     <main className="container-shell py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 hidden flex-wrap items-center justify-between gap-4 min-[520px]:flex">
         <div>
           <h1 className="text-3xl font-bold text-navy">{text.search.title}</h1>
           <p className="mt-2 text-[#607085]">{result.total} {text.search.resultsIn}</p>
@@ -45,7 +45,9 @@ export default async function BoatsPage({
         </div>
       </div>
       <form action={`/${locale}/boats`} className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <SearchFilters filters={filters} locale={locale} availableBrands={availableBrands} />
+        <div className="hidden min-[520px]:block">
+          <SearchFilters filters={filters} locale={locale} availableBrands={availableBrands} />
+        </div>
         <section>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#d9e2ec] bg-white p-3">
             <span className="text-sm text-[#607085]">{text.search.page} {result.page} {text.search.of} {result.pages}</span>
