@@ -867,8 +867,8 @@ function PriceRangePicker({
             <NumberBox value={range.max} label={labels.to} onChange={updateMax} min={range.min + step} max={maxPrice} step={step} />
           </div>
 
-          <div className="relative mt-12 h-44 border-b border-[#d6d6d6] sm:mt-16 sm:h-64">
-            <div className="absolute inset-x-6 bottom-16 flex h-28 items-end gap-1.5 sm:inset-x-10 sm:h-44">
+          <div className="relative mt-12 h-52 border-b border-[#d6d6d6] sm:mt-16 sm:h-64">
+            <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
               {histogram.bars.map((height, index) => {
                 const selected = isHistogramBarSelected(index, histogram.bars.length, minPercent, maxPercent);
 
@@ -988,8 +988,8 @@ function LengthRangePicker({
             <NumberBox value={range.max} label={labels.to} onChange={updateMax} min={range.min + 1} max={maxLength} suffix="m" />
           </div>
 
-          <div className="relative mt-12 h-44 border-b border-[#d6d6d6] sm:mt-16 sm:h-64">
-            <div className="absolute inset-x-6 bottom-16 flex h-28 items-end gap-1.5 sm:inset-x-10 sm:h-44">
+          <div className="relative mt-12 h-52 border-b border-[#d6d6d6] sm:mt-16 sm:h-64">
+            <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
               {histogram.bars.map((height, index) => {
                 const selected = isHistogramBarSelected(index, histogram.bars.length, minPercent, maxPercent);
 
@@ -1086,8 +1086,8 @@ function YearRangePicker({
             <NumberBox value={range.max} label={labels.to} onChange={updateMax} min={range.min + 1} max={maxYear} />
           </div>
 
-          <div className="relative mt-12 h-44 sm:mt-16 sm:h-64">
-            <div className="absolute inset-x-6 bottom-16 flex h-28 items-end gap-1.5 sm:inset-x-10 sm:h-44">
+          <div className="relative mt-12 h-52 sm:mt-16 sm:h-64">
+            <div className="absolute inset-x-6 bottom-16 flex h-36 items-end gap-1 sm:inset-x-10 sm:h-44">
               {histogram.bars.map((height, index) => {
                 const selected = isHistogramBarSelected(index, histogram.bars.length, minPercent, maxPercent);
 
