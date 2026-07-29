@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Bath, BedDouble, CookingPot, Moon, Palette, Users } from "lucide-react";
 import { submitListingAction } from "@/lib/actions/listings";
 import { brands, cantons, categories, conditions, engineTypes, exteriorColors, fuelTypes, hullMaterials, lakes } from "@/lib/data/reference";
@@ -89,8 +89,18 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
   const labels = stepFormLabels(locale);
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<ListingDraft>(initialDraft);
-  const totalSteps = 8;
-  const progress = useMemo(() => Math.round(((step + 1) / totalSteps) * 100), [step]);
+  const stepTitles = [
+    text.sell.step1,
+    text.sell.step2,
+    text.sell.step3,
+    text.sell.step4,
+    labels.habitabilityTitle,
+    labels.descriptionTitle,
+    labels.photosTitle,
+    labels.contactTitle
+  ];
+  const totalSteps = stepTitles.length;
+  const progress = Math.round(((step + 1) / totalSteps) * 100);
 
   const update = (key: keyof ListingDraft, value: string | boolean) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -101,6 +111,22 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
       <HiddenDraftInputs draft={draft} />
       <input type="hidden" name="locale" value={locale} />
       <div className="rounded-md border border-[#d9e2ec] bg-white p-4">
+        <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {stepTitles.map((title, index) => (
+            <button
+              key={title}
+              type="button"
+              onClick={() => setStep(index)}
+              className={`min-h-12 rounded-md border px-3 py-2 text-left text-sm font-semibold transition ${
+                index === step
+                  ? "border-[#58b9e8] bg-[#8bd3ff] text-[#06233f] shadow-[0_3px_0_#58b9e8]"
+                  : "border-[#d9e2ec] bg-white text-[#607085] hover:border-[#8bd3ff] hover:bg-[#eef9ff] hover:text-navy"
+              }`}
+            >
+              {title}
+            </button>
+          ))}
+        </div>
         <div className="mb-3 flex items-center justify-between gap-3 text-sm font-semibold text-[#607085]">
           <span>{labels.step} {step + 1} / {totalSteps}</span>
           <span>{progress}%</span>
