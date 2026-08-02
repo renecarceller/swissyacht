@@ -235,7 +235,7 @@ export const demoListings: Listing[] = baseListings.map((row, index) => {
     licenseRequired: Number(powerHp) > 8,
     electric,
     description:
-      "Demo listing created for SwissYacht MVP. The boat data is illustrative and must be replaced by verified seller information before production publication.",
+      "Demo listing created for Alpinyacht MVP. The boat data is illustrative and must be replaced by verified seller information before production publication.",
     equipment: ["Navigation lights", "Mooring cover", "Bathing ladder", "Safety kit", index % 2 === 0 ? "GPS" : "Teak cockpit"],
     images: demoBoatImages(category).map((url, offset) => ({
       id: `demo-${index + 1}-image-${offset + 1}`,

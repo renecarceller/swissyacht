@@ -4,12 +4,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
-    default: "SwissYacht",
-    template: "%s | SwissYacht"
+    default: "Alpinyacht",
+    template: "%s | Alpinyacht"
   },
   description: "Swiss-only marketplace for boats, sailboats, and yachts.",
   openGraph: {
-    title: "SwissYacht",
+    title: "Alpinyacht",
     description: "A Swiss marketplace for boats and marine professionals.",
     type: "website"
   }

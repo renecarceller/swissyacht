@@ -1,6 +1,6 @@
-# SwissYacht
+# Alpinyacht
 
-SwissYacht is a professional MVP for a Swiss-only boat marketplace inspired by classified portals such as AutoScout24, focused on boats, sailboats, yachts, brokers, dealers, and marine businesses.
+Alpinyacht is a professional MVP for a Swiss-only boat marketplace inspired by classified portals such as AutoScout24, focused on boats, sailboats, yachts, brokers, dealers, and marine businesses.
 
 ## Stack
 

@@ -1,6 +1,6 @@
 # Deployment
 
-SwissYacht is prepared for GitHub and Cloudflare Workers using the OpenNext Cloudflare adapter.
+Alpinyacht is prepared for GitHub and Cloudflare Workers using the OpenNext Cloudflare adapter.
 
 ## 1. Requirements
 
@@ -23,7 +23,7 @@ Create the repository and push the project:
 ```bash
 git init
 git add -A
-git commit -m "Initial SwissYacht MVP"
+git commit -m "Initial Alpinyacht MVP"
 gh repo create swissyacht --private --source=. --remote=origin --push
 ```
 

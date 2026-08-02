@@ -33,7 +33,7 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
     return (
       <section className={cn("mx-auto grid gap-6", compact ? "max-w-4xl" : "max-w-5xl")}>
         <div className="text-center">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-[#0f6fae]">SwissYacht</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-[#0f6fae]">Alpinyacht</p>
           <h1 className={cn("font-bold text-navy", compact ? "text-2xl md:text-3xl" : "text-3xl")}>{labels.choiceTitle}</h1>
           <p className="mt-2 text-[#607085]">{labels.choiceIntro}</p>
         </div>

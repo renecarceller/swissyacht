@@ -12,10 +12,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   if (!broker) return {};
 
   return {
-    title: `${broker.companyName} | SwissYacht`,
-    description: `${broker.companyName}: catalogue de bateaux, informations, services et contact direct sur SwissYacht.`,
+    title: `${broker.companyName} | Alpinyacht`,
+    description: `${broker.companyName}: catalogue de bateaux, informations, services et contact direct sur Alpinyacht.`,
     openGraph: {
-      title: `${broker.companyName} | SwissYacht`,
+      title: `${broker.companyName} | Alpinyacht`,
       description: broker.description,
       images: broker.coverUrl ? [broker.coverUrl] : []
     }
