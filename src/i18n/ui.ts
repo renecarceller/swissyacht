@@ -295,6 +295,8 @@ const dictionaries: Record<Locale, UiDictionary> = {
 };
 
 const sharedRefs = {
+  Bateau: ["Bateau", "Boot", "Barca", "Boat"],
+  "Jet-ski": ["Jet-ski", "Jetski", "Moto d'acqua", "Jet-ski"],
   "Motor boats": ["Bateaux à moteur", "Motorboote", "Barche a motore", "Motor boats"],
   "Sailing boats": ["Voiliers", "Segelboote", "Barche a vela", "Sailing boats"],
   Yachts: ["Yachts", "Yachten", "Yacht", "Yachts"],
@@ -326,6 +328,18 @@ const sharedRefs = {
   Sterndrive: ["Z-drive", "Z-Antrieb", "Piede poppiero", "Sterndrive"],
   Saildrive: ["Saildrive", "Saildrive", "Saildrive", "Saildrive"],
   Jet: ["Jet", "Jet", "Jet", "Jet"],
+  "2-stroke": ["2 temps", "2-Takt", "2 tempi", "2-stroke"],
+  "4-stroke": ["4 temps", "4-Takt", "4 tempi", "4-stroke"],
+  "Trailer included": ["Remorque incluse", "Trailer inklusive", "Rimorchio incluso", "Trailer included"],
+  Cover: ["Funda", "Abdeckung", "Copertura", "Cover"],
+  GPS: ["GPS", "GPS", "GPS", "GPS"],
+  "Audio system": ["Système audio", "Audiosystem", "Sistema audio", "Audio system"],
+  Ladder: ["Échelle", "Leiter", "Scaletta", "Ladder"],
+  "Safety kit": ["Kit de sécurité", "Sicherheitskit", "Kit di sicurezza", "Safety kit"],
+  "Life jackets included": ["Gilets inclus", "Schwimmwesten inklusive", "Giubbotti inclusi", "Life jackets included"],
+  Reverse: ["Marche arrière", "Rückwärtsgang", "Retromarcia", "Reverse"],
+  "ECO mode": ["Mode ECO", "ECO-Modus", "Modalità ECO", "ECO mode"],
+  Other: ["Autres", "Andere", "Altro", "Other"],
   "Lake Geneva": ["Lac Léman", "Genfersee", "Lago Lemano", "Lake Geneva"],
   "Lake Zurich": ["Lac de Zurich", "Zuerichsee", "Lago di Zurigo", "Lake Zurich"],
   "Lake Neuchatel": ["Lac de Neuchatel", "Neuenburgersee", "Lago di Neuchatel", "Lake Neuchatel"],

@@ -4,7 +4,8 @@ import { filterListings, getBrandCounts, getCategoryCounts, getListings, parseFi
 
 describe("listing filters", () => {
   it("parses URL reflected filters", () => {
-    const filters = parseFilters(new URLSearchParams("brand=Jeanneau&priceMax=90000&withPhotos=true&page=2&view=list"));
+    const filters = parseFilters(new URLSearchParams("listingKind=Jet-ski&brand=Jeanneau&priceMax=90000&withPhotos=true&page=2&view=list"));
+    expect(filters.listingKind).toBe("Jet-ski");
     expect(filters.brand).toBe("Jeanneau");
     expect(filters.priceMax).toBe(90000);
     expect(filters.withPhotos).toBe(true);
@@ -36,6 +37,13 @@ describe("listing filters", () => {
     expect(counts["Motor boats"]).toBe(6);
     expect(counts.Yachts).toBe(3);
     expect(counts["Sailing boats"]).toBe(1);
+    expect(counts["Jet skis"]).toBe(4);
+  });
+
+  it("filters Jet-skis by seats and engine hours", () => {
+    const results = filterListings(demoListings, { listingKind: "Jet-ski", seatsMin: 3, maxEngineHours: 500 });
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((listing) => listing.listingKind === "Jet-ski" && listing.seats >= 3 && listing.engineHours <= 500)).toBe(true);
   });
 
   it("sorts by engine power descending", () => {

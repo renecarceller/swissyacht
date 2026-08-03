@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Bath, BedDouble, CookingPot, Moon, Palette, Users } from "lucide-react";
+import { Bath, BedDouble, CookingPot, Moon, Palette, ShipWheel, Waves, Users } from "lucide-react";
 import { submitListingAction } from "@/lib/actions/listings";
-import { brands, cantons, categories, conditions, engineTypes, exteriorColors, fuelTypes, hullMaterials, lakes } from "@/lib/data/reference";
+import { brands, cantons, categories, conditions, engineTypes, exteriorColors, fuelTypes, hullMaterials, jetSkiEngineTypes, jetSkiEquipment, lakes, listingKinds } from "@/lib/data/reference";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { refLabel, ui } from "@/i18n/ui";
 
 type ListingDraft = {
+  listingKind: string;
   boatType: string;
   category: string;
   brand: string;
@@ -24,6 +25,8 @@ type ListingDraft = {
   powerHp: string;
   engineCount: string;
   engineHours: string;
+  displacementCc: string;
+  seats: string;
   lengthM: string;
   beamM: string;
   weightKg: string;
@@ -31,6 +34,7 @@ type ListingDraft = {
   canton: string;
   lake: string;
   city: string;
+  postalCode: string;
   marina: string;
   peopleCapacity: string;
   cabins: string;
@@ -41,12 +45,14 @@ type ListingDraft = {
   overnightAccommodation: boolean;
   description: string;
   equipment: string;
+  videoUrl: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
 };
 
 const initialDraft: ListingDraft = {
+  listingKind: "Bateau",
   boatType: "",
   category: categories[0],
   brand: brands[0],
@@ -62,6 +68,8 @@ const initialDraft: ListingDraft = {
   powerHp: "",
   engineCount: "",
   engineHours: "",
+  displacementCc: "",
+  seats: "",
   lengthM: "",
   beamM: "",
   weightKg: "",
@@ -69,6 +77,7 @@ const initialDraft: ListingDraft = {
   canton: cantons[0],
   lake: lakes[0],
   city: "",
+  postalCode: "",
   marina: "",
   peopleCapacity: "",
   cabins: "",
@@ -79,6 +88,7 @@ const initialDraft: ListingDraft = {
   overnightAccommodation: false,
   description: "",
   equipment: "",
+  videoUrl: "",
   contactName: "",
   contactEmail: "",
   contactPhone: ""
@@ -101,6 +111,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
   ];
   const totalSteps = stepTitles.length;
   const progress = Math.round(((step + 1) / totalSteps) * 100);
+  const isJetSki = draft.listingKind === "Jet-ski";
 
   const update = (key: keyof ListingDraft, value: string | boolean) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -113,9 +124,34 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
 
       {step === 0 ? (
         <StepCard title={text.sell.step1}>
+          <div className="mb-5 grid gap-3 sm:grid-cols-2">
+            {listingKinds.map((kind) => {
+              const selected = draft.listingKind === kind;
+              const Icon = kind === "Jet-ski" ? Waves : ShipWheel;
+
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => setDraft((current) => ({
+                    ...current,
+                    listingKind: kind,
+                    category: kind === "Jet-ski" ? "Jet skis" : current.category === "Jet skis" ? categories[0] : current.category,
+                    boatType: kind === "Jet-ski" ? "Jet-ski" : current.boatType,
+                    engineType: kind === "Jet-ski" ? jetSkiEngineTypes[1] : engineTypes[0],
+                    fuelType: kind === "Jet-ski" ? fuelTypes[0] : current.fuelType
+                  }))}
+                  className={`flex items-center gap-3 rounded-md border p-4 text-left transition ${selected ? "border-[#58b9e8] bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8]" : "border-[#d9e2ec] bg-white text-navy hover:bg-[#eef9ff]"}`}
+                >
+                  <Icon className="size-6" />
+                  <span className="text-lg font-bold">{kind === "Jet-ski" ? labels.jetSkis : labels.boats}</span>
+                </button>
+              );
+            })}
+          </div>
           <div className="grid gap-4 md:grid-cols-3">
-            <Field label={text.sell.type}><Input value={draft.boatType} onChange={(event) => update("boatType", event.target.value)} placeholder="Day cruiser" /></Field>
-            <Field label={text.search.category}><Select value={draft.category} onChange={(event) => update("category", event.target.value)}>{categories.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
+            {!isJetSki ? <Field label={text.sell.type}><Input value={draft.boatType} onChange={(event) => update("boatType", event.target.value)} placeholder="Day cruiser" /></Field> : null}
+            {!isJetSki ? <Field label={text.search.category}><Select value={draft.category} onChange={(event) => update("category", event.target.value)}>{categories.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field> : null}
             <Field label={text.common.brand}>
               <Input value={draft.brand} onChange={(event) => update("brand", event.target.value)} list="listing-brand-options" />
               <datalist id="listing-brand-options">
@@ -124,7 +160,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
             </Field>
             <Field label={text.common.model}><Input value={draft.model} onChange={(event) => update("model", event.target.value)} /></Field>
             <Field label={text.common.year}><Input value={draft.year} onChange={(event) => update("year", event.target.value)} type="number" min="1900" max="2027" /></Field>
-            <Field label={text.search.condition}><Select value={draft.condition} onChange={(event) => update("condition", event.target.value)}>{conditions.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
+            <Field label={text.search.condition}><Select value={draft.condition} onChange={(event) => update("condition", event.target.value)}>{(isJetSki ? ["new", "used"] : [...conditions]).map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
           </div>
         </StepCard>
       ) : null}
@@ -144,14 +180,16 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
         <StepCard title={text.sell.step3}>
           <div className="grid gap-4 md:grid-cols-4">
             <Field label={text.sell.fuel}><Select value={draft.fuelType} onChange={(event) => update("fuelType", event.target.value)}>{fuelTypes.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
-            <Field label={text.sell.engineType}><Select value={draft.engineType} onChange={(event) => update("engineType", event.target.value)}>{engineTypes.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
+            <Field label={text.sell.engineType}><Select value={draft.engineType} onChange={(event) => update("engineType", event.target.value)}>{(isJetSki ? jetSkiEngineTypes : engineTypes).map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
             <Field label={text.sell.powerHp}><Input value={draft.powerHp} onChange={(event) => update("powerHp", event.target.value)} type="number" min="0" /></Field>
-            <Field label={text.sell.engineCount}><Input value={draft.engineCount} onChange={(event) => update("engineCount", event.target.value)} type="number" min="0" max="8" /></Field>
+            {!isJetSki ? <Field label={text.sell.engineCount}><Input value={draft.engineCount} onChange={(event) => update("engineCount", event.target.value)} type="number" min="0" max="8" /></Field> : null}
             <Field label={text.sell.engineHours}><Input value={draft.engineHours} onChange={(event) => update("engineHours", event.target.value)} type="number" min="0" /></Field>
-            <Field label={`${text.common.length} m`}><Input value={draft.lengthM} onChange={(event) => update("lengthM", event.target.value)} type="number" step="0.01" /></Field>
-            <Field label={text.sell.beam}><Input value={draft.beamM} onChange={(event) => update("beamM", event.target.value)} type="number" step="0.01" /></Field>
-            <Field label={text.sell.weight}><Input value={draft.weightKg} onChange={(event) => update("weightKg", event.target.value)} type="number" /></Field>
-            <Field label={text.sell.material}><Select value={draft.hullMaterial} onChange={(event) => update("hullMaterial", event.target.value)}>{hullMaterials.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
+            {isJetSki ? <Field label={labels.displacement}><Input value={draft.displacementCc} onChange={(event) => update("displacementCc", event.target.value)} type="number" min="0" /></Field> : null}
+            {isJetSki ? <Field label={labels.seats}><Input value={draft.seats} onChange={(event) => update("seats", event.target.value)} type="number" min="1" max="4" /></Field> : null}
+            <Field label={`${text.common.length} m${isJetSki ? ` (${labels.optional})` : ""}`}><Input value={draft.lengthM} onChange={(event) => update("lengthM", event.target.value)} type="number" step="0.01" /></Field>
+            {!isJetSki ? <Field label={text.sell.beam}><Input value={draft.beamM} onChange={(event) => update("beamM", event.target.value)} type="number" step="0.01" /></Field> : null}
+            <Field label={`${text.sell.weight}${isJetSki ? ` (${labels.optional})` : ""}`}><Input value={draft.weightKg} onChange={(event) => update("weightKg", event.target.value)} type="number" /></Field>
+            {!isJetSki ? <Field label={text.sell.material}><Select value={draft.hullMaterial} onChange={(event) => update("hullMaterial", event.target.value)}>{hullMaterials.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field> : null}
           </div>
         </StepCard>
       ) : null}
@@ -160,16 +198,27 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
         <StepCard title={text.sell.step4}>
           <div className="grid gap-4 md:grid-cols-4">
             <Field label={text.common.canton}><Select value={draft.canton} onChange={(event) => update("canton", event.target.value)}>{cantons.map((item) => <option key={item}>{item}</option>)}</Select></Field>
-            <Field label={text.common.lake}><Select value={draft.lake} onChange={(event) => update("lake", event.target.value)}>{lakes.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
+            {!isJetSki ? <Field label={text.common.lake}><Select value={draft.lake} onChange={(event) => update("lake", event.target.value)}>{lakes.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field> : null}
             <Field label={text.common.city}><Input value={draft.city} onChange={(event) => update("city", event.target.value)} /></Field>
-            <Field label={text.common.marina}><Input value={draft.marina} onChange={(event) => update("marina", event.target.value)} /></Field>
+            {isJetSki ? <Field label={labels.postalCode}><Input value={draft.postalCode} onChange={(event) => update("postalCode", event.target.value)} /></Field> : <Field label={text.common.marina}><Input value={draft.marina} onChange={(event) => update("marina", event.target.value)} /></Field>}
           </div>
         </StepCard>
       ) : null}
 
       {step === 4 ? (
         <StepCard title={labels.habitabilityTitle}>
-          <div className="divide-y divide-[#e1e1e1]">
+          {isJetSki ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {jetSkiEquipment.map((item) => (
+                <CheckField
+                  key={item}
+                  checked={equipmentList(draft.equipment).includes(item)}
+                  onChange={(checked) => update("equipment", updateEquipment(draft.equipment, item, checked))}
+                  label={refLabel(locale, item)}
+                />
+              ))}
+            </div>
+          ) : <div className="divide-y divide-[#e1e1e1]">
             <CompactNumberField icon={<Users />} label={labels.people} value={draft.peopleCapacity} onChange={(value) => update("peopleCapacity", value)} max={20} />
             <CompactNumberField icon={<BedDouble />} label={labels.cabins} value={draft.cabins} onChange={(value) => update("cabins", value)} max={10} />
             <CompactNumberField icon={<Moon />} label={labels.berths} value={draft.berths} onChange={(value) => update("berths", value)} max={20} />
@@ -177,7 +226,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
             <CompactBooleanField icon={<CookingPot />} label={labels.kitchen} checked={draft.kitchen} onChange={(value) => update("kitchen", value)} yes={labels.yes} no={labels.no} />
             <CompactSelectField icon={<Palette />} label={labels.exteriorColor} value={draft.color} onChange={(value) => update("color", value)} options={exteriorColors.map((color) => ({ value: color, label: refLabel(locale, color) }))} />
             <CompactBooleanField icon={<Moon />} label={labels.overnight} checked={draft.overnightAccommodation} onChange={(value) => update("overnightAccommodation", value)} yes={labels.yes} no={labels.no} />
-          </div>
+          </div>}
         </StepCard>
       ) : null}
 
@@ -185,7 +234,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
         <StepCard title={labels.descriptionTitle}>
           <div className="grid gap-4">
             <Field label={text.common.description}><Textarea value={draft.description} onChange={(event) => update("description", event.target.value)} placeholder={text.sell.minDescription} /></Field>
-            <Field label={text.common.equipment}><Textarea value={draft.equipment} onChange={(event) => update("equipment", event.target.value)} placeholder={text.sell.equipmentPlaceholder} /></Field>
+            {!isJetSki ? <Field label={text.common.equipment}><Textarea value={draft.equipment} onChange={(event) => update("equipment", event.target.value)} placeholder={text.sell.equipmentPlaceholder} /></Field> : null}
           </div>
         </StepCard>
       ) : null}
@@ -195,6 +244,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
           <div className="rounded-md border border-dashed border-[#b8c7d8] p-6 text-sm text-[#607085]">
             {text.sell.photoPlaceholder}
           </div>
+          {isJetSki ? <div className="mt-4"><Field label={labels.video}><Input value={draft.videoUrl} onChange={(event) => update("videoUrl", event.target.value)} type="url" placeholder="https://..." /></Field></div> : null}
         </StepCard>
       ) : null}
 
@@ -259,11 +309,22 @@ function StepCard({ title, children }: { title: string; children: React.ReactNod
 
 function CheckField({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
   return (
-    <label className="flex items-center gap-2 pt-8 text-sm">
+    <label className="flex items-center gap-2 rounded-md border border-[#d9e2ec] bg-white p-3 text-sm font-semibold text-[#21354b]">
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       {label}
     </label>
   );
+}
+
+function equipmentList(value: string) {
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function updateEquipment(value: string, item: string, checked: boolean) {
+  const current = new Set(equipmentList(value));
+  if (checked) current.add(item);
+  else current.delete(item);
+  return Array.from(current).join(", ");
 }
 
 function CompactNumberField({
@@ -349,10 +410,10 @@ function CompactSelectField({
 
 function stepFormLabels(locale: string) {
   const dictionary = {
-    fr: { back: "Retour", continue: "Continuer", step: "Étape", habitabilityTitle: "Étape 5 · Capacité et habitabilité", descriptionTitle: "Étape 6 · Description et équipement", photosTitle: "Étape 7 · Photos", contactTitle: "Étape 8 · Contact et publication", people: "Nombre de personnes", cabins: "Nombre de cabines", berths: "Nombre de couchettes", bathrooms: "Salles de bain", kitchen: "Cuisine", exteriorColor: "Couleur extérieure", overnight: "Hébergement de nuit", yes: "Oui", no: "Non" },
-    de: { back: "Zurück", continue: "Weiter", step: "Schritt", habitabilityTitle: "Schritt 5 · Kapazität und Wohnen", descriptionTitle: "Schritt 6 · Beschreibung und Ausstattung", photosTitle: "Schritt 7 · Fotos", contactTitle: "Schritt 8 · Kontakt und Veröffentlichung", people: "Anzahl Personen", cabins: "Anzahl Kabinen", berths: "Anzahl Kojen", bathrooms: "Bäder", kitchen: "Küche", exteriorColor: "Außenfarbe", overnight: "Übernachtung", yes: "Ja", no: "Nein" },
-    it: { back: "Indietro", continue: "Continua", step: "Passo", habitabilityTitle: "Passo 5 · Capacità e abitabilità", descriptionTitle: "Passo 6 · Descrizione e dotazioni", photosTitle: "Passo 7 · Foto", contactTitle: "Passo 8 · Contatto e pubblicazione", people: "Numero di persone", cabins: "Numero cabine", berths: "Numero cuccette", bathrooms: "Bagni", kitchen: "Cucina", exteriorColor: "Colore esterno", overnight: "Pernottamento", yes: "Sì", no: "No" },
-    en: { back: "Back", continue: "Continue", step: "Step", habitabilityTitle: "Step 5 · Capacity and accommodation", descriptionTitle: "Step 6 · Description and equipment", photosTitle: "Step 7 · Photos", contactTitle: "Step 8 · Contact and publishing", people: "Number of people", cabins: "Number of cabins", berths: "Number of berths", bathrooms: "Bathrooms", kitchen: "Kitchen", exteriorColor: "Exterior color", overnight: "Overnight accommodation", yes: "Yes", no: "No" }
+    fr: { back: "Retour", continue: "Continuer", step: "Étape", habitabilityTitle: "Étape 5 · Capacité et équipement", descriptionTitle: "Étape 6 · Description et équipement", photosTitle: "Étape 7 · Photos", contactTitle: "Étape 8 · Contact et publication", people: "Nombre de personnes", cabins: "Nombre de cabines", berths: "Nombre de couchettes", bathrooms: "Salles de bain", kitchen: "Cuisine", exteriorColor: "Couleur extérieure", overnight: "Hébergement de nuit", yes: "Oui", no: "Non", boats: "Bateaux", jetSkis: "Jets-skis", displacement: "Cylindrée cc", seats: "Nombre de places", postalCode: "Code postal", video: "Vidéo optionnelle", optional: "optionnel" },
+    de: { back: "Zurück", continue: "Weiter", step: "Schritt", habitabilityTitle: "Schritt 5 · Kapazität und Ausstattung", descriptionTitle: "Schritt 6 · Beschreibung und Ausstattung", photosTitle: "Schritt 7 · Fotos", contactTitle: "Schritt 8 · Kontakt und Veröffentlichung", people: "Anzahl Personen", cabins: "Anzahl Kabinen", berths: "Anzahl Kojen", bathrooms: "Bäder", kitchen: "Küche", exteriorColor: "Außenfarbe", overnight: "Übernachtung", yes: "Ja", no: "Nein", boats: "Boote", jetSkis: "Jetskis", displacement: "Hubraum ccm", seats: "Anzahl Sitze", postalCode: "Postleitzahl", video: "Optionales Video", optional: "optional" },
+    it: { back: "Indietro", continue: "Continua", step: "Passo", habitabilityTitle: "Passo 5 · Capacità e dotazioni", descriptionTitle: "Passo 6 · Descrizione e dotazioni", photosTitle: "Passo 7 · Foto", contactTitle: "Passo 8 · Contatto e pubblicazione", people: "Numero di persone", cabins: "Numero cabine", berths: "Numero cuccette", bathrooms: "Bagni", kitchen: "Cucina", exteriorColor: "Colore esterno", overnight: "Pernottamento", yes: "Sì", no: "No", boats: "Barche", jetSkis: "Moto d'acqua", displacement: "Cilindrata cc", seats: "Numero posti", postalCode: "Codice postale", video: "Video opzionale", optional: "opzionale" },
+    en: { back: "Back", continue: "Continue", step: "Step", habitabilityTitle: "Step 5 · Capacity and equipment", descriptionTitle: "Step 6 · Description and equipment", photosTitle: "Step 7 · Photos", contactTitle: "Step 8 · Contact and publishing", people: "Number of people", cabins: "Number of cabins", berths: "Number of berths", bathrooms: "Bathrooms", kitchen: "Kitchen", exteriorColor: "Exterior color", overnight: "Overnight accommodation", yes: "Yes", no: "No", boats: "Boats", jetSkis: "Jet-skis", displacement: "Displacement cc", seats: "Number of seats", postalCode: "Postal code", video: "Optional video", optional: "optional" }
   };
 
   return dictionary[locale as keyof typeof dictionary] ?? dictionary.fr;

@@ -34,18 +34,20 @@ export function saveUserListing(values: ListingFormValues, slug: string, status:
   const images = demoBoatImages(values.category).map((url, index) => ({
     id: `${slug}-image-${index + 1}`,
     url,
-    alt: `${title} boat photo ${index + 1}`,
+    alt: `${title} ${values.listingKind === "Jet-ski" ? "Jet-ski" : "boat"} photo ${index + 1}`,
     isPrimary: index === 0,
     sortOrder: index
   }));
+  const equipment = values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [];
 
   const listing: Listing = {
     id: `user-${slug}`,
     slug,
     status,
     title,
+    listingKind: values.listingKind,
     category: values.category,
-    boatType: values.boatType,
+    boatType: values.listingKind === "Jet-ski" ? "Jet-ski" : values.boatType,
     brand: values.brand.trim(),
     model: values.model.trim(),
     year: values.year,
@@ -59,6 +61,8 @@ export function saveUserListing(values: ListingFormValues, slug: string, status:
     engineCount: values.engineCount,
     powerHp: values.powerHp,
     engineHours: values.engineHours,
+    displacementCc: values.displacementCc,
+    seats: values.seats,
     lengthM: values.lengthM,
     beamM: values.beamM,
     weightKg: values.weightKg,
@@ -73,13 +77,15 @@ export function saveUserListing(values: ListingFormValues, slug: string, status:
     canton: values.canton,
     lake: values.lake,
     city: values.city,
+    postalCode: values.postalCode,
     marina: values.marina,
-    trailerIncluded: false,
+    trailerIncluded: equipment.includes("Trailer included"),
     berthIncluded: false,
     licenseRequired: values.powerHp > 8,
     electric: values.fuelType === "Electric",
     description: values.description,
-    equipment: values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [],
+    equipment,
+    videoUrl: values.videoUrl || undefined,
     images,
     seller: {
       id: "local-seller",

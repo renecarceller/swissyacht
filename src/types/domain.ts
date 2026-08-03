@@ -18,6 +18,7 @@ export type ListingStatus =
   | "archived";
 
 export type BoatCondition = "new" | "used" | "parts" | "classic" | "refit";
+export type ListingKind = "Bateau" | "Jet-ski";
 
 export type SellerType = "private" | "professional";
 
@@ -124,6 +125,7 @@ export type Listing = {
   slug: string;
   status: ListingStatus;
   title: string;
+  listingKind: ListingKind;
   category: string;
   boatType: string;
   brand: string;
@@ -144,6 +146,10 @@ export type Listing = {
   weightKg: number;
   hullMaterial: string;
   color: string;
+  displacementCc: number;
+  seats: number;
+  postalCode?: string;
+  videoUrl?: string;
   peopleCapacity: number;
   cabins: number;
   berths: number;
@@ -193,6 +199,7 @@ export type ListingComparison = {
 
 export type ListingFilters = {
   q?: string;
+  listingKind?: ListingKind;
   boatType?: string;
   category?: string;
   brand?: string;
@@ -210,6 +217,7 @@ export type ListingFilters = {
   fuelType?: string;
   engineType?: string;
   maxEngineHours?: number;
+  seatsMin?: number;
   condition?: string;
   color?: string;
   peopleCapacityMin?: number;

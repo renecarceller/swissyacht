@@ -22,7 +22,9 @@ export async function generateMetadata({
 
   return {
     title: `${listing.title} - ${formatChf(listing.priceChf)}`,
-    description: `${listing.brand} ${listing.model}, ${listing.year}, ${listing.lengthM} m, ${listing.lake}, ${listing.canton}.`,
+    description: listing.listingKind === "Jet-ski"
+      ? `${listing.brand} ${listing.model}, ${listing.year}, ${listing.engineHours} h, ${listing.city}, ${listing.canton}.`
+      : `${listing.brand} ${listing.model}, ${listing.year}, ${listing.lengthM} m, ${listing.lake}, ${listing.canton}.`,
     openGraph: {
       title: listing.title,
       images: listing.images.map((image) => image.url)
@@ -38,6 +40,36 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const text = ui(locale);
   const specLabels = text.listing.specs.split("|");
+  const jetSkiLabels = jetSkiSpecLabels(locale);
+  const technicalRows = listing.listingKind === "Jet-ski"
+    ? [
+        [specLabels[0], listing.brand],
+        [specLabels[1], listing.model],
+        [specLabels[2], refLabel(locale, listing.fuelType)],
+        [specLabels[3], refLabel(locale, listing.engineType)],
+        [specLabels[5], `${listing.powerHp} hp`],
+        [specLabels[6], `${listing.engineHours} h`],
+        [jetSkiLabels.displacement, listing.displacementCc ? `${listing.displacementCc} cc` : jetSkiLabels.notSpecified],
+        [jetSkiLabels.seats, listing.seats || jetSkiLabels.notSpecified],
+        [text.common.city, listing.city],
+        [jetSkiLabels.postalCode, listing.postalCode || jetSkiLabels.notSpecified],
+        [text.common.canton, listing.canton],
+        [jetSkiLabels.color, refLabel(locale, listing.color)]
+      ]
+    : [
+        [specLabels[0], listing.brand],
+        [specLabels[1], listing.model],
+        [specLabels[2], refLabel(locale, listing.fuelType)],
+        [specLabels[3], refLabel(locale, listing.engineType)],
+        [specLabels[4], listing.engineCount],
+        [specLabels[5], `${listing.powerHp} hp`],
+        [specLabels[6], `${listing.engineHours} h`],
+        [specLabels[7], `${listing.beamM} m`],
+        [specLabels[8], `${listing.weightKg} kg`],
+        [specLabels[9], refLabel(locale, listing.hullMaterial)],
+        [specLabels[10], refLabel(locale, listing.lake)],
+        [specLabels[11], listing.marina]
+      ];
 
   return (
     <main className="container-shell py-8">
@@ -55,13 +87,13 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-navy">{listing.title}</h1>
-                <p className="mt-2 text-[#607085]">{refLabel(locale, listing.category)} · {refLabel(locale, listing.condition)}</p>
+                <p className="mt-2 text-[#607085]">{refLabel(locale, listing.listingKind === "Jet-ski" ? "Jet-ski" : listing.category)} · {refLabel(locale, listing.condition)}</p>
               </div>
               <div className="text-3xl font-bold text-navy">{formatChf(listing.priceChf)}</div>
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Spec icon={<Calendar size={18} />} label={text.common.year} value={listing.year} />
-              <Spec icon={<Ruler size={18} />} label={text.common.length} value={`${listing.lengthM} m`} />
+              <Spec icon={<Ruler size={18} />} label={listing.listingKind === "Jet-ski" ? specLabels[6] : text.common.length} value={listing.listingKind === "Jet-ski" ? `${listing.engineHours} h` : `${listing.lengthM} m`} />
               <Spec icon={<MapPin size={18} />} label={text.common.location} value={`${listing.city}, ${listing.canton}`} />
               <Spec icon={<Eye size={18} />} label={text.common.views} value={listing.views} />
             </div>
@@ -69,20 +101,7 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
           <section className="rounded-md border border-[#d9e2ec] bg-white p-6">
             <h2 className="mb-4 text-xl font-bold text-navy">{text.listing.technical}</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                [specLabels[0], listing.brand],
-                [specLabels[1], listing.model],
-                [specLabels[2], refLabel(locale, listing.fuelType)],
-                [specLabels[3], refLabel(locale, listing.engineType)],
-                [specLabels[4], listing.engineCount],
-                [specLabels[5], `${listing.powerHp} hp`],
-                [specLabels[6], `${listing.engineHours} h`],
-                [specLabels[7], `${listing.beamM} m`],
-                [specLabels[8], `${listing.weightKg} kg`],
-                [specLabels[9], refLabel(locale, listing.hullMaterial)],
-                [specLabels[10], refLabel(locale, listing.lake)],
-                [specLabels[11], listing.marina]
-              ].map(([label, value]) => (
+              {technicalRows.map(([label, value]) => (
                 <div key={label} className="rounded-md bg-[#f6f8fb] p-3">
                   <div className="text-xs font-bold uppercase text-[#607085]">{label}</div>
                   <div className="mt-1 font-semibold">{value}</div>
@@ -150,6 +169,13 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
       </section>
     </main>
   );
+}
+
+function jetSkiSpecLabels(locale: string) {
+  if (locale === "de") return { displacement: "Hubraum", seats: "Sitzplätze", postalCode: "Postleitzahl", color: "Farbe", notSpecified: "Nicht angegeben" };
+  if (locale === "it") return { displacement: "Cilindrata", seats: "Posti", postalCode: "Codice postale", color: "Colore", notSpecified: "Non indicato" };
+  if (locale === "en") return { displacement: "Displacement", seats: "Seats", postalCode: "Postal code", color: "Color", notSpecified: "Not specified" };
+  return { displacement: "Cylindrée", seats: "Places", postalCode: "Code postal", color: "Couleur", notSpecified: "Non renseigné" };
 }
 
 function Spec({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
