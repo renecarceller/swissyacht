@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Bath, BedDouble, CookingPot, Moon, Palette, Users } from "lucide-react";
+import { Bath, BedDouble, CookingPot, FolderOpen, Images, Moon, Palette, Upload, Users } from "lucide-react";
 import { submitListingAction } from "@/lib/actions/listings";
 import { brands, cantons, categories, conditions, engineTypes, exteriorColors, fuelTypes, hullMaterials, lakes } from "@/lib/data/reference";
 import { Button } from "@/components/ui/button";
@@ -309,9 +309,12 @@ type PhotoPreview = {
 
 function PhotoUploadField({ labels }: { labels: ReturnType<typeof stepFormLabels> }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const finderInputRef = useRef<HTMLInputElement | null>(null);
+  const libraryInputRef = useRef<HTMLInputElement | null>(null);
   const photosRef = useRef<PhotoPreview[]>([]);
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const [error, setError] = useState("");
+  const [showSources, setShowSources] = useState(false);
 
   useEffect(() => {
     photosRef.current = photos;
@@ -377,19 +380,54 @@ function PhotoUploadField({ labels }: { labels: ReturnType<typeof stepFormLabels
 
   return (
     <div className="grid gap-4">
-      <label className="group grid cursor-pointer place-items-center rounded-md border border-dashed border-[#8bd3ff] bg-[#f6fbff] p-6 text-center transition hover:border-[#58b9e8] hover:bg-[#eef9ff]">
-        <input
-          ref={inputRef}
-          type="file"
-          name="photos"
-          accept="image/jpeg,image/png,image/webp"
-          multiple
-          className="sr-only"
-          onChange={(event) => handleFiles(event.target.files)}
-        />
-        <span className="text-lg font-bold text-navy">{labels.photoUploadTitle}</span>
-        <span className="mt-2 max-w-2xl text-sm leading-6 text-[#607085]">{labels.photoUploadText}</span>
-      </label>
+      <input ref={inputRef} type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple className="hidden" tabIndex={-1} readOnly />
+      <input ref={finderInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={(event) => handleFiles(event.target.files)} />
+      <input ref={libraryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(event) => handleFiles(event.target.files)} />
+
+      <div className="rounded-md border border-dashed border-[#8bd3ff] bg-[#f6fbff] p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-lg font-bold text-navy">{labels.photoUploadTitle}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#607085]">{labels.photoUploadText}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSources((current) => !current)}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#8bd3ff] px-5 text-base font-bold text-[#06233f] shadow-[0_4px_0_#58b9e8] transition hover:bg-[#aee2ff]"
+            aria-expanded={showSources}
+          >
+            <Upload className="h-5 w-5" />
+            {labels.addPhotosButton}
+          </button>
+        </div>
+
+        {showSources ? (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => finderInputRef.current?.click()}
+              className="flex min-h-20 items-center gap-3 rounded-md border border-[#d9e2ec] bg-white px-4 text-left text-navy transition hover:border-[#8bd3ff] hover:bg-[#eef9ff]"
+            >
+              <FolderOpen className="h-7 w-7 text-[#8bd3ff]" />
+              <span>
+                <span className="block text-base font-bold">{labels.photoSourceFinder}</span>
+                <span className="block text-sm text-[#607085]">{labels.photoSourceFinderHint}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => libraryInputRef.current?.click()}
+              className="flex min-h-20 items-center gap-3 rounded-md border border-[#d9e2ec] bg-white px-4 text-left text-navy transition hover:border-[#8bd3ff] hover:bg-[#eef9ff]"
+            >
+              <Images className="h-7 w-7 text-[#8bd3ff]" />
+              <span>
+                <span className="block text-base font-bold">{labels.photoSourceLibrary}</span>
+                <span className="block text-sm text-[#607085]">{labels.photoSourceLibraryHint}</span>
+              </span>
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       {error ? <p className="rounded-md bg-[#fff4f4] px-4 py-3 text-sm font-semibold text-[#8a1f2d]">{error}</p> : null}
 
@@ -473,10 +511,10 @@ function CompactSelectField({
 
 function stepFormLabels(locale: string) {
   const dictionary = {
-    fr: { back: "Retour", continue: "Continuer", publishing: "Publication...", step: "Étape", habitabilityTitle: "Étape 5 · Capacité et habitabilité", descriptionTitle: "Étape 6 · Description et équipement", photosTitle: "Étape 7 · Photos", contactTitle: "Étape 8 · Contact et publication", people: "Nombre de personnes", cabins: "Nombre de cabines", berths: "Nombre de couchettes", bathrooms: "Salles de bain", kitchen: "Cuisine", exteriorColor: "Couleur extérieure", overnight: "Hébergement de nuit", yes: "Oui", no: "Non", photoUploadTitle: "Ajouter des photos du bateau", photoUploadText: "Choisissez jusqu'à 8 images JPG, PNG ou WebP. La première photo sera l'image principale de l'annonce.", photoInvalidType: "Format non accepté. Utilisez JPG, PNG ou WebP.", photoTooLarge: "Une photo dépasse 5 MB.", primaryPhoto: "Photo principale", photo: "Photo", removePhoto: "Supprimer", makePrimary: "Mettre en principal" },
-    de: { back: "Zurück", continue: "Weiter", publishing: "Wird veröffentlicht...", step: "Schritt", habitabilityTitle: "Schritt 5 · Kapazität und Wohnen", descriptionTitle: "Schritt 6 · Beschreibung und Ausstattung", photosTitle: "Schritt 7 · Fotos", contactTitle: "Schritt 8 · Kontakt und Veröffentlichung", people: "Anzahl Personen", cabins: "Anzahl Kabinen", berths: "Anzahl Kojen", bathrooms: "Bäder", kitchen: "Küche", exteriorColor: "Außenfarbe", overnight: "Übernachtung", yes: "Ja", no: "Nein", photoUploadTitle: "Bootsfotos hinzufügen", photoUploadText: "Wählen Sie bis zu 8 Bilder als JPG, PNG oder WebP. Das erste Foto wird das Hauptbild des Inserats.", photoInvalidType: "Dieses Format wird nicht akzeptiert. Nutzen Sie JPG, PNG oder WebP.", photoTooLarge: "Ein Foto ist größer als 5 MB.", primaryPhoto: "Hauptfoto", photo: "Foto", removePhoto: "Entfernen", makePrimary: "Als Hauptfoto setzen" },
-    it: { back: "Indietro", continue: "Continua", publishing: "Pubblicazione...", step: "Passo", habitabilityTitle: "Passo 5 · Capacità e abitabilità", descriptionTitle: "Passo 6 · Descrizione e dotazioni", photosTitle: "Passo 7 · Foto", contactTitle: "Passo 8 · Contatto e pubblicazione", people: "Numero di persone", cabins: "Numero cabine", berths: "Numero cuccette", bathrooms: "Bagni", kitchen: "Cucina", exteriorColor: "Colore esterno", overnight: "Pernottamento", yes: "Sì", no: "No", photoUploadTitle: "Aggiungi foto della barca", photoUploadText: "Scegli fino a 8 immagini JPG, PNG o WebP. La prima foto sarà l'immagine principale dell'annuncio.", photoInvalidType: "Formato non accettato. Usa JPG, PNG o WebP.", photoTooLarge: "Una foto supera 5 MB.", primaryPhoto: "Foto principale", photo: "Foto", removePhoto: "Elimina", makePrimary: "Imposta come principale" },
-    en: { back: "Back", continue: "Continue", publishing: "Publishing...", step: "Step", habitabilityTitle: "Step 5 · Capacity and accommodation", descriptionTitle: "Step 6 · Description and equipment", photosTitle: "Step 7 · Photos", contactTitle: "Step 8 · Contact and publishing", people: "Number of people", cabins: "Number of cabins", berths: "Number of berths", bathrooms: "Bathrooms", kitchen: "Kitchen", exteriorColor: "Exterior color", overnight: "Overnight accommodation", yes: "Yes", no: "No", photoUploadTitle: "Add boat photos", photoUploadText: "Choose up to 8 JPG, PNG or WebP images. The first photo will be the main listing image.", photoInvalidType: "Unsupported format. Use JPG, PNG or WebP.", photoTooLarge: "One photo is larger than 5 MB.", primaryPhoto: "Main photo", photo: "Photo", removePhoto: "Remove", makePrimary: "Make main" }
+    fr: { back: "Retour", continue: "Continuer", publishing: "Publication...", step: "Étape", habitabilityTitle: "Étape 5 · Capacité et habitabilité", descriptionTitle: "Étape 6 · Description et équipement", photosTitle: "Étape 7 · Photos", contactTitle: "Étape 8 · Contact et publication", people: "Nombre de personnes", cabins: "Nombre de cabines", berths: "Nombre de couchettes", bathrooms: "Salles de bain", kitchen: "Cuisine", exteriorColor: "Couleur extérieure", overnight: "Hébergement de nuit", yes: "Oui", no: "Non", photoUploadTitle: "Photos du bateau", photoUploadText: "Ajoutez jusqu'à 8 images JPG, PNG ou WebP. La première photo sera l'image principale de l'annonce.", addPhotosButton: "Ajouter des photos", photoSourceFinder: "Finder", photoSourceFinderHint: "Choisir des fichiers sur l'appareil.", photoSourceLibrary: "Photothèque", photoSourceLibraryHint: "Choisir depuis les photos.", photoInvalidType: "Format non accepté. Utilisez JPG, PNG ou WebP.", photoTooLarge: "Une photo dépasse 5 MB.", primaryPhoto: "Photo principale", photo: "Photo", removePhoto: "Supprimer", makePrimary: "Mettre en principal" },
+    de: { back: "Zurück", continue: "Weiter", publishing: "Wird veröffentlicht...", step: "Schritt", habitabilityTitle: "Schritt 5 · Kapazität und Wohnen", descriptionTitle: "Schritt 6 · Beschreibung und Ausstattung", photosTitle: "Schritt 7 · Fotos", contactTitle: "Schritt 8 · Kontakt und Veröffentlichung", people: "Anzahl Personen", cabins: "Anzahl Kabinen", berths: "Anzahl Kojen", bathrooms: "Bäder", kitchen: "Küche", exteriorColor: "Außenfarbe", overnight: "Übernachtung", yes: "Ja", no: "Nein", photoUploadTitle: "Bootsfotos", photoUploadText: "Fügen Sie bis zu 8 Bilder als JPG, PNG oder WebP hinzu. Das erste Foto wird das Hauptbild des Inserats.", addPhotosButton: "Fotos hinzufügen", photoSourceFinder: "Finder", photoSourceFinderHint: "Dateien vom Gerät wählen.", photoSourceLibrary: "Fotomediathek", photoSourceLibraryHint: "Aus den Fotos wählen.", photoInvalidType: "Dieses Format wird nicht akzeptiert. Nutzen Sie JPG, PNG oder WebP.", photoTooLarge: "Ein Foto ist größer als 5 MB.", primaryPhoto: "Hauptfoto", photo: "Foto", removePhoto: "Entfernen", makePrimary: "Als Hauptfoto setzen" },
+    it: { back: "Indietro", continue: "Continua", publishing: "Pubblicazione...", step: "Passo", habitabilityTitle: "Passo 5 · Capacità e abitabilità", descriptionTitle: "Passo 6 · Descrizione e dotazioni", photosTitle: "Passo 7 · Foto", contactTitle: "Passo 8 · Contatto e pubblicazione", people: "Numero di persone", cabins: "Numero cabine", berths: "Numero cuccette", bathrooms: "Bagni", kitchen: "Cucina", exteriorColor: "Colore esterno", overnight: "Pernottamento", yes: "Sì", no: "No", photoUploadTitle: "Foto della barca", photoUploadText: "Aggiungi fino a 8 immagini JPG, PNG o WebP. La prima foto sarà l'immagine principale dell'annuncio.", addPhotosButton: "Aggiungi foto", photoSourceFinder: "Finder", photoSourceFinderHint: "Scegli file dal dispositivo.", photoSourceLibrary: "Libreria foto", photoSourceLibraryHint: "Scegli dalle foto.", photoInvalidType: "Formato non accettato. Usa JPG, PNG o WebP.", photoTooLarge: "Una foto supera 5 MB.", primaryPhoto: "Foto principale", photo: "Foto", removePhoto: "Elimina", makePrimary: "Imposta come principale" },
+    en: { back: "Back", continue: "Continue", publishing: "Publishing...", step: "Step", habitabilityTitle: "Step 5 · Capacity and accommodation", descriptionTitle: "Step 6 · Description and equipment", photosTitle: "Step 7 · Photos", contactTitle: "Step 8 · Contact and publishing", people: "Number of people", cabins: "Number of cabins", berths: "Number of berths", bathrooms: "Bathrooms", kitchen: "Kitchen", exteriorColor: "Exterior color", overnight: "Overnight accommodation", yes: "Yes", no: "No", photoUploadTitle: "Boat photos", photoUploadText: "Add up to 8 JPG, PNG or WebP images. The first photo will be the main listing image.", addPhotosButton: "Add photos", photoSourceFinder: "Finder", photoSourceFinderHint: "Choose files from the device.", photoSourceLibrary: "Photo library", photoSourceLibraryHint: "Choose from photos.", photoInvalidType: "Unsupported format. Use JPG, PNG or WebP.", photoTooLarge: "One photo is larger than 5 MB.", primaryPhoto: "Main photo", photo: "Photo", removePhoto: "Remove", makePrimary: "Make main" }
   };
 
   return dictionary[locale as keyof typeof dictionary] ?? dictionary.fr;
