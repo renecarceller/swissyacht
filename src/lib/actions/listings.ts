@@ -14,19 +14,30 @@ type ProfessionalProfileOwner = {
   company_name: string | null;
 };
 
-export async function submitListingAction(formData: FormData) {
+export type ListingActionState = {
+  error: string;
+};
+
+type SaveListingResult =
+  | { ok: true; slug: string; brand: string; model: string }
+  | { ok: false; error: string };
+
+export async function submitListingAction(_state: ListingActionState, formData: FormData): Promise<ListingActionState> {
   const parsed = listingFormSchema.safeParse(Object.fromEntries(formData.entries()));
   const rawLocale = String(formData.get("locale") || "fr");
   const locale = locales.includes(rawLocale as (typeof locales)[number]) ? rawLocale : "fr";
 
   if (!parsed.success) {
-    throw new Error(`Invalid listing: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
+    console.error("Invalid listing", parsed.error.flatten().fieldErrors);
+    return { error: listingErrorMessage(locale, "invalid") };
   }
 
   const values = parsed.data;
   const status = values.saveAsDraft ? "draft" : "published";
   const slug = `${slugify(`${values.brand} ${values.model}`)}-${Date.now().toString().slice(-6)}`;
-  const listing = await saveListing(values, slug, status, locale);
+  const photoFiles = getListingPhotoFiles(formData);
+  const result = await saveListing(values, slug, status, locale, photoFiles);
+  if (!result.ok) return { error: result.error };
 
   for (const appLocale of locales) {
     revalidatePath(`/${appLocale}`);
@@ -34,16 +45,16 @@ export async function submitListingAction(formData: FormData) {
     revalidatePath(`/${appLocale}/dashboard/listings`);
   }
 
-  console.info("Listing accepted", { status, slug, brand: listing.brand, model: listing.model });
+  console.info("Listing accepted", { status, slug, brand: result.brand, model: result.model });
 
   if (status === "draft") {
     redirect(`/${locale}/dashboard/listings`);
   }
 
-  redirect(`/${locale}/listing/${listing.slug}`);
+  redirect(`/${locale}/listing/${result.slug}`);
 }
 
-async function saveListing(values: ListingFormValues, slug: string, status: "draft" | "published", locale: string) {
+async function saveListing(values: ListingFormValues, slug: string, status: "draft" | "published", locale: string, photoFiles: File[]): Promise<SaveListingResult> {
   const supabase = await createSupabaseServerClient();
   const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
@@ -79,26 +90,24 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const professionalProfile = await getProfessionalProfileForUser(userId);
     const sellerType = professionalProfile ? "professional" : "private";
     const title = `${values.brand.trim()} ${values.model.trim()}`.trim();
-    const equipment = values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [];
 
     const { data: listing, error } = await admin
       .from("listings")
       .insert({
         owner_id: userId,
         professional_profile_id: professionalProfile?.id || null,
-        listing_kind: values.listingKind,
         category_id: categoryId,
         brand_id: brandId,
         model_id: modelId,
         canton_id: cantonId,
-        lake_id: values.listingKind === "Jet-ski" ? null : lakeId,
+        lake_id: lakeId,
         city_id: cityId,
-        marina_id: values.listingKind === "Jet-ski" ? null : marinaId,
+        marina_id: marinaId,
         slug,
         title,
         status,
         seller_type: sellerType,
-        boat_type: values.listingKind === "Jet-ski" ? "Jet-ski" : values.boatType || values.category,
+        boat_type: values.boatType || values.category,
         brand_name: values.brand.trim(),
         model_name: values.model.trim(),
         year: values.year,
@@ -112,45 +121,158 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
         engine_count: values.engineCount,
         power_hp: values.powerHp,
         engine_hours: values.engineHours,
-        displacement_cc: values.displacementCc || null,
-        seats: values.seats || null,
         length_m: values.lengthM,
         beam_m: values.beamM,
         weight_kg: values.weightKg,
         hull_material: values.hullMaterial,
         color: values.color,
-        postal_code: values.postalCode || null,
         people_capacity: values.peopleCapacity,
         cabins: values.cabins,
         berths: values.berths,
         bathrooms: values.bathrooms,
         kitchen: values.kitchen,
         overnight_accommodation: values.overnightAccommodation,
-        trailer_included: equipment.includes("Trailer included"),
         license_required: values.powerHp > 8,
         electric: values.fuelType === "Electric",
-        video_url: values.videoUrl || null,
         description: values.description,
-        equipment,
+        equipment: values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [],
         contact_name: professionalProfile?.company_name || values.contactName,
         contact_email: values.contactEmail,
         contact_phone: values.contactPhone || null,
         published_at: status === "published" ? now : null
       })
-      .select("slug")
+      .select("id, slug")
       .single();
 
     if (error) throw new Error(error.message);
     if (!listing?.slug) throw new Error("Supabase did not return the listing slug.");
 
-    return { slug: listing.slug, brand: values.brand, model: values.model };
+    if (photoFiles.length > 0) {
+      try {
+        await saveListingImages({
+          files: photoFiles,
+          listingId: listing.id as string,
+          ownerId: userId,
+          slug,
+          title
+        });
+      } catch (imageError) {
+        console.error("Listing images could not be saved", imageError);
+      }
+    }
+
+    return { ok: true, slug: listing.slug as string, brand: values.brand, model: values.model };
   } catch (error) {
     console.error("Supabase listing save failed; using local fallback", error);
     if (process.env.VERCEL || process.env.NODE_ENV === "production") {
-      throw new Error("No se pudo publicar el anuncio en Supabase. Revisa que las migraciones de base de datos esten aplicadas.");
+      return { ok: false, error: listingErrorMessage(locale, "supabase") };
     }
-    return saveUserListing(values, slug, status);
+    const listing = await saveUserListing(values, slug, status, await filesToDataUrls(photoFiles));
+    return { ok: true, ...listing };
   }
+}
+
+function listingErrorMessage(locale: string, reason: "invalid" | "supabase") {
+  const messages = {
+    invalid: {
+      fr: "Veuillez compléter tous les champs obligatoires avant de publier votre annonce.",
+      de: "Bitte füllen Sie alle Pflichtfelder aus, bevor Sie Ihr Inserat veröffentlichen.",
+      it: "Completa tutti i campi obbligatori prima di pubblicare l'annuncio.",
+      en: "Please complete all required fields before publishing your listing."
+    },
+    supabase: {
+      fr: "L'annonce n'a pas pu être publiée. Vérifiez que Supabase est connecté et que les migrations sont appliquées.",
+      de: "Das Inserat konnte nicht veröffentlicht werden. Prüfen Sie, ob Supabase verbunden ist und die Migrationen angewendet wurden.",
+      it: "Non è stato possibile pubblicare l'annuncio. Verifica che Supabase sia collegato e che le migrazioni siano applicate.",
+      en: "The listing could not be published. Check that Supabase is connected and the migrations are applied."
+    }
+  };
+
+  return messages[reason][locale as keyof (typeof messages)[typeof reason]] ?? messages[reason].fr;
+}
+
+function getListingPhotoFiles(formData: FormData) {
+  return formData
+    .getAll("photos")
+    .filter((item): item is File => item instanceof File && item.size > 0)
+    .slice(0, 8);
+}
+
+async function saveListingImages({
+  files,
+  listingId,
+  ownerId,
+  slug,
+  title
+}: {
+  files: File[];
+  listingId: string;
+  ownerId: string;
+  slug: string;
+  title: string;
+}) {
+  const admin = createSupabaseAdminClient();
+  const rows = [];
+
+  for (const [index, file] of files.entries()) {
+    validateListingImage(file);
+    const extension = imageExtension(file);
+    const storagePath = `${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
+    const { error: uploadError } = await admin.storage
+      .from("listing-images")
+      .upload(storagePath, file, {
+        contentType: file.type,
+        cacheControl: "31536000",
+        upsert: false
+      });
+
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { data: signedData } = await admin.storage
+      .from("listing-images")
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 365 * 10);
+
+    rows.push({
+      listing_id: listingId,
+      storage_path: storagePath,
+      public_url: signedData?.signedUrl || null,
+      alt_text: `${title} photo ${index + 1}`,
+      is_primary: index === 0,
+      sort_order: index
+    });
+  }
+
+  if (rows.length === 0) return;
+  const { error } = await admin.from("listing_images").insert(rows);
+  if (error) throw new Error(error.message);
+}
+
+function validateListingImage(file: File) {
+  const acceptedTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!acceptedTypes.includes(file.type)) {
+    throw new Error("Formato de imagen no aceptado. Usa JPG, PNG o WebP.");
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Una imagen supera 5 MB.");
+  }
+}
+
+function imageExtension(file: File) {
+  if (file.type === "image/png") return "png";
+  if (file.type === "image/webp") return "webp";
+  return "jpg";
+}
+
+async function filesToDataUrls(files: File[]) {
+  const urls: string[] = [];
+
+  for (const file of files) {
+    validateListingImage(file);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    urls.push(`data:${file.type};base64,${buffer.toString("base64")}`);
+  }
+
+  return urls;
 }
 
 async function findReferenceId(table: "categories" | "cantons" | "lakes", label: string) {

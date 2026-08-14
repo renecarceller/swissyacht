@@ -41,30 +41,6 @@ describe("listing validation", () => {
   it("rejects impossible prices", () => {
     expect(listingFormSchema.safeParse({ ...validListing, priceChf: -10 }).success).toBe(false);
   });
-
-  it("accepts a complete Jet-ski listing", () => {
-    const parsed = listingFormSchema.safeParse({
-      ...validListing,
-      listingKind: "Jet-ski",
-      category: "Jet skis",
-      boatType: "Jet-ski",
-      brand: "Sea-Doo",
-      model: "GTI 130",
-      engineType: "4-stroke",
-      displacementCc: 1630,
-      seats: 3,
-      lengthM: "",
-      beamM: "",
-      weightKg: "",
-      hullMaterial: "",
-      lake: "",
-      marina: "",
-      postalCode: "1588",
-      equipment: "Trailer included, Cover, Safety kit"
-    });
-
-    expect(parsed.success).toBe(true);
-  });
 });
 
 describe("inquiry validation", () => {

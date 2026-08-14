@@ -7,22 +7,27 @@ import { privateRegisterSchema, professionalRegisterSchema } from "@/lib/validat
 import { slugify } from "@/lib/utils";
 import { locales } from "@/lib/data/reference";
 
+export type AuthActionState = {
+  error: string;
+};
+
 function localeFromForm(formData: FormData) {
   const rawLocale = String(formData.get("locale") || "fr");
   return locales.includes(rawLocale as (typeof locales)[number]) ? rawLocale : "fr";
 }
 
-export async function registerPrivateAccountAction(formData: FormData) {
+export async function registerPrivateAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const locale = localeFromForm(formData);
   const parsed = privateRegisterSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!parsed.success) {
-    throw new Error(`Invalid private registration: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
+    console.error("Invalid private registration", parsed.error.flatten().fieldErrors);
+    return { error: authErrorMessage(locale, "invalid") };
   }
 
   const values = parsed.data;
   const supabase = await createSupabaseServerClient();
-  if (!supabase) throw new Error("Supabase is not configured.");
+  if (!supabase) return { error: authErrorMessage(locale, "supabase") };
 
   const { data, error } = await supabase.auth.signUp({
     email: values.email,
@@ -36,28 +41,40 @@ export async function registerPrivateAccountAction(formData: FormData) {
     }
   });
 
-  if (error) throw new Error(error.message);
-  if (!data.user) throw new Error("Supabase did not return a user.");
+  if (error) {
+    console.error("Private registration failed", error);
+    return { error: authErrorMessage(locale, "register") };
+  }
+  if (!data.user) return { error: authErrorMessage(locale, "register") };
 
-  const admin = createSupabaseAdminClient();
-  const { error: profileError } = await admin.from("profiles").upsert({
-    id: data.user.id,
-    role: "private",
-    account_type: "private",
-    first_name: values.firstName,
-    last_name: values.lastName,
-    full_name: `${values.firstName} ${values.lastName}`.trim(),
-    phone: values.phone,
-    preferred_locale: locale,
-    terms_accepted_at: new Date().toISOString(),
-    privacy_accepted_at: new Date().toISOString()
-  });
+  try {
+    const admin = createSupabaseAdminClient();
+    const { error: profileError } = await admin.from("profiles").upsert({
+      id: data.user.id,
+      role: "private",
+      account_type: "private",
+      first_name: values.firstName,
+      last_name: values.lastName,
+      full_name: `${values.firstName} ${values.lastName}`.trim(),
+      phone: values.phone,
+      preferred_locale: locale,
+      terms_accepted_at: new Date().toISOString(),
+      privacy_accepted_at: new Date().toISOString()
+    });
 
-  if (profileError) throw new Error(profileError.message);
+    if (profileError) {
+      console.error("Private profile creation failed", profileError);
+      return { error: authErrorMessage(locale, "profile") };
+    }
+  } catch (error) {
+    console.error("Private profile creation failed", error);
+    return { error: authErrorMessage(locale, "profile") };
+  }
+
   redirect(`/${locale}/dashboard` as never);
 }
 
-export async function registerProfessionalAccountAction(formData: FormData) {
+export async function registerProfessionalAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const locale = localeFromForm(formData);
   const parsed = professionalRegisterSchema.safeParse({
     ...Object.fromEntries(formData.entries()),
@@ -66,12 +83,13 @@ export async function registerProfessionalAccountAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    throw new Error(`Invalid professional registration: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
+    console.error("Invalid professional registration", parsed.error.flatten().fieldErrors);
+    return { error: authErrorMessage(locale, "invalid") };
   }
 
   const values = parsed.data;
   const supabase = await createSupabaseServerClient();
-  if (!supabase) throw new Error("Supabase is not configured.");
+  if (!supabase) return { error: authErrorMessage(locale, "supabase") };
 
   const { data, error } = await supabase.auth.signUp({
     email: values.email,
@@ -86,88 +104,139 @@ export async function registerProfessionalAccountAction(formData: FormData) {
     }
   });
 
-  if (error) throw new Error(error.message);
-  if (!data.user) throw new Error("Supabase did not return a user.");
+  if (error) {
+    console.error("Professional registration failed", error);
+    return { error: authErrorMessage(locale, "register") };
+  }
+  if (!data.user) return { error: authErrorMessage(locale, "register") };
 
-  const admin = createSupabaseAdminClient();
   const now = new Date().toISOString();
-  const { error: profileError } = await admin.from("profiles").upsert({
-    id: data.user.id,
-    role: "professional",
-    account_type: "professional",
-    first_name: values.firstName,
-    last_name: values.lastName,
-    full_name: `${values.firstName} ${values.lastName}`.trim(),
-    phone: values.phone,
-    preferred_locale: locale,
-    terms_accepted_at: now,
-    privacy_accepted_at: now
-  });
 
-  if (profileError) throw new Error(profileError.message);
+  try {
+    const admin = createSupabaseAdminClient();
+    const { error: profileError } = await admin.from("profiles").upsert({
+      id: data.user.id,
+      role: "professional",
+      account_type: "professional",
+      first_name: values.firstName,
+      last_name: values.lastName,
+      full_name: `${values.firstName} ${values.lastName}`.trim(),
+      phone: values.phone,
+      preferred_locale: locale,
+      terms_accepted_at: now,
+      privacy_accepted_at: now
+    });
 
-  const slugBase = slugify(values.companyName);
-  const slug = `${slugBase}-${data.user.id.slice(0, 6)}`;
-  const completion = Math.min(
-    100,
-    20 +
-      Number(Boolean(values.companyName)) * 10 +
-      Number(Boolean(values.addressLine)) * 10 +
-      Number(Boolean(values.description)) * 15 +
-      values.languages.length * 5 +
-      values.services.length * 3
-  );
+    if (profileError) {
+      console.error("Professional profile user creation failed", profileError);
+      return { error: authErrorMessage(locale, "profile") };
+    }
 
-  const { data: professionalProfile, error: companyError } = await admin
-    .from("professional_profiles")
-    .insert({
-      user_id: data.user.id,
-      company_name: values.companyName,
-      legal_name: null,
-      professional_type: "broker",
-      uid_vat: null,
-      founded_year: null,
-      approximate_inventory: null,
-      slug,
-      address_line: values.addressLine,
-      postal_code: values.postalCode,
-      city: values.city,
-      canton: values.canton,
-      country: values.country,
-      public_phone: values.publicPhone || values.phone,
-      public_email: values.publicEmail,
-      website: values.website || null,
-      description: values.description || null,
-      logo_path: values.logoUrl || null,
-      cover_path: values.coverUrl || null,
-      languages: values.languages,
-      opening_hours: values.openingHours ? { text: values.openingHours } : {},
-      profile_completed_percent: completion,
-      published_at: now
-    })
-    .select("id")
-    .single();
-
-  if (companyError) throw new Error(companyError.message);
-  if (!professionalProfile) throw new Error("Professional profile was not created.");
-
-  const { error: memberError } = await admin.from("professional_members").insert({
-    professional_profile_id: professionalProfile.id,
-    user_id: data.user.id,
-    role: "owner",
-    accepted_at: now
-  });
-  if (memberError) throw new Error(memberError.message);
-
-  if (values.services.length > 0) {
-    const { error: servicesError } = await admin.from("broker_services").insert(
-      values.services.map((service) => ({
-        professional_profile_id: professionalProfile.id,
-        service_code: service
-      }))
+    const slugBase = slugify(values.companyName);
+    const slug = `${slugBase}-${data.user.id.slice(0, 6)}`;
+    const completion = Math.min(
+      100,
+      20 +
+        Number(Boolean(values.companyName)) * 10 +
+        Number(Boolean(values.addressLine)) * 10 +
+        Number(Boolean(values.description)) * 15 +
+        values.languages.length * 5 +
+        values.services.length * 3
     );
-    if (servicesError) throw new Error(servicesError.message);
+
+    const { data: professionalProfile, error: companyError } = await admin
+      .from("professional_profiles")
+      .insert({
+        user_id: data.user.id,
+        company_name: values.companyName,
+        legal_name: null,
+        professional_type: "broker",
+        uid_vat: null,
+        founded_year: null,
+        approximate_inventory: null,
+        slug,
+        address_line: values.addressLine,
+        postal_code: values.postalCode,
+        city: values.city,
+        canton: values.canton,
+        country: values.country,
+        public_phone: values.publicPhone || values.phone,
+        public_email: values.publicEmail,
+        website: values.website || null,
+        description: values.description || null,
+        logo_path: values.logoUrl || null,
+        cover_path: values.coverUrl || null,
+        languages: values.languages,
+        opening_hours: values.openingHours ? { text: values.openingHours } : {},
+        profile_completed_percent: completion,
+        published_at: now
+      })
+      .select("id")
+      .single();
+
+    if (companyError || !professionalProfile) {
+      console.error("Professional company profile creation failed", companyError);
+      return { error: authErrorMessage(locale, "profile") };
+    }
+
+    const { error: memberError } = await admin.from("professional_members").insert({
+      professional_profile_id: professionalProfile.id,
+      user_id: data.user.id,
+      role: "owner",
+      accepted_at: now
+    });
+    if (memberError) {
+      console.error("Professional membership creation failed", memberError);
+      return { error: authErrorMessage(locale, "profile") };
+    }
+
+    if (values.services.length > 0) {
+      const { error: servicesError } = await admin.from("broker_services").insert(
+        values.services.map((service) => ({
+          professional_profile_id: professionalProfile.id,
+          service_code: service
+        }))
+      );
+      if (servicesError) {
+        console.error("Professional services creation failed", servicesError);
+        return { error: authErrorMessage(locale, "profile") };
+      }
+    }
+  } catch (error) {
+    console.error("Professional profile creation failed", error);
+    return { error: authErrorMessage(locale, "profile") };
   }
 
   redirect(`/${locale}/dashboard/professional` as never);
+}
+
+function authErrorMessage(locale: string, reason: "invalid" | "supabase" | "register" | "profile") {
+  const messages = {
+    invalid: {
+      fr: "Veuillez vérifier les champs obligatoires.",
+      de: "Bitte prüfen Sie die Pflichtfelder.",
+      it: "Controlla i campi obbligatori.",
+      en: "Please check the required fields."
+    },
+    supabase: {
+      fr: "Supabase n'est pas encore correctement connecté.",
+      de: "Supabase ist noch nicht korrekt verbunden.",
+      it: "Supabase non è ancora collegato correttamente.",
+      en: "Supabase is not connected correctly yet."
+    },
+    register: {
+      fr: "Le compte n'a pas pu être créé. Vérifiez l'email, le mot de passe ou si le compte existe déjà.",
+      de: "Das Konto konnte nicht erstellt werden. Prüfen Sie E-Mail, Passwort oder ob das Konto bereits existiert.",
+      it: "Non è stato possibile creare l'account. Verifica email, password o se l'account esiste già.",
+      en: "The account could not be created. Check the email, password or whether the account already exists."
+    },
+    profile: {
+      fr: "Le compte a été créé, mais le profil n'a pas pu être finalisé. Vérifiez les migrations Supabase.",
+      de: "Das Konto wurde erstellt, aber das Profil konnte nicht abgeschlossen werden. Prüfen Sie die Supabase-Migrationen.",
+      it: "L'account è stato creato, ma il profilo non è stato completato. Verifica le migrazioni Supabase.",
+      en: "The account was created, but the profile could not be completed. Check the Supabase migrations."
+    }
+  };
+
+  return messages[reason][locale as keyof (typeof messages)[typeof reason]] ?? messages[reason].fr;
 }

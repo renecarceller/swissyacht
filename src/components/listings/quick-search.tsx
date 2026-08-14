@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Anchor, Bath, BedDouble, CalendarDays, Check, ChevronRight, CircleGauge, CookingPot, Fuel, MapPin, Moon, Palette, Ruler, Sailboat, Search, ShipWheel, SlidersHorizontal, Tag, Users, Waves, X, Zap } from "lucide-react";
-import { categories, brands, conditions, engineTypes, exteriorColors, fuelTypes, lakes, listingKinds, popularBrands } from "@/lib/data/reference";
+import { categories, brands, conditions, engineTypes, exteriorColors, fuelTypes, lakes, popularBrands } from "@/lib/data/reference";
 import { refLabel, ui } from "@/i18n/ui";
 
 export function QuickSearch({
@@ -19,7 +19,6 @@ export function QuickSearch({
   initialValues?: Record<string, string | undefined>;
 }) {
   const text = ui(locale);
-  const [listingKind, setListingKind] = useState(initialValues.listingKind === "Jet-ski" ? "Jet-ski" : "Bateau");
   const tabs = [
     { label: text.search.motorTab, value: "Motor boats", icon: ShipWheel, active: true },
     { label: text.search.sailTab, value: "Sailing boats", icon: Sailboat },
@@ -41,25 +40,11 @@ export function QuickSearch({
 
   return (
     <form action={`/${locale}/boats`} className="w-full max-w-full overflow-hidden bg-white text-[#2f3033] min-[520px]:rounded-lg min-[520px]:border min-[520px]:border-[#d8d8d8] min-[520px]:shadow-2xl">
-      <input type="hidden" name="listingKind" value={listingKind} />
       <div className="flex items-center justify-between px-4 pb-2 pt-6 min-[520px]:hidden">
         <h2 className="text-4xl font-semibold tracking-normal">{text.common.search}</h2>
         <a href={`/${locale}`} className="text-2xl font-semibold text-[#0f6fae] transition hover:text-[#06233f]">
           {text.search.clear}
         </a>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 px-4 pb-1 pt-3 min-[520px]:px-3 min-[520px]:pb-0 xl:px-4">
-        {listingKinds.map((kind) => (
-          <button
-            key={kind}
-            type="button"
-            onClick={() => setListingKind(kind)}
-            className={`h-12 rounded-md border-2 text-lg font-extrabold transition min-[520px]:h-11 min-[520px]:text-base ${listingKind === kind ? "border-[#0f6fae] bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8]" : "border-[#d6d6d6] bg-white text-[#555] hover:border-[#8bd3ff]"}`}
-          >
-            {refLabel(locale, kind)}
-          </button>
-        ))}
       </div>
 
       <div className="flex max-w-full gap-7 overflow-x-auto border-b border-[#cfcfcf] px-4 min-[520px]:hidden">
@@ -1409,7 +1394,6 @@ function BoatCategoryDrawing({ category }: { category: string }) {
   const sail = category === "Sailing boats" || category === "Catamarans";
   const yacht = category === "Yachts";
   const rib = category === "RIBs";
-  const jet = category === "Jet skis";
   const fishing = category === "Fishing boats";
   const classic = category === "Classic boats";
   const electric = category === "Electric boats";
@@ -1423,12 +1407,6 @@ function BoatCategoryDrawing({ category }: { category: string }) {
           <path d="M111 21 159 63h-48Z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" />
           <path d="M35 66h150l-18 14H54Z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" />
           {category === "Catamarans" ? <path d="M38 80h55M128 80h55" stroke="currentColor" strokeWidth="6" strokeLinecap="round" /> : null}
-        </>
-      ) : jet ? (
-        <>
-          <path d="M34 62c28-21 70-25 118-12 18 5 27 12 35 25H72c-18 0-30-4-38-13Z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" />
-          <path d="M85 45c18-17 37-20 58-7" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-          <path d="M38 77h150" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
         </>
       ) : (
         <>

@@ -1,4 +1,4 @@
-import type { BrokerBadge, Listing, ListingFilters, ListingKind } from "@/types/domain";
+import type { BrokerBadge, Listing, ListingFilters } from "@/types/domain";
 import { brands } from "./reference";
 import { demoBoatImages, demoListings } from "./demo";
 import { getUserListings } from "./user-listing-storage";
@@ -26,7 +26,6 @@ type SupabaseListingRow = Record<string, unknown> & {
   status: Listing["status"];
   owner_id: string;
   title?: string | null;
-  listing_kind?: ListingKind | null;
   boat_type?: string | null;
   brand_name?: string | null;
   model_name?: string | null;
@@ -46,10 +45,6 @@ type SupabaseListingRow = Record<string, unknown> & {
   weight_kg?: number | null;
   hull_material?: string | null;
   color?: string | null;
-  displacement_cc?: number | null;
-  seats?: number | null;
-  postal_code?: string | null;
-  video_url?: string | null;
   people_capacity?: number | null;
   cabins?: number | null;
   berths?: number | null;
@@ -110,11 +105,8 @@ export function parseFilters(searchParams: URLSearchParams): ListingFilters {
     return value === "true" || value === "1";
   };
 
-  const listingKind = searchParams.get("listingKind");
-
   return {
     q: searchParams.get("q") || undefined,
-    listingKind: listingKind === "Bateau" || listingKind === "Jet-ski" ? listingKind : undefined,
     boatType: searchParams.get("boatType") || undefined,
     category: searchParams.get("category") || undefined,
     brand: searchParams.get("brand") || undefined,
@@ -132,7 +124,6 @@ export function parseFilters(searchParams: URLSearchParams): ListingFilters {
     fuelType: searchParams.get("fuelType") || undefined,
     engineType: searchParams.get("engineType") || undefined,
     maxEngineHours: numberValue("maxEngineHours"),
-    seatsMin: numberValue("seatsMin"),
     condition: searchParams.get("condition") || undefined,
     color: searchParams.get("color") || undefined,
     peopleCapacityMin: numberValue("peopleCapacityMin"),
@@ -165,8 +156,7 @@ export function filterListings(listings: Listing[], filters: ListingFilters) {
   const text = filters.q?.trim().toLowerCase();
 
   return listings.filter((listing) => {
-    if (text && !`${listing.title} ${listing.brand} ${listing.model} ${listing.lake} ${listing.canton} ${listing.city}`.toLowerCase().includes(text)) return false;
-    if (filters.listingKind && listing.listingKind !== filters.listingKind) return false;
+    if (text && !`${listing.title} ${listing.brand} ${listing.model} ${listing.lake} ${listing.canton}`.toLowerCase().includes(text)) return false;
     if (filters.boatType && listing.boatType !== filters.boatType) return false;
     if (filters.category && listing.category !== filters.category) return false;
     if (filters.brand && listing.brand !== filters.brand) return false;
@@ -184,7 +174,6 @@ export function filterListings(listings: Listing[], filters: ListingFilters) {
     if (filters.fuelType && listing.fuelType !== filters.fuelType) return false;
     if (filters.engineType && listing.engineType !== filters.engineType) return false;
     if (filters.maxEngineHours && listing.engineHours > filters.maxEngineHours) return false;
-    if (filters.seatsMin && listing.seats < filters.seatsMin) return false;
     if (filters.condition && listing.condition !== filters.condition) return false;
     if (filters.color && listing.color !== filters.color) return false;
     if (filters.peopleCapacityMin && listing.peopleCapacity < filters.peopleCapacityMin) return false;
@@ -426,9 +415,7 @@ async function getSupabaseListings() {
 }
 
 function toListing(item: SupabaseListingRow) {
-  const rawCategory = item.categories?.name_en || item.boat_type || "Motor boats";
-  const listingKind = item.listing_kind === "Jet-ski" || rawCategory === "Jet skis" || item.boat_type === "Jet-ski" ? "Jet-ski" : "Bateau";
-  const category = listingKind === "Jet-ski" ? "Jet skis" : rawCategory;
+  const category = item.categories?.name_en || item.boat_type || "Motor boats";
   const brand = item.brand_name || item.brands?.name || "";
   const model = item.model_name || item.models?.name || "";
   const title = item.title || `${brand} ${model}`.trim();
@@ -450,7 +437,7 @@ function toListing(item: SupabaseListingRow) {
     : demoBoatImages(category).map((url, index) => ({
         id: `${item.id}-fallback-image-${index + 1}`,
         url,
-        alt: `${title} ${listingKind === "Jet-ski" ? "Jet-ski" : "boat"} photo ${index + 1}`,
+        alt: `${title} boat photo ${index + 1}`,
         isPrimary: index === 0,
         sortOrder: index
       }));
@@ -461,9 +448,8 @@ function toListing(item: SupabaseListingRow) {
     slug: item.slug,
     status: item.status,
     title,
-    listingKind,
     category,
-    boatType: item.boat_type || (listingKind === "Jet-ski" ? "Jet-ski" : category),
+    boatType: item.boat_type || category,
     brand,
     model,
     year: Number(item.year),
@@ -482,10 +468,6 @@ function toListing(item: SupabaseListingRow) {
     weightKg: Number(item.weight_kg || 0),
     hullMaterial: item.hull_material || "",
     color: item.color || "",
-    displacementCc: Number(item.displacement_cc || 0),
-    seats: Number(item.seats || 0),
-    postalCode: item.postal_code || undefined,
-    videoUrl: item.video_url || undefined,
     peopleCapacity: Number(item.people_capacity || 0),
     cabins: Number(item.cabins || 0),
     berths: Number(item.berths || 0),

@@ -74,21 +74,6 @@ export const categories = [
   "Classic boats"
 ] as const;
 
-export const listingKinds = ["Bateau", "Jet-ski"] as const;
-export const jetSkiEngineTypes = ["2-stroke", "4-stroke", "Electric"] as const;
-export const jetSkiEquipment = [
-  "Trailer included",
-  "Cover",
-  "GPS",
-  "Audio system",
-  "Ladder",
-  "Safety kit",
-  "Life jackets included",
-  "Reverse",
-  "ECO mode",
-  "Other"
-] as const;
-
 export const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid", "None"] as const;
 export const engineTypes = ["Outboard", "Inboard", "Sterndrive", "Saildrive", "Jet"] as const;
 export const hullMaterials = ["Fiberglass", "Aluminium", "Steel", "Wood", "Carbon", "Hypalon"] as const;
@@ -169,7 +154,6 @@ export const brands = [
   "Italboats",
   "Jeanneau",
   "Karnic",
-  "Kawasaki",
   "Lagoon",
   "Larson",
   "Lomac",
@@ -213,7 +197,6 @@ export const brands = [
   "Scanner",
   "Scarab",
   "Sea Ray",
-  "Sea-Doo",
   "Sealine",
   "Selva",
   "Sessa Marine",
@@ -258,9 +241,6 @@ export const popularBrands = [
   "Riva",
   "Candela",
   "Brabus Marine",
-  "Sea-Doo",
-  "Yamaha",
-  "Kawasaki",
   "Azimut",
   "Prestige"
 ] as const;

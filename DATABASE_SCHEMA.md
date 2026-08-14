@@ -1,4 +1,4 @@
-# Alpinyacht Database Schema
+# Swissnaut Database Schema
 
 The Supabase database is normalized around users, professional profiles, listings, location taxonomy, inquiries, moderation, and future subscriptions.
 

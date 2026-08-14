@@ -34,7 +34,7 @@ export function SiteHeader({ locale }: { locale: string }) {
               priority
             />
           </span>
-          <span className="min-w-0 truncate text-2xl min-[520px]:text-lg">Alpinyacht</span>
+          <span className="min-w-0 truncate text-2xl min-[520px]:text-lg">Swissnaut</span>
         </Link>
         <Link href="/sell" locale={locale} className="hidden h-10 items-center gap-2 justify-self-center rounded-md bg-[#8bd3ff] px-5 text-sm font-semibold text-[#06233f] shadow-[0_3px_0_#58b9e8] transition hover:bg-[#aee2ff] min-[520px]:inline-flex">
           <ShipWheel size={16} />

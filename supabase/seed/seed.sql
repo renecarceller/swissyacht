@@ -20,7 +20,6 @@ insert into public.categories (slug, name_fr, name_de, name_it, name_en, sort_or
 ('ribs','Semi-rigides','Schlauchboote','Gommoni','RIBs',5),
 ('catamarans','Catamarans','Katamarane','Catamarani','Catamarans',6),
 ('electric-boats','Bateaux electriques','Elektroboote','Barche elettriche','Electric boats',7),
-('jet-skis','Motos nautiques','Jetskis','Moto d acqua','Jet skis',8),
 ('fishing-boats','Bateaux de peche','Fischerboote','Barche da pesca','Fishing boats',9),
 ('classic-boats','Bateaux classiques','Klassische Boote','Barche classiche','Classic boats',10)
 on conflict (slug) do nothing;

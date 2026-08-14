@@ -11,7 +11,6 @@ import { refLabel, ui } from "@/i18n/ui";
 export function ListingCard({ listing, locale, view = "cards" }: { listing: Listing; locale: string; view?: "cards" | "list" }) {
   const text = ui(locale);
   const primary = listing.images.find((image) => image.isPrimary) || listing.images[0];
-  const isJetSki = listing.listingKind === "Jet-ski";
 
   return (
     <article className={view === "list" ? "relative grid overflow-hidden rounded-md border border-[#d9e2ec] bg-white md:grid-cols-[280px_1fr]" : "relative overflow-hidden rounded-md border border-[#d9e2ec] bg-white"}>
@@ -30,16 +29,16 @@ export function ListingCard({ listing, locale, view = "cards" }: { listing: List
               {listing.title}
             </Link>
             <p className="mt-1 text-sm text-[#607085]">
-              {refLabel(locale, isJetSki ? "Jet-ski" : listing.category)} · {refLabel(locale, listing.condition)}
+              {refLabel(locale, listing.category)} · {refLabel(locale, listing.condition)}
             </p>
           </div>
           <div className="text-right text-xl font-bold text-navy">{formatChf(listing.priceChf)}</div>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm text-[#324963] md:grid-cols-4">
           <span className="flex items-center gap-2"><Calendar size={16} />{listing.year}</span>
-          <span className="flex items-center gap-2"><Ruler size={16} />{isJetSki ? `${listing.engineHours} h` : `${listing.lengthM} m`}</span>
+          <span className="flex items-center gap-2"><Ruler size={16} />{listing.lengthM} m</span>
           <span className="flex items-center gap-2"><Gauge size={16} />{listing.powerHp} hp</span>
-          <span className="flex items-center gap-2"><MapPin size={16} />{isJetSki ? listing.city : refLabel(locale, listing.lake)}</span>
+          <span className="flex items-center gap-2"><MapPin size={16} />{refLabel(locale, listing.lake)}</span>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf2f7] pt-4 text-sm">
           <span className="flex items-center gap-2 text-[#607085]">

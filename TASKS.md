@@ -1,4 +1,4 @@
-# Alpinyacht Tasks
+# Swissnaut Tasks
 
 ## Phase 1 - Initialization
 

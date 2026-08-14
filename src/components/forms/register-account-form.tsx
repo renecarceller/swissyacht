@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, Check, ShipWheel, UserRound } from "lucide-react";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { registerPrivateAccountAction, registerProfessionalAccountAction } from "@/lib/actions/auth";
 import { cantons } from "@/lib/data/reference";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ const brokerServices = [
 
 export function RegisterAccountForm({ locale, compact = false }: { locale: string; compact?: boolean }) {
   const [accountType, setAccountType] = useState<"private" | "professional" | null>(null);
+  const [privateState, privateAction, privatePending] = useActionState(registerPrivateAccountAction, { error: "" });
+  const [professionalState, professionalAction, professionalPending] = useActionState(registerProfessionalAccountAction, { error: "" });
   const text = ui(locale);
   const labels = registerLabels(locale);
 
@@ -33,7 +35,7 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
     return (
       <section className={cn("mx-auto grid gap-6", compact ? "max-w-4xl" : "max-w-5xl")}>
         <div className="text-center">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-[#0f6fae]">Alpinyacht</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-[#0f6fae]">Swissnaut</p>
           <h1 className={cn("font-bold text-navy", compact ? "text-2xl md:text-3xl" : "text-3xl")}>{labels.choiceTitle}</h1>
           <p className="mt-2 text-[#607085]">{labels.choiceIntro}</p>
         </div>
@@ -65,9 +67,10 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
         {labels.changeType}
       </button>
       {accountType === "private" ? (
-        <form action={registerPrivateAccountAction} className={cn("rounded-md border border-[#d9e2ec] bg-white", compact ? "p-4 md:p-5" : "p-6")}>
+        <form action={privateAction} className={cn("rounded-md border border-[#d9e2ec] bg-white", compact ? "p-4 md:p-5" : "p-6")}>
           <input type="hidden" name="locale" value={locale} />
           <h1 className="mb-5 flex items-center gap-2 text-2xl font-bold text-navy"><UserRound />{labels.privateRegister}</h1>
+          {privateState.error ? <FormError message={privateState.error} /> : null}
           <div className="grid gap-4 md:grid-cols-2">
             <Field label={labels.firstName}><Input name="firstName" required /></Field>
             <Field label={labels.lastName}><Input name="lastName" required /></Field>
@@ -75,11 +78,14 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
             <Field label={text.common.phone}><Input name="phone" required /></Field>
             <Field label={text.common.password}><Input type="password" name="password" required minLength={8} /></Field>
           </div>
-          <Button className="mt-6 bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">{labels.createPrivate}</Button>
+          <Button disabled={privatePending} className="mt-6 bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">
+            {privatePending ? labels.creating : labels.createPrivate}
+          </Button>
         </form>
       ) : (
-        <form action={registerProfessionalAccountAction} className={cn("grid", compact ? "gap-3" : "gap-5")}>
+        <form action={professionalAction} className={cn("grid", compact ? "gap-3" : "gap-5")}>
           <input type="hidden" name="locale" value={locale} />
+          {professionalState.error ? <FormError message={professionalState.error} /> : null}
           <Step title={labels.accessData}>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label={labels.firstName}><Input name="firstName" required /></Field>
@@ -141,11 +147,21 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
             </div>
           </Step>
           <div className="rounded-md border border-[#d9e2ec] bg-white p-5 text-right">
-            <Button className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">{labels.createProfessional}</Button>
+            <Button disabled={professionalPending} className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">
+              {professionalPending ? labels.creating : labels.createProfessional}
+            </Button>
           </div>
         </form>
       )}
     </section>
+  );
+}
+
+function FormError({ message }: { message: string }) {
+  return (
+    <div className="mb-4 rounded-md border border-[#8bd3ff] bg-[#e8f6ff] px-4 py-3 text-sm font-semibold text-navy">
+      {message}
+    </div>
   );
 }
 
@@ -199,6 +215,7 @@ function registerLabels(locale: string) {
       firstName: "Prénom",
       lastName: "Nom",
       createPrivate: "Créer mon compte",
+      creating: "Creation...",
       accessData: "Données d'accès",
       companyData: "Informations de l'entreprise",
       publicPresentation: "Présentation publique",
@@ -235,6 +252,7 @@ function registerLabels(locale: string) {
       firstName: "Vorname",
       lastName: "Nachname",
       createPrivate: "Konto erstellen",
+      creating: "Wird erstellt...",
       accessData: "Zugangsdaten",
       companyData: "Unternehmensdaten",
       publicPresentation: "Öffentliche Präsentation",
@@ -271,6 +289,7 @@ function registerLabels(locale: string) {
       firstName: "Nome",
       lastName: "Cognome",
       createPrivate: "Crea account",
+      creating: "Creazione...",
       accessData: "Dati di accesso",
       companyData: "Informazioni azienda",
       publicPresentation: "Presentazione pubblica",
@@ -307,6 +326,7 @@ function registerLabels(locale: string) {
       firstName: "First name",
       lastName: "Last name",
       createPrivate: "Create my account",
+      creating: "Creating...",
       accessData: "Access details",
       companyData: "Company information",
       publicPresentation: "Public presentation",

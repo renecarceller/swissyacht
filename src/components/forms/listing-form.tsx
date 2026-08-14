@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Bath, BedDouble, CookingPot, Moon, Palette, ShipWheel, Waves, Users } from "lucide-react";
+/* eslint-disable @next/next/no-img-element */
+
+import { useActionState, useEffect, useRef, useState } from "react";
+import { Bath, BedDouble, CookingPot, Moon, Palette, Users } from "lucide-react";
 import { submitListingAction } from "@/lib/actions/listings";
-import { brands, cantons, categories, conditions, engineTypes, exteriorColors, fuelTypes, hullMaterials, jetSkiEngineTypes, jetSkiEquipment, lakes, listingKinds } from "@/lib/data/reference";
+import { brands, cantons, categories, conditions, engineTypes, exteriorColors, fuelTypes, hullMaterials, lakes } from "@/lib/data/reference";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { refLabel, ui } from "@/i18n/ui";
 
 type ListingDraft = {
-  listingKind: string;
   boatType: string;
   category: string;
   brand: string;
@@ -25,8 +26,6 @@ type ListingDraft = {
   powerHp: string;
   engineCount: string;
   engineHours: string;
-  displacementCc: string;
-  seats: string;
   lengthM: string;
   beamM: string;
   weightKg: string;
@@ -34,7 +33,6 @@ type ListingDraft = {
   canton: string;
   lake: string;
   city: string;
-  postalCode: string;
   marina: string;
   peopleCapacity: string;
   cabins: string;
@@ -45,14 +43,12 @@ type ListingDraft = {
   overnightAccommodation: boolean;
   description: string;
   equipment: string;
-  videoUrl: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
 };
 
 const initialDraft: ListingDraft = {
-  listingKind: "Bateau",
   boatType: "",
   category: categories[0],
   brand: brands[0],
@@ -68,8 +64,6 @@ const initialDraft: ListingDraft = {
   powerHp: "",
   engineCount: "",
   engineHours: "",
-  displacementCc: "",
-  seats: "",
   lengthM: "",
   beamM: "",
   weightKg: "",
@@ -77,7 +71,6 @@ const initialDraft: ListingDraft = {
   canton: cantons[0],
   lake: lakes[0],
   city: "",
-  postalCode: "",
   marina: "",
   peopleCapacity: "",
   cabins: "",
@@ -88,7 +81,6 @@ const initialDraft: ListingDraft = {
   overnightAccommodation: false,
   description: "",
   equipment: "",
-  videoUrl: "",
   contactName: "",
   contactEmail: "",
   contactPhone: ""
@@ -97,6 +89,7 @@ const initialDraft: ListingDraft = {
 export function ListingForm({ locale, availableBrands = [...brands] }: { locale: string; availableBrands?: string[] }) {
   const text = ui(locale);
   const labels = stepFormLabels(locale);
+  const [actionState, formAction, pending] = useActionState(submitListingAction, { error: "" });
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<ListingDraft>(initialDraft);
   const stepTitles = [
@@ -111,47 +104,26 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
   ];
   const totalSteps = stepTitles.length;
   const progress = Math.round(((step + 1) / totalSteps) * 100);
-  const isJetSki = draft.listingKind === "Jet-ski";
 
   const update = (key: keyof ListingDraft, value: string | boolean) => {
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
   return (
-    <form action={submitListingAction} className="grid gap-5">
+    <form action={formAction} className="grid gap-5">
       <HiddenDraftInputs draft={draft} />
       <input type="hidden" name="locale" value={locale} />
+      {actionState.error ? (
+        <div className="rounded-md border border-[#8bd3ff] bg-[#e8f6ff] px-4 py-3 text-sm font-semibold text-navy">
+          {actionState.error}
+        </div>
+      ) : null}
 
       {step === 0 ? (
         <StepCard title={text.sell.step1}>
-          <div className="mb-5 grid gap-3 sm:grid-cols-2">
-            {listingKinds.map((kind) => {
-              const selected = draft.listingKind === kind;
-              const Icon = kind === "Jet-ski" ? Waves : ShipWheel;
-
-              return (
-                <button
-                  key={kind}
-                  type="button"
-                  onClick={() => setDraft((current) => ({
-                    ...current,
-                    listingKind: kind,
-                    category: kind === "Jet-ski" ? "Jet skis" : current.category === "Jet skis" ? categories[0] : current.category,
-                    boatType: kind === "Jet-ski" ? "Jet-ski" : current.boatType,
-                    engineType: kind === "Jet-ski" ? jetSkiEngineTypes[1] : engineTypes[0],
-                    fuelType: kind === "Jet-ski" ? fuelTypes[0] : current.fuelType
-                  }))}
-                  className={`flex items-center gap-3 rounded-md border p-4 text-left transition ${selected ? "border-[#58b9e8] bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8]" : "border-[#d9e2ec] bg-white text-navy hover:bg-[#eef9ff]"}`}
-                >
-                  <Icon className="size-6" />
-                  <span className="text-lg font-bold">{kind === "Jet-ski" ? labels.jetSkis : labels.boats}</span>
-                </button>
-              );
-            })}
-          </div>
           <div className="grid gap-4 md:grid-cols-3">
-            {!isJetSki ? <Field label={text.sell.type}><Input value={draft.boatType} onChange={(event) => update("boatType", event.target.value)} placeholder="Day cruiser" /></Field> : null}
-            {!isJetSki ? <Field label={text.search.category}><Select value={draft.category} onChange={(event) => update("category", event.target.value)}>{categories.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field> : null}
+            <Field label={text.sell.type}><Input value={draft.boatType} onChange={(event) => update("boatType", event.target.value)} placeholder="Day cruiser" /></Field>
+            <Field label={text.search.category}><Select value={draft.category} onChange={(event) => update("category", event.target.value)}>{categories.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
             <Field label={text.common.brand}>
               <Input value={draft.brand} onChange={(event) => update("brand", event.target.value)} list="listing-brand-options" />
               <datalist id="listing-brand-options">
@@ -160,7 +132,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
             </Field>
             <Field label={text.common.model}><Input value={draft.model} onChange={(event) => update("model", event.target.value)} /></Field>
             <Field label={text.common.year}><Input value={draft.year} onChange={(event) => update("year", event.target.value)} type="number" min="1900" max="2027" /></Field>
-            <Field label={text.search.condition}><Select value={draft.condition} onChange={(event) => update("condition", event.target.value)}>{(isJetSki ? ["new", "used"] : [...conditions]).map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
+            <Field label={text.search.condition}><Select value={draft.condition} onChange={(event) => update("condition", event.target.value)}>{conditions.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
           </div>
         </StepCard>
       ) : null}
@@ -180,16 +152,14 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
         <StepCard title={text.sell.step3}>
           <div className="grid gap-4 md:grid-cols-4">
             <Field label={text.sell.fuel}><Select value={draft.fuelType} onChange={(event) => update("fuelType", event.target.value)}>{fuelTypes.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
-            <Field label={text.sell.engineType}><Select value={draft.engineType} onChange={(event) => update("engineType", event.target.value)}>{(isJetSki ? jetSkiEngineTypes : engineTypes).map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
+            <Field label={text.sell.engineType}><Select value={draft.engineType} onChange={(event) => update("engineType", event.target.value)}>{engineTypes.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
             <Field label={text.sell.powerHp}><Input value={draft.powerHp} onChange={(event) => update("powerHp", event.target.value)} type="number" min="0" /></Field>
-            {!isJetSki ? <Field label={text.sell.engineCount}><Input value={draft.engineCount} onChange={(event) => update("engineCount", event.target.value)} type="number" min="0" max="8" /></Field> : null}
+            <Field label={text.sell.engineCount}><Input value={draft.engineCount} onChange={(event) => update("engineCount", event.target.value)} type="number" min="0" max="8" /></Field>
             <Field label={text.sell.engineHours}><Input value={draft.engineHours} onChange={(event) => update("engineHours", event.target.value)} type="number" min="0" /></Field>
-            {isJetSki ? <Field label={labels.displacement}><Input value={draft.displacementCc} onChange={(event) => update("displacementCc", event.target.value)} type="number" min="0" /></Field> : null}
-            {isJetSki ? <Field label={labels.seats}><Input value={draft.seats} onChange={(event) => update("seats", event.target.value)} type="number" min="1" max="4" /></Field> : null}
-            <Field label={`${text.common.length} m${isJetSki ? ` (${labels.optional})` : ""}`}><Input value={draft.lengthM} onChange={(event) => update("lengthM", event.target.value)} type="number" step="0.01" /></Field>
-            {!isJetSki ? <Field label={text.sell.beam}><Input value={draft.beamM} onChange={(event) => update("beamM", event.target.value)} type="number" step="0.01" /></Field> : null}
-            <Field label={`${text.sell.weight}${isJetSki ? ` (${labels.optional})` : ""}`}><Input value={draft.weightKg} onChange={(event) => update("weightKg", event.target.value)} type="number" /></Field>
-            {!isJetSki ? <Field label={text.sell.material}><Select value={draft.hullMaterial} onChange={(event) => update("hullMaterial", event.target.value)}>{hullMaterials.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field> : null}
+            <Field label={`${text.common.length} m`}><Input value={draft.lengthM} onChange={(event) => update("lengthM", event.target.value)} type="number" step="0.01" /></Field>
+            <Field label={text.sell.beam}><Input value={draft.beamM} onChange={(event) => update("beamM", event.target.value)} type="number" step="0.01" /></Field>
+            <Field label={text.sell.weight}><Input value={draft.weightKg} onChange={(event) => update("weightKg", event.target.value)} type="number" /></Field>
+            <Field label={text.sell.material}><Select value={draft.hullMaterial} onChange={(event) => update("hullMaterial", event.target.value)}>{hullMaterials.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
           </div>
         </StepCard>
       ) : null}
@@ -198,27 +168,16 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
         <StepCard title={text.sell.step4}>
           <div className="grid gap-4 md:grid-cols-4">
             <Field label={text.common.canton}><Select value={draft.canton} onChange={(event) => update("canton", event.target.value)}>{cantons.map((item) => <option key={item}>{item}</option>)}</Select></Field>
-            {!isJetSki ? <Field label={text.common.lake}><Select value={draft.lake} onChange={(event) => update("lake", event.target.value)}>{lakes.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field> : null}
+            <Field label={text.common.lake}><Select value={draft.lake} onChange={(event) => update("lake", event.target.value)}>{lakes.map((item) => <option key={item} value={item}>{refLabel(locale, item)}</option>)}</Select></Field>
             <Field label={text.common.city}><Input value={draft.city} onChange={(event) => update("city", event.target.value)} /></Field>
-            {isJetSki ? <Field label={labels.postalCode}><Input value={draft.postalCode} onChange={(event) => update("postalCode", event.target.value)} /></Field> : <Field label={text.common.marina}><Input value={draft.marina} onChange={(event) => update("marina", event.target.value)} /></Field>}
+            <Field label={text.common.marina}><Input value={draft.marina} onChange={(event) => update("marina", event.target.value)} /></Field>
           </div>
         </StepCard>
       ) : null}
 
       {step === 4 ? (
         <StepCard title={labels.habitabilityTitle}>
-          {isJetSki ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {jetSkiEquipment.map((item) => (
-                <CheckField
-                  key={item}
-                  checked={equipmentList(draft.equipment).includes(item)}
-                  onChange={(checked) => update("equipment", updateEquipment(draft.equipment, item, checked))}
-                  label={refLabel(locale, item)}
-                />
-              ))}
-            </div>
-          ) : <div className="divide-y divide-[#e1e1e1]">
+          <div className="divide-y divide-[#e1e1e1]">
             <CompactNumberField icon={<Users />} label={labels.people} value={draft.peopleCapacity} onChange={(value) => update("peopleCapacity", value)} max={20} />
             <CompactNumberField icon={<BedDouble />} label={labels.cabins} value={draft.cabins} onChange={(value) => update("cabins", value)} max={10} />
             <CompactNumberField icon={<Moon />} label={labels.berths} value={draft.berths} onChange={(value) => update("berths", value)} max={20} />
@@ -226,7 +185,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
             <CompactBooleanField icon={<CookingPot />} label={labels.kitchen} checked={draft.kitchen} onChange={(value) => update("kitchen", value)} yes={labels.yes} no={labels.no} />
             <CompactSelectField icon={<Palette />} label={labels.exteriorColor} value={draft.color} onChange={(value) => update("color", value)} options={exteriorColors.map((color) => ({ value: color, label: refLabel(locale, color) }))} />
             <CompactBooleanField icon={<Moon />} label={labels.overnight} checked={draft.overnightAccommodation} onChange={(value) => update("overnightAccommodation", value)} yes={labels.yes} no={labels.no} />
-          </div>}
+          </div>
         </StepCard>
       ) : null}
 
@@ -234,17 +193,14 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
         <StepCard title={labels.descriptionTitle}>
           <div className="grid gap-4">
             <Field label={text.common.description}><Textarea value={draft.description} onChange={(event) => update("description", event.target.value)} placeholder={text.sell.minDescription} /></Field>
-            {!isJetSki ? <Field label={text.common.equipment}><Textarea value={draft.equipment} onChange={(event) => update("equipment", event.target.value)} placeholder={text.sell.equipmentPlaceholder} /></Field> : null}
+            <Field label={text.common.equipment}><Textarea value={draft.equipment} onChange={(event) => update("equipment", event.target.value)} placeholder={text.sell.equipmentPlaceholder} /></Field>
           </div>
         </StepCard>
       ) : null}
 
       {step === 6 ? (
         <StepCard title={labels.photosTitle}>
-          <div className="rounded-md border border-dashed border-[#b8c7d8] p-6 text-sm text-[#607085]">
-            {text.sell.photoPlaceholder}
-          </div>
-          {isJetSki ? <div className="mt-4"><Field label={labels.video}><Input value={draft.videoUrl} onChange={(event) => update("videoUrl", event.target.value)} type="url" placeholder="https://..." /></Field></div> : null}
+          <PhotoUploadField labels={labels} />
         </StepCard>
       ) : null}
 
@@ -278,8 +234,10 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
             </Button>
           ) : (
             <div className="flex flex-wrap gap-3">
-              <Button name="saveAsDraft" value="true" variant="secondary">{text.sell.saveDraft}</Button>
-              <Button name="saveAsDraft" value="false" className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">{text.sell.sendModeration}</Button>
+              <Button name="saveAsDraft" value="true" variant="secondary" disabled={pending}>{text.sell.saveDraft}</Button>
+              <Button name="saveAsDraft" value="false" disabled={pending} className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">
+                {pending ? labels.publishing : text.sell.sendModeration}
+              </Button>
             </div>
           )}
         </div>
@@ -309,22 +267,11 @@ function StepCard({ title, children }: { title: string; children: React.ReactNod
 
 function CheckField({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
   return (
-    <label className="flex items-center gap-2 rounded-md border border-[#d9e2ec] bg-white p-3 text-sm font-semibold text-[#21354b]">
+    <label className="flex items-center gap-2 pt-8 text-sm">
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       {label}
     </label>
   );
-}
-
-function equipmentList(value: string) {
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
-}
-
-function updateEquipment(value: string, item: string, checked: boolean) {
-  const current = new Set(equipmentList(value));
-  if (checked) current.add(item);
-  else current.delete(item);
-  return Array.from(current).join(", ");
 }
 
 function CompactNumberField({
@@ -350,6 +297,122 @@ function CompactNumberField({
           <option key={option} value={option}>{option}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+type PhotoPreview = {
+  id: string;
+  file: File;
+  url: string;
+};
+
+function PhotoUploadField({ labels }: { labels: ReturnType<typeof stepFormLabels> }) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const photosRef = useRef<PhotoPreview[]>([]);
+  const [photos, setPhotos] = useState<PhotoPreview[]>([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+
+  useEffect(() => {
+    return () => photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.url));
+  }, []);
+
+  const syncInputFiles = (nextPhotos: PhotoPreview[]) => {
+    if (!inputRef.current) return;
+    const transfer = new DataTransfer();
+    nextPhotos.forEach((photo) => transfer.items.add(photo.file));
+    inputRef.current.files = transfer.files;
+  };
+
+  const updatePhotos = (nextPhotos: PhotoPreview[]) => {
+    setPhotos((current) => {
+      const nextIds = new Set(nextPhotos.map((photo) => photo.id));
+      current.forEach((photo) => {
+        if (!nextIds.has(photo.id)) URL.revokeObjectURL(photo.url);
+      });
+      return nextPhotos;
+    });
+    syncInputFiles(nextPhotos);
+  };
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files?.length) return;
+    setError("");
+
+    const acceptedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const incoming: PhotoPreview[] = [];
+
+    for (const file of Array.from(files)) {
+      if (!acceptedTypes.includes(file.type)) {
+        setError(labels.photoInvalidType);
+        continue;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        setError(labels.photoTooLarge);
+        continue;
+      }
+
+      incoming.push({
+        id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+        file,
+        url: URL.createObjectURL(file)
+      });
+    }
+
+    updatePhotos([...photos, ...incoming].slice(0, 8));
+  };
+
+  const removePhoto = (id: string) => updatePhotos(photos.filter((photo) => photo.id !== id));
+
+  const makePrimary = (id: string) => {
+    const selected = photos.find((photo) => photo.id === id);
+    if (!selected) return;
+    updatePhotos([selected, ...photos.filter((photo) => photo.id !== id)]);
+  };
+
+  return (
+    <div className="grid gap-4">
+      <label className="group grid cursor-pointer place-items-center rounded-md border border-dashed border-[#8bd3ff] bg-[#f6fbff] p-6 text-center transition hover:border-[#58b9e8] hover:bg-[#eef9ff]">
+        <input
+          ref={inputRef}
+          type="file"
+          name="photos"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="sr-only"
+          onChange={(event) => handleFiles(event.target.files)}
+        />
+        <span className="text-lg font-bold text-navy">{labels.photoUploadTitle}</span>
+        <span className="mt-2 max-w-2xl text-sm leading-6 text-[#607085]">{labels.photoUploadText}</span>
+      </label>
+
+      {error ? <p className="rounded-md bg-[#fff4f4] px-4 py-3 text-sm font-semibold text-[#8a1f2d]">{error}</p> : null}
+
+      {photos.length ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {photos.map((photo, index) => (
+            <div key={photo.id} className="overflow-hidden rounded-md border border-[#d9e2ec] bg-white">
+              <img src={photo.url} alt="" className="h-36 w-full object-cover" />
+              <div className="grid gap-2 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-semibold text-navy">{index === 0 ? labels.primaryPhoto : `${labels.photo} ${index + 1}`}</span>
+                  <button type="button" onClick={() => removePhoto(photo.id)} className="text-sm font-bold text-[#8a1f2d]">{labels.removePhoto}</button>
+                </div>
+                {index !== 0 ? (
+                  <button type="button" onClick={() => makePrimary(photo.id)} className="h-9 rounded-md border border-[#cbd7e4] text-sm font-semibold text-navy">
+                    {labels.makePrimary}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -410,10 +473,10 @@ function CompactSelectField({
 
 function stepFormLabels(locale: string) {
   const dictionary = {
-    fr: { back: "Retour", continue: "Continuer", step: "Étape", habitabilityTitle: "Étape 5 · Capacité et équipement", descriptionTitle: "Étape 6 · Description et équipement", photosTitle: "Étape 7 · Photos", contactTitle: "Étape 8 · Contact et publication", people: "Nombre de personnes", cabins: "Nombre de cabines", berths: "Nombre de couchettes", bathrooms: "Salles de bain", kitchen: "Cuisine", exteriorColor: "Couleur extérieure", overnight: "Hébergement de nuit", yes: "Oui", no: "Non", boats: "Bateaux", jetSkis: "Jets-skis", displacement: "Cylindrée cc", seats: "Nombre de places", postalCode: "Code postal", video: "Vidéo optionnelle", optional: "optionnel" },
-    de: { back: "Zurück", continue: "Weiter", step: "Schritt", habitabilityTitle: "Schritt 5 · Kapazität und Ausstattung", descriptionTitle: "Schritt 6 · Beschreibung und Ausstattung", photosTitle: "Schritt 7 · Fotos", contactTitle: "Schritt 8 · Kontakt und Veröffentlichung", people: "Anzahl Personen", cabins: "Anzahl Kabinen", berths: "Anzahl Kojen", bathrooms: "Bäder", kitchen: "Küche", exteriorColor: "Außenfarbe", overnight: "Übernachtung", yes: "Ja", no: "Nein", boats: "Boote", jetSkis: "Jetskis", displacement: "Hubraum ccm", seats: "Anzahl Sitze", postalCode: "Postleitzahl", video: "Optionales Video", optional: "optional" },
-    it: { back: "Indietro", continue: "Continua", step: "Passo", habitabilityTitle: "Passo 5 · Capacità e dotazioni", descriptionTitle: "Passo 6 · Descrizione e dotazioni", photosTitle: "Passo 7 · Foto", contactTitle: "Passo 8 · Contatto e pubblicazione", people: "Numero di persone", cabins: "Numero cabine", berths: "Numero cuccette", bathrooms: "Bagni", kitchen: "Cucina", exteriorColor: "Colore esterno", overnight: "Pernottamento", yes: "Sì", no: "No", boats: "Barche", jetSkis: "Moto d'acqua", displacement: "Cilindrata cc", seats: "Numero posti", postalCode: "Codice postale", video: "Video opzionale", optional: "opzionale" },
-    en: { back: "Back", continue: "Continue", step: "Step", habitabilityTitle: "Step 5 · Capacity and equipment", descriptionTitle: "Step 6 · Description and equipment", photosTitle: "Step 7 · Photos", contactTitle: "Step 8 · Contact and publishing", people: "Number of people", cabins: "Number of cabins", berths: "Number of berths", bathrooms: "Bathrooms", kitchen: "Kitchen", exteriorColor: "Exterior color", overnight: "Overnight accommodation", yes: "Yes", no: "No", boats: "Boats", jetSkis: "Jet-skis", displacement: "Displacement cc", seats: "Number of seats", postalCode: "Postal code", video: "Optional video", optional: "optional" }
+    fr: { back: "Retour", continue: "Continuer", publishing: "Publication...", step: "Étape", habitabilityTitle: "Étape 5 · Capacité et habitabilité", descriptionTitle: "Étape 6 · Description et équipement", photosTitle: "Étape 7 · Photos", contactTitle: "Étape 8 · Contact et publication", people: "Nombre de personnes", cabins: "Nombre de cabines", berths: "Nombre de couchettes", bathrooms: "Salles de bain", kitchen: "Cuisine", exteriorColor: "Couleur extérieure", overnight: "Hébergement de nuit", yes: "Oui", no: "Non", photoUploadTitle: "Ajouter des photos du bateau", photoUploadText: "Choisissez jusqu'à 8 images JPG, PNG ou WebP. La première photo sera l'image principale de l'annonce.", photoInvalidType: "Format non accepté. Utilisez JPG, PNG ou WebP.", photoTooLarge: "Une photo dépasse 5 MB.", primaryPhoto: "Photo principale", photo: "Photo", removePhoto: "Supprimer", makePrimary: "Mettre en principal" },
+    de: { back: "Zurück", continue: "Weiter", publishing: "Wird veröffentlicht...", step: "Schritt", habitabilityTitle: "Schritt 5 · Kapazität und Wohnen", descriptionTitle: "Schritt 6 · Beschreibung und Ausstattung", photosTitle: "Schritt 7 · Fotos", contactTitle: "Schritt 8 · Kontakt und Veröffentlichung", people: "Anzahl Personen", cabins: "Anzahl Kabinen", berths: "Anzahl Kojen", bathrooms: "Bäder", kitchen: "Küche", exteriorColor: "Außenfarbe", overnight: "Übernachtung", yes: "Ja", no: "Nein", photoUploadTitle: "Bootsfotos hinzufügen", photoUploadText: "Wählen Sie bis zu 8 Bilder als JPG, PNG oder WebP. Das erste Foto wird das Hauptbild des Inserats.", photoInvalidType: "Dieses Format wird nicht akzeptiert. Nutzen Sie JPG, PNG oder WebP.", photoTooLarge: "Ein Foto ist größer als 5 MB.", primaryPhoto: "Hauptfoto", photo: "Foto", removePhoto: "Entfernen", makePrimary: "Als Hauptfoto setzen" },
+    it: { back: "Indietro", continue: "Continua", publishing: "Pubblicazione...", step: "Passo", habitabilityTitle: "Passo 5 · Capacità e abitabilità", descriptionTitle: "Passo 6 · Descrizione e dotazioni", photosTitle: "Passo 7 · Foto", contactTitle: "Passo 8 · Contatto e pubblicazione", people: "Numero di persone", cabins: "Numero cabine", berths: "Numero cuccette", bathrooms: "Bagni", kitchen: "Cucina", exteriorColor: "Colore esterno", overnight: "Pernottamento", yes: "Sì", no: "No", photoUploadTitle: "Aggiungi foto della barca", photoUploadText: "Scegli fino a 8 immagini JPG, PNG o WebP. La prima foto sarà l'immagine principale dell'annuncio.", photoInvalidType: "Formato non accettato. Usa JPG, PNG o WebP.", photoTooLarge: "Una foto supera 5 MB.", primaryPhoto: "Foto principale", photo: "Foto", removePhoto: "Elimina", makePrimary: "Imposta come principale" },
+    en: { back: "Back", continue: "Continue", publishing: "Publishing...", step: "Step", habitabilityTitle: "Step 5 · Capacity and accommodation", descriptionTitle: "Step 6 · Description and equipment", photosTitle: "Step 7 · Photos", contactTitle: "Step 8 · Contact and publishing", people: "Number of people", cabins: "Number of cabins", berths: "Number of berths", bathrooms: "Bathrooms", kitchen: "Kitchen", exteriorColor: "Exterior color", overnight: "Overnight accommodation", yes: "Yes", no: "No", photoUploadTitle: "Add boat photos", photoUploadText: "Choose up to 8 JPG, PNG or WebP images. The first photo will be the main listing image.", photoInvalidType: "Unsupported format. Use JPG, PNG or WebP.", photoTooLarge: "One photo is larger than 5 MB.", primaryPhoto: "Main photo", photo: "Photo", removePhoto: "Remove", makePrimary: "Make main" }
   };
 
   return dictionary[locale as keyof typeof dictionary] ?? dictionary.fr;

@@ -132,11 +132,7 @@ const baseListings = [
   ["sunseeker-portofino-40-leman-12356", "Sunseeker Portofino 40", "Yachts", "Sport yacht", "Sunseeker", "Portofino 40", 2015, 390000, "Vaud", "Lake Geneva", "Nyon", "Port de Nyon", 12.9, 3.87, "Diesel", "Inboard", 740],
   ["axopar-28-zurich-demo-12357", "Axopar 28 Cabin", "Motor boats", "Cabin boat", "Axopar", "28 Cabin", 2023, 169000, "Zurich", "Lake Zurich", "Horgen", "Horgen Marina", 8.75, 2.95, "Petrol", "Outboard", 300],
   ["catamaran-lagoon-380-lugano-12358", "Lagoon 380", "Catamarans", "Catamaran", "Lagoon", "380", 2014, 285000, "Ticino", "Lake Lugano", "Melide", "Melide", 11.55, 6.53, "Diesel", "Inboard", 58],
-  ["fishing-aluminium-lucerne-12359", "Aluminium Fishing 520", "Fishing boats", "Fishing boat", "Alumacraft", "Classic 520", 2020, 31500, "Schwyz", "Lake Lucerne", "Brunnen", "Brunnen", 5.2, 2.05, "Petrol", "Outboard", 80],
-  ["seadoo-gti-neuchatel-12360", "Sea-Doo GTI 130", "Jet skis", "Jet-ski", "Sea-Doo", "GTI 130", 2022, 15900, "Neuchatel", "Lake Neuchatel", "Cudrefin", "Cudrefin", 3.32, 1.25, "Petrol", "4-stroke", 130],
-  ["yamaha-vx-cruiser-lugano-12361", "Yamaha VX Cruiser HO", "Jet skis", "Jet-ski", "Yamaha", "VX Cruiser HO", 2023, 18900, "Ticino", "Lake Lugano", "Lugano", "Marina di Lugano", 3.37, 1.24, "Petrol", "4-stroke", 180],
-  ["kawasaki-ultra-310x-zurich-12362", "Kawasaki Jet Ski Ultra 310X", "Jet skis", "Jet-ski", "Kawasaki", "Jet Ski Ultra 310X", 2021, 21900, "Zurich", "Lake Zurich", "Zurich", "Tiefenbrunnen", 3.58, 1.2, "Petrol", "4-stroke", 310],
-  ["seadoo-spark-trixx-biel-12363", "Sea-Doo Spark Trixx 3UP", "Jet skis", "Jet-ski", "Sea-Doo", "Spark Trixx 3UP", 2024, 12900, "Bern", "Lake Biel", "Biel", "Port de Bienne", 3.05, 1.18, "Petrol", "4-stroke", 90]
+  ["fishing-aluminium-lucerne-12359", "Aluminium Fishing 520", "Fishing boats", "Fishing boat", "Alumacraft", "Classic 520", 2020, 31500, "Schwyz", "Lake Lucerne", "Brunnen", "Brunnen", 5.2, 2.05, "Petrol", "Outboard", 80]
 ] as const;
 
 const commonsFile = (filename: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}`;
@@ -181,11 +177,6 @@ const photoSets: Record<string, string[]> = {
     commonsFile("Small_sport_fishing_boat.jpg"),
     commonsFile("Krabbenkutter_Ivonne_Pellworm_P5242390jm.JPG"),
     commonsFile("Parked_boats_at_Anjarle_Creek.jpg")
-  ],
-  "Jet skis": [
-    commonsFile("1997_Yamaha_SuperJet_side_view.jpg"),
-    commonsFile("1995_Yamaha_SuperJet_Rear_View.jpg"),
-    commonsFile("1995_Yamaha_SuperJet_Engine_Bay.jpg")
   ]
 };
 
@@ -197,14 +188,12 @@ export const demoListings: Listing[] = baseListings.map((row, index) => {
   const [slug, title, category, boatType, brand, model, year, priceChf, canton, lake, city, marina, lengthM, beamM, fuelType, engineType, powerHp] = row;
   const seller = sellers[index % sellers.length];
   const electric = fuelType === "Electric";
-  const listingKind = category === "Jet skis" ? "Jet-ski" : "Bateau";
 
   return {
     id: `demo-${index + 1}`,
     slug,
     status: "published",
     title,
-    listingKind,
     category,
     boatType,
     brand,
@@ -225,13 +214,9 @@ export const demoListings: Listing[] = baseListings.map((row, index) => {
     weightKg: Math.round(Number(lengthM) * Number(beamM) * 420),
     hullMaterial: category === "Classic boats" ? "Wood" : category === "Fishing boats" ? "Aluminium" : "Fiberglass",
     color: index % 4 === 0 ? "White" : index % 4 === 1 ? "Blue" : index % 4 === 2 ? "Grey" : "Black",
-    displacementCc: listingKind === "Jet-ski" ? (brand === "Kawasaki" ? 1498 : brand === "Yamaha" ? 1898 : 1630) : 0,
-    seats: listingKind === "Jet-ski" ? (model.includes("3UP") || model.includes("GTI") || model.includes("VX") ? 3 : 2) : 0,
-    postalCode: listingKind === "Jet-ski" ? (city === "Lugano" ? "6900" : city === "Zurich" ? "8008" : city === "Biel" ? "2503" : "1588") : undefined,
-    videoUrl: undefined,
-    peopleCapacity: category === "Jet skis" ? 2 : category === "Catamarans" ? 10 : category === "Yachts" ? 8 : Number(lengthM) >= 9 ? 7 : 5,
-    cabins: category === "Jet skis" || category === "Fishing boats" || Number(lengthM) < 7 ? 0 : category === "Catamarans" ? 4 : category === "Yachts" ? 2 : 1,
-    berths: category === "Jet skis" || category === "Fishing boats" || Number(lengthM) < 7 ? 0 : category === "Catamarans" ? 8 : category === "Yachts" ? 4 : 2,
+    peopleCapacity: category === "Catamarans" ? 10 : category === "Yachts" ? 8 : Number(lengthM) >= 9 ? 7 : 5,
+    cabins: category === "Fishing boats" || Number(lengthM) < 7 ? 0 : category === "Catamarans" ? 4 : category === "Yachts" ? 2 : 1,
+    berths: category === "Fishing boats" || Number(lengthM) < 7 ? 0 : category === "Catamarans" ? 8 : category === "Yachts" ? 4 : 2,
     bathrooms: category === "Catamarans" ? 2 : category === "Yachts" || Number(lengthM) >= 9 ? 1 : 0,
     kitchen: category === "Catamarans" || category === "Yachts" || Number(lengthM) >= 9,
     overnightAccommodation: category === "Catamarans" || category === "Yachts" || Number(lengthM) >= 9,
@@ -239,21 +224,17 @@ export const demoListings: Listing[] = baseListings.map((row, index) => {
     lake,
     city,
     marina,
-    trailerIncluded: listingKind === "Jet-ski" || Number(lengthM) < 7,
+    trailerIncluded: Number(lengthM) < 7,
     berthIncluded: seller.type === "professional" && index % 2 === 0,
     licenseRequired: Number(powerHp) > 8,
     electric,
     description:
-      listingKind === "Jet-ski"
-        ? "Demo listing created for Alpinyacht MVP. The Jet-ski data is illustrative and must be replaced by verified seller information before production publication."
-        : "Demo listing created for Alpinyacht MVP. The boat data is illustrative and must be replaced by verified seller information before production publication.",
-    equipment: listingKind === "Jet-ski"
-      ? ["Trailer included", "Cover", "Safety kit", "Life jackets included", index % 2 === 0 ? "Reverse" : "GPS"]
-      : ["Navigation lights", "Mooring cover", "Bathing ladder", "Safety kit", index % 2 === 0 ? "GPS" : "Teak cockpit"],
+      "Demo listing created for Swissnaut MVP. The boat data is illustrative and must be replaced by verified seller information before production publication.",
+    equipment: ["Navigation lights", "Mooring cover", "Bathing ladder", "Safety kit", index % 2 === 0 ? "GPS" : "Teak cockpit"],
     images: demoBoatImages(category).map((url, offset) => ({
       id: `demo-${index + 1}-image-${offset + 1}`,
       url,
-      alt: `${title} real demo ${listingKind === "Jet-ski" ? "Jet-ski" : "boat"} photo ${offset + 1}`,
+      alt: `${title} real demo boat photo ${offset + 1}`,
       isPrimary: offset === 0,
       sortOrder: offset
     })),

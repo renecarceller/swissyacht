@@ -17,7 +17,7 @@ export function SiteFooter({ locale }: { locale: string }) {
     <footer className="mt-16 border-t border-[#d9e2ec] bg-[#061b31] py-12 text-white">
       <div className="container-shell grid gap-10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
         <div>
-          <div className="text-xl font-bold">Alpinyacht</div>
+          <div className="text-xl font-bold">Swissnaut</div>
           <p className="mt-3 max-w-sm text-sm leading-6 text-[#b8c7d8]">
             {text.home.subtitle}
           </p>

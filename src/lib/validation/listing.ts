@@ -19,7 +19,6 @@ export const listingStatusSchema = z.enum([
 ]);
 
 export const listingFormSchema = z.object({
-  listingKind: z.enum(["Bateau", "Jet-ski"]).default("Bateau"),
   boatType: z.string().min(2),
   category: z.string().min(2),
   brand: z.string().trim().min(1),
@@ -33,18 +32,15 @@ export const listingFormSchema = z.object({
   fuelType: z.string().min(2),
   engineType: z.string().min(2),
   powerHp: z.coerce.number().int().min(0).max(5000),
-  engineCount: z.coerce.number().int().min(0).max(8).default(1),
+  engineCount: z.coerce.number().int().min(0).max(8),
   engineHours: z.coerce.number().int().min(0).max(100000),
-  displacementCc: z.preprocess((value) => (value === "" || value === null ? 0 : value), z.coerce.number().int().min(0).max(10000)).default(0),
-  seats: z.preprocess((value) => (value === "" || value === null ? 0 : value), z.coerce.number().int().min(0).max(8)).default(0),
-  lengthM: z.preprocess((value) => (value === "" || value === null ? 0 : value), z.coerce.number().min(0).max(80)).default(0),
-  beamM: z.preprocess((value) => (value === "" || value === null ? 0 : value), z.coerce.number().min(0).max(30)).default(0),
-  weightKg: z.preprocess((value) => (value === "" || value === null ? 0 : value), z.coerce.number().min(0).max(500000)).default(0),
-  hullMaterial: z.string().optional().default(""),
+  lengthM: z.coerce.number().positive().max(80),
+  beamM: z.coerce.number().positive().max(30),
+  weightKg: z.coerce.number().positive().max(500000),
+  hullMaterial: z.string().min(2),
   canton: z.string().min(2),
-  lake: z.string().optional().default(""),
+  lake: z.string().min(2),
   city: z.string().min(1),
-  postalCode: z.string().trim().max(20).optional().default(""),
   marina: z.string().optional().default(""),
   peopleCapacity: optionalSmallIntSchema.default(0),
   cabins: optionalSmallIntSchema.default(0),
@@ -55,24 +51,10 @@ export const listingFormSchema = z.object({
   overnightAccommodation: booleanStringSchema.default(false),
   description: z.string().min(80).max(8000),
   equipment: z.string().optional().default(""),
-  videoUrl: z.string().url().optional().or(z.literal("")).default(""),
   contactName: z.string().min(2),
   contactEmail: z.string().email(),
   contactPhone: z.string().optional().default(""),
   saveAsDraft: booleanStringSchema.default(false)
-}).superRefine((values, ctx) => {
-  if (values.listingKind === "Bateau") {
-    if (values.lengthM <= 0) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lengthM"], message: "Required for boats" });
-    if (values.beamM <= 0) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["beamM"], message: "Required for boats" });
-    if (values.weightKg <= 0) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["weightKg"], message: "Required for boats" });
-    if (!values.hullMaterial) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["hullMaterial"], message: "Required for boats" });
-    if (!values.lake) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lake"], message: "Required for boats" });
-  }
-
-  if (values.listingKind === "Jet-ski") {
-    if (values.seats <= 0) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["seats"], message: "Required for jet-skis" });
-    if (values.displacementCc <= 0 && values.engineType !== "Electric") ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["displacementCc"], message: "Required for combustion jet-skis" });
-  }
 });
 
 export const inquirySchema = z.object({

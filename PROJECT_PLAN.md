@@ -1,6 +1,6 @@
-# Alpinyacht Project Plan
+# Swissnaut Project Plan
 
-Alpinyacht is a Swiss-only boat marketplace built with Next.js App Router, TypeScript, Tailwind CSS, next-intl, Supabase Auth/Postgres/Storage, React Hook Form, and Zod.
+Swissnaut is a Swiss-only boat marketplace built with Next.js App Router, TypeScript, Tailwind CSS, next-intl, Supabase Auth/Postgres/Storage, React Hook Form, and Zod.
 
 ## Repository Status
 

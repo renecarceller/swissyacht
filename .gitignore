@@ -12,3 +12,5 @@ cloudflare-env.d.ts
 npm-debug.log*
 supabase/.branches
 supabase/.temp
+.vercel
+.env*
