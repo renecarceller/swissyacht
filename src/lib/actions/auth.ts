@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { privateRegisterSchema, professionalRegisterSchema } from "@/lib/validation/listing";
+import { privateRegisterSchema, professionalProfileUpdateSchema, professionalRegisterSchema } from "@/lib/validation/listing";
 import { slugify } from "@/lib/utils";
 import { locales } from "@/lib/data/reference";
 
@@ -160,7 +160,8 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
   const parsed = professionalRegisterSchema.safeParse({
     ...Object.fromEntries(formData.entries()),
     languages: formData.getAll("languages").map(String),
-    services: formData.getAll("services").map(String)
+    services: formData.getAll("services").map(String),
+    specialties: formData.getAll("specialties").map(String)
   });
 
   if (!parsed.success) {
@@ -238,6 +239,9 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
         values.services.length * 3
     );
 
+    const representedBrands = parseMultiValueText(values.representedBrands);
+    const galleryUrls = parseMultiValueText(values.galleryUrls).filter((url) => url.startsWith("http://") || url.startsWith("https://"));
+
     let { data: professionalProfile, error: companyError } = await admin
       .from("professional_profiles")
       .insert({
@@ -256,6 +260,8 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
         country: values.country,
         public_phone: values.publicPhone || values.phone,
         public_email: values.publicEmail,
+        whatsapp_phone: values.whatsappPhone || null,
+        whatsapp_enabled: Boolean(values.whatsappPhone),
         website: values.website || null,
         description: values.description || null,
         logo_path: values.logoUrl || null,
@@ -319,12 +325,198 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
         return { error: authErrorMessage(locale, "profile") };
       }
     }
+
+    if (values.specialties.length > 0) {
+      const { error: specialtiesError } = await admin.from("broker_specialties").insert(
+        values.specialties.map((specialty) => ({
+          professional_profile_id: professionalProfile.id,
+          specialty_code: specialty
+        }))
+      );
+      if (specialtiesError && !isSchemaCompatibilityError(specialtiesError)) {
+        console.error("Professional specialties creation failed", specialtiesError);
+        return { error: authErrorMessage(locale, "profile") };
+      }
+    }
+
+    if (representedBrands.length > 0) {
+      const { error: brandsError } = await admin.from("broker_represented_brands").insert(
+        representedBrands.map((brand) => ({
+          professional_profile_id: professionalProfile.id,
+          brand_name: brand
+        }))
+      );
+      if (brandsError && !isSchemaCompatibilityError(brandsError)) {
+        console.error("Professional represented brands creation failed", brandsError);
+        return { error: authErrorMessage(locale, "profile") };
+      }
+    }
+
+    if (galleryUrls.length > 0) {
+      const { error: galleryError } = await admin.from("broker_gallery").insert(
+        galleryUrls.map((url, index) => ({
+          professional_profile_id: professionalProfile.id,
+          storage_path: url,
+          public_url: url,
+          alt_text: values.companyName,
+          sort_order: index
+        }))
+      );
+      if (galleryError && !isSchemaCompatibilityError(galleryError)) {
+        console.error("Professional gallery creation failed", galleryError);
+        return { error: authErrorMessage(locale, "profile") };
+      }
+    }
   } catch (error) {
     console.error("Professional profile creation failed", error);
     return { error: authErrorMessage(locale, "profile") };
   }
 
   redirect(`/${locale}/dashboard/professional` as never);
+}
+
+export async function updateProfessionalProfileAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  const locale = localeFromForm(formData);
+  const parsed = professionalProfileUpdateSchema.safeParse({
+    ...Object.fromEntries(formData.entries()),
+    languages: formData.getAll("languages").map(String),
+    services: formData.getAll("services").map(String),
+    specialties: formData.getAll("specialties").map(String)
+  });
+
+  if (!parsed.success) {
+    console.error("Invalid professional profile update", parsed.error.flatten().fieldErrors);
+    return { error: authErrorMessage(locale, "invalid") };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { error: authErrorMessage(locale, "supabase") };
+
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { error: authErrorMessage(locale, "login") };
+
+  const values = parsed.data;
+  const now = new Date().toISOString();
+  const representedBrands = parseMultiValueText(values.representedBrands);
+  const galleryUrls = parseMultiValueText(values.galleryUrls).filter((url) => url.startsWith("http://") || url.startsWith("https://"));
+
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data: professionalProfile, error: profileReadError } = await admin
+      .from("professional_profiles")
+      .select("id")
+      .eq("user_id", userData.user.id)
+      .is("deleted_at", null)
+      .maybeSingle<{ id: string }>();
+
+    if (profileReadError || !professionalProfile) {
+      console.error("Professional profile not found", profileReadError);
+      return { error: authErrorMessage(locale, "profile") };
+    }
+
+    const completion = Math.min(
+      100,
+      20 +
+        Number(Boolean(values.companyName)) * 10 +
+        Number(Boolean(values.addressLine)) * 10 +
+        Number(Boolean(values.description)) * 15 +
+        values.languages.length * 5 +
+        values.services.length * 3 +
+        values.specialties.length * 3 +
+        representedBrands.length * 2
+    );
+
+    const { error: updateError } = await admin
+      .from("professional_profiles")
+      .update({
+        company_name: values.companyName,
+        logo_path: values.logoUrl || null,
+        cover_path: values.coverUrl || null,
+        address_line: values.addressLine || null,
+        postal_code: values.postalCode || null,
+        city: values.city || null,
+        canton: values.canton || null,
+        country: values.country || "Switzerland",
+        public_phone: values.publicPhone || null,
+        public_email: values.publicEmail || null,
+        whatsapp_phone: values.whatsappPhone || null,
+        whatsapp_enabled: Boolean(values.whatsappPhone),
+        website: values.website || null,
+        description: values.description || null,
+        languages: values.languages,
+        opening_hours: values.openingHours ? { text: values.openingHours } : {},
+        profile_completed_percent: completion,
+        updated_at: now
+      })
+      .eq("id", professionalProfile.id);
+
+    if (updateError) {
+      console.error("Professional profile update failed", updateError);
+      return { error: authErrorMessage(locale, "profile") };
+    }
+
+    await replaceBrokerRows(admin, "broker_services", professionalProfile.id, values.services, "service_code");
+    await replaceBrokerRows(admin, "broker_specialties", professionalProfile.id, values.specialties, "specialty_code");
+    await replaceBrokerRows(admin, "broker_represented_brands", professionalProfile.id, representedBrands, "brand_name");
+
+    const { error: deleteGalleryError } = await admin.from("broker_gallery").delete().eq("professional_profile_id", professionalProfile.id);
+    if (deleteGalleryError && !isSchemaCompatibilityError(deleteGalleryError)) {
+      console.error("Professional gallery delete failed", deleteGalleryError);
+      return { error: authErrorMessage(locale, "profile") };
+    }
+    if (galleryUrls.length > 0) {
+      const { error: galleryError } = await admin.from("broker_gallery").insert(
+        galleryUrls.map((url, index) => ({
+          professional_profile_id: professionalProfile.id,
+          storage_path: url,
+          public_url: url,
+          alt_text: values.companyName,
+          sort_order: index
+        }))
+      );
+      if (galleryError && !isSchemaCompatibilityError(galleryError)) {
+        console.error("Professional gallery update failed", galleryError);
+        return { error: authErrorMessage(locale, "profile") };
+      }
+    }
+  } catch (error) {
+    console.error("Professional profile update failed", error);
+    return { error: authErrorMessage(locale, "profile") };
+  }
+
+  redirect(`/${locale}/dashboard/profile?saved=1` as never);
+}
+
+export async function updateProfessionalProfileFormAction(formData: FormData) {
+  await updateProfessionalProfileAction({ error: "" }, formData);
+}
+
+async function replaceBrokerRows(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  table: "broker_services" | "broker_specialties" | "broker_represented_brands",
+  professionalProfileId: string,
+  values: string[],
+  column: "service_code" | "specialty_code" | "brand_name"
+) {
+  const { error: deleteError } = await admin.from(table).delete().eq("professional_profile_id", professionalProfileId);
+  if (deleteError && !isSchemaCompatibilityError(deleteError)) throw deleteError;
+  if (!values.length) return;
+
+  const { error } = await admin.from(table).insert(
+    values.map((value) => ({
+      professional_profile_id: professionalProfileId,
+      [column]: value
+    }))
+  );
+  if (error && !isSchemaCompatibilityError(error)) throw error;
+}
+
+function parseMultiValueText(value: string) {
+  return value
+    .split(/[\n,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .filter((item, index, all) => all.findIndex((candidate) => candidate.toLowerCase() === item.toLowerCase()) === index);
 }
 
 function authErrorMessage(locale: string, reason: "invalid" | "supabase" | "register" | "profile" | "login") {

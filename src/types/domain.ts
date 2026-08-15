@@ -52,11 +52,14 @@ export type BrokerService =
   | "buy_boats"
   | "sell_boats"
   | "brokerage"
+  | "consignment"
   | "rental"
   | "financing"
   | "leasing"
   | "insurance"
   | "transport"
+  | "import"
+  | "export"
   | "maintenance"
   | "repair"
   | "winter_storage"
@@ -65,6 +68,15 @@ export type BrokerService =
   | "administration"
   | "sea_trials"
   | "other";
+
+export type BrokerSpecialty =
+  | "motor_boats"
+  | "sailing_boats"
+  | "yachts"
+  | "jet_skis"
+  | "electric_boats"
+  | "used_boats"
+  | "new_boats";
 
 export type BrokerBadge =
   | "verified_broker"
@@ -104,6 +116,8 @@ export type ProfessionalProfile = {
   socialLinks?: Record<string, string>;
   serviceAreas: readonly string[];
   services: readonly BrokerService[];
+  specialties: readonly BrokerSpecialty[];
+  representedBrands: readonly string[];
   badges: readonly BrokerBadge[];
   gallery: readonly ListingImage[];
   activeListingsCount: number;

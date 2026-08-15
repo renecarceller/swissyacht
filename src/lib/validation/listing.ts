@@ -99,13 +99,39 @@ export const professionalRegisterSchema = z.object({
   canton: z.string().trim().min(2).max(120),
   country: z.string().trim().min(2).max(120).default("Switzerland"),
   publicPhone: z.string().trim().max(60).optional().default(""),
+  whatsappPhone: z.string().trim().max(60).optional().default(""),
   publicEmail: z.string().email().max(180),
   website: z.string().url().optional().or(z.literal("")).default(""),
   description: z.string().trim().max(3000).optional().default(""),
   preferredLocale: z.enum(["fr", "de", "it", "en"]).default("fr"),
   languages: z.array(z.enum(["fr", "de", "it", "en"])).min(1).default(["fr"]),
   openingHours: z.string().trim().max(1000).optional().default(""),
-  services: z.array(z.string()).default([])
+  services: z.array(z.string()).default([]),
+  specialties: z.array(z.string()).default([]),
+  representedBrands: z.string().trim().max(1000).optional().default(""),
+  galleryUrls: z.string().trim().max(3000).optional().default("")
+});
+
+export const professionalProfileUpdateSchema = z.object({
+  companyName: z.string().trim().min(2).max(180),
+  logoUrl: z.string().url().optional().or(z.literal("")).default(""),
+  coverUrl: z.string().url().optional().or(z.literal("")).default(""),
+  addressLine: z.string().trim().max(220).optional().default(""),
+  postalCode: z.string().trim().max(20).optional().default(""),
+  city: z.string().trim().max(120).optional().default(""),
+  canton: z.string().trim().max(120).optional().default(""),
+  country: z.string().trim().max(120).optional().default("Switzerland"),
+  publicPhone: z.string().trim().max(60).optional().default(""),
+  whatsappPhone: z.string().trim().max(60).optional().default(""),
+  publicEmail: z.string().email().max(180).optional().or(z.literal("")).default(""),
+  website: z.string().url().optional().or(z.literal("")).default(""),
+  description: z.string().trim().max(3000).optional().default(""),
+  languages: z.array(z.enum(["fr", "de", "it", "en"])).default([]),
+  openingHours: z.string().trim().max(1000).optional().default(""),
+  services: z.array(z.string()).default([]),
+  specialties: z.array(z.string()).default([]),
+  representedBrands: z.string().trim().max(1000).optional().default(""),
+  galleryUrls: z.string().trim().max(3000).optional().default("")
 });
 
 export const savedSearchSchema = z.object({
@@ -123,3 +149,4 @@ export type ListingFormValues = z.infer<typeof listingFormSchema>;
 export type InquiryValues = z.infer<typeof inquirySchema>;
 export type PrivateRegisterValues = z.infer<typeof privateRegisterSchema>;
 export type ProfessionalRegisterValues = z.infer<typeof professionalRegisterSchema>;
+export type ProfessionalProfileUpdateValues = z.infer<typeof professionalProfileUpdateSchema>;

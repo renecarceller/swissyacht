@@ -630,20 +630,20 @@ function BoatTypePicker({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/55 p-0 sm:items-center sm:justify-center sm:p-6" role="dialog" aria-modal="true" aria-label={label}>
-      <div className="max-h-[92vh] w-full overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-4xl sm:rounded-3xl">
-        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-5 py-4 sm:px-8">
-          <div className="flex items-center gap-4">
-            <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
-              <X className="size-7" strokeWidth={2.2} />
+      <div className="max-h-[90vh] w-full overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl">
+        <div className="flex items-center justify-between border-b border-[#d6d6d6] px-4 py-3 sm:px-7">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={onClose} className="grid size-9 place-items-center rounded-full bg-white text-[#2f3033] transition hover:bg-[#e8e8e8]" aria-label={labels.close}>
+              <X className="size-6" strokeWidth={2.2} />
             </button>
-            <h3 className="text-3xl font-semibold text-[#2f3033] sm:text-4xl">{label}</h3>
+            <h3 className="text-2xl font-semibold text-[#2f3033] sm:text-3xl">{label}</h3>
           </div>
-          <button type="button" onClick={() => onSelect("")} className="text-xl font-semibold text-[#0f6fae] transition hover:text-[#06233f] sm:text-2xl">
+          <button type="button" onClick={() => onSelect("")} className="text-lg font-semibold text-[#0f6fae] transition hover:text-[#06233f] sm:text-xl">
             {labels.selectAll}
           </button>
         </div>
 
-        <div className="max-h-[calc(92vh-88px)] overflow-y-auto px-5 py-2 sm:px-8">
+        <div className="max-h-[calc(90vh-76px)] overflow-y-auto px-4 py-1 sm:px-7">
           <div className="divide-y divide-[#dedede]">
             {categories.map((category) => {
               const selected = selectedCategory === category;
@@ -652,14 +652,14 @@ function BoatTypePicker({
                   type="button"
                   key={category}
                   onClick={() => onSelect(category)}
-                  className="grid w-full grid-cols-[40px_96px_1fr_auto] items-center gap-3 py-4 text-left text-[#2f3033] transition hover:text-[#0f6fae] sm:grid-cols-[52px_150px_1fr_auto] sm:gap-5 sm:py-6"
+                  className="grid w-full grid-cols-[34px_82px_1fr_auto] items-center gap-3 py-3 text-left text-[#2f3033] transition hover:text-[#0f6fae] sm:grid-cols-[44px_124px_1fr_auto] sm:gap-4 sm:py-5"
                 >
-                  <span className={`grid size-9 place-items-center rounded-md border-4 sm:size-11 ${selected ? "border-[#0f6fae] bg-[#0f6fae]" : "border-[#999] bg-white"}`}>
-                    {selected ? <span className="size-3 rounded-sm bg-white sm:size-4" /> : null}
+                  <span className={`grid size-8 place-items-center rounded-md border-[3px] sm:size-10 ${selected ? "border-[#0f6fae] bg-[#0f6fae]" : "border-[#999] bg-white"}`}>
+                    {selected ? <span className="size-2.5 rounded-sm bg-white sm:size-3.5" /> : null}
                   </span>
                   <BoatCategoryDrawing category={category} />
-                  <span className="min-w-0 truncate text-2xl font-semibold sm:text-3xl">{refLabel(locale, category)}</span>
-                  <span className="text-2xl font-semibold text-[#5f5f5f] sm:text-3xl">{categoryCounts[category] || 0}</span>
+                  <span className="min-w-0 truncate text-xl font-semibold sm:text-2xl">{refLabel(locale, category)}</span>
+                  <span className="text-xl font-semibold text-[#5f5f5f] sm:text-2xl">{categoryCounts[category] || 0}</span>
                 </button>
               );
             })}
@@ -1399,7 +1399,7 @@ function BoatCategoryDrawing({ category }: { category: string }) {
   const electric = category === "Electric boats";
 
   return (
-    <svg viewBox="0 0 220 90" className="h-12 w-24 text-[#333] sm:h-16 sm:w-36" aria-hidden="true">
+    <svg viewBox="0 0 220 90" className="h-10 w-20 text-[#333] sm:h-14 sm:w-28" aria-hidden="true">
       {sail ? (
         <>
           <path d="M105 10v52" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />

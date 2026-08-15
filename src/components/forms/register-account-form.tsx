@@ -10,19 +10,25 @@ import { cn } from "@/lib/utils";
 import { ui } from "@/i18n/ui";
 
 const brokerServices = [
-  "Compra de barcos",
-  "Venta de barcos",
-  "Brokerage",
-  "Alquiler",
-  "Financiacion",
-  "Leasing",
-  "Seguros",
-  "Transporte",
-  "Mantenimiento",
-  "Reparacion",
-  "Invernaje",
-  "Amarres"
+  "sell_boats",
+  "buy_boats",
+  "consignment",
+  "financing",
+  "leasing",
+  "insurance",
+  "transport",
+  "import",
+  "export",
+  "maintenance",
+  "repair",
+  "winter_storage",
+  "moorings",
+  "valuation",
+  "administration",
+  "sea_trials"
 ];
+
+const brokerSpecialties = ["motor_boats", "sailing_boats", "yachts", "jet_skis", "electric_boats", "used_boats", "new_boats"];
 
 export function RegisterAccountForm({ locale, compact = false }: { locale: string; compact?: boolean }) {
   const [accountType, setAccountType] = useState<"private" | "professional" | null>(null);
@@ -115,6 +121,7 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
               <Field label={text.common.canton}><Select name="canton">{cantons.map((canton) => <option key={canton}>{canton}</option>)}</Select></Field>
               <Field label={labels.country}><Input name="country" defaultValue="Switzerland" required /></Field>
               <Field label={text.common.phone}><Input name="publicPhone" /></Field>
+              <Field label={labels.whatsapp}><Input name="whatsappPhone" placeholder="+41..." /></Field>
               <Field label={text.common.email}><Input type="email" name="publicEmail" required /></Field>
             </div>
           </Step>
@@ -122,6 +129,8 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
             <div className="grid gap-4">
               <Field label={text.common.description}><Textarea name="description" rows={5} /></Field>
               <Field label={labels.openingHours}><Textarea name="openingHours" rows={3} /></Field>
+              <Field label={labels.representedBrands}><Textarea name="representedBrands" rows={3} placeholder={labels.representedBrandsPlaceholder} /></Field>
+              <Field label={labels.galleryUrls}><Textarea name="galleryUrls" rows={3} placeholder={labels.galleryUrlsPlaceholder} /></Field>
               <div>
                 <div className="mb-2 text-sm font-semibold text-navy">{labels.languages}</div>
                 <div className="flex flex-wrap gap-3">
@@ -134,12 +143,23 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
                 </div>
               </div>
               <div>
+                <div className="mb-2 text-sm font-semibold text-navy">{labels.specialties}</div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {brokerSpecialties.map((specialty) => (
+                    <label key={specialty} className="rounded-md border border-[#d9e2ec] bg-white px-3 py-2 text-sm">
+                      <input type="checkbox" name="specialties" value={specialty} className="mr-2" />
+                      {specialtyLabel(locale, specialty)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
                 <div className="mb-2 text-sm font-semibold text-navy">{labels.services}</div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {brokerServices.map((service) => (
                     <label key={service} className="rounded-md border border-[#d9e2ec] bg-white px-3 py-2 text-sm">
                       <input type="checkbox" name="services" value={service} className="mr-2" />
-                      {service}
+                      {serviceLabel(locale, service)}
                     </label>
                   ))}
                 </div>
@@ -215,7 +235,7 @@ function registerLabels(locale: string) {
       firstName: "Prénom",
       lastName: "Nom",
       createPrivate: "Créer mon compte",
-      creating: "Creation...",
+      creating: "Création...",
       accessData: "Données d'accès",
       companyData: "Informations de l'entreprise",
       publicPresentation: "Présentation publique",
@@ -224,11 +244,17 @@ function registerLabels(locale: string) {
       logo: "Logo",
       cover: "Image de couverture",
       website: "Page web",
+      whatsapp: "WhatsApp",
       address: "Adresse",
       postalCode: "Code postal",
       country: "Pays",
       openingHours: "Horaires",
       languages: "Langues",
+      specialties: "Spécialités",
+      representedBrands: "Marques représentées",
+      representedBrandsPlaceholder: "Une marque par ligne",
+      galleryUrls: "Galerie de l'entreprise",
+      galleryUrlsPlaceholder: "URLs d'images, une par ligne",
       services: "Services offerts",
       createProfessional: "Créer le compte professionnel"
     },
@@ -261,11 +287,17 @@ function registerLabels(locale: string) {
       logo: "Logo",
       cover: "Titelbild",
       website: "Webseite",
+      whatsapp: "WhatsApp",
       address: "Adresse",
       postalCode: "Postleitzahl",
       country: "Land",
       openingHours: "Öffnungszeiten",
       languages: "Sprachen",
+      specialties: "Spezialitäten",
+      representedBrands: "Vertretene Marken",
+      representedBrandsPlaceholder: "Eine Marke pro Zeile",
+      galleryUrls: "Firmengalerie",
+      galleryUrlsPlaceholder: "Bild-URLs, eine pro Zeile",
       services: "Angebotene Services",
       createProfessional: "Profi-Konto erstellen"
     },
@@ -298,11 +330,17 @@ function registerLabels(locale: string) {
       logo: "Logo",
       cover: "Immagine di copertina",
       website: "Sito web",
+      whatsapp: "WhatsApp",
       address: "Indirizzo",
       postalCode: "Codice postale",
       country: "Paese",
       openingHours: "Orari",
       languages: "Lingue",
+      specialties: "Specialità",
+      representedBrands: "Marchi rappresentati",
+      representedBrandsPlaceholder: "Un marchio per riga",
+      galleryUrls: "Galleria azienda",
+      galleryUrlsPlaceholder: "URL immagini, una per riga",
       services: "Servizi offerti",
       createProfessional: "Crea account professionale"
     },
@@ -335,15 +373,56 @@ function registerLabels(locale: string) {
       logo: "Logo",
       cover: "Cover image",
       website: "Website",
+      whatsapp: "WhatsApp",
       address: "Address",
       postalCode: "Postal code",
       country: "Country",
       openingHours: "Opening hours",
       languages: "Languages",
+      specialties: "Specialties",
+      representedBrands: "Represented brands",
+      representedBrandsPlaceholder: "One brand per line",
+      galleryUrls: "Company gallery",
+      galleryUrlsPlaceholder: "Image URLs, one per line",
       services: "Services offered",
       createProfessional: "Create professional account"
     }
   };
 
   return dictionaries[locale as keyof typeof dictionaries] ?? dictionaries.fr;
+}
+
+function serviceLabel(locale: string, service: string) {
+  const labels: Record<string, Record<string, string>> = {
+    sell_boats: { fr: "Vente", de: "Verkauf", it: "Vendita", en: "Sales" },
+    buy_boats: { fr: "Achat", de: "Ankauf", it: "Acquisto", en: "Buying" },
+    consignment: { fr: "Consignation", de: "Kommission", it: "Conto vendita", en: "Consignment" },
+    financing: { fr: "Financement", de: "Finanzierung", it: "Finanziamento", en: "Financing" },
+    leasing: { fr: "Leasing", de: "Leasing", it: "Leasing", en: "Leasing" },
+    insurance: { fr: "Assurance", de: "Versicherung", it: "Assicurazione", en: "Insurance" },
+    transport: { fr: "Transport", de: "Transport", it: "Trasporto", en: "Transport" },
+    import: { fr: "Importation", de: "Import", it: "Importazione", en: "Import" },
+    export: { fr: "Exportation", de: "Export", it: "Esportazione", en: "Export" },
+    maintenance: { fr: "Maintenance", de: "Wartung", it: "Manutenzione", en: "Maintenance" },
+    repair: { fr: "Réparation", de: "Reparatur", it: "Riparazione", en: "Repair" },
+    winter_storage: { fr: "Invernage", de: "Winterlager", it: "Rimessaggio invernale", en: "Winter storage" },
+    moorings: { fr: "Amarrage", de: "Liegeplatz", it: "Ormeggio", en: "Mooring" },
+    valuation: { fr: "Évaluations", de: "Bewertungen", it: "Perizie", en: "Valuations" },
+    administration: { fr: "Gestion documentaire", de: "Dokumentenverwaltung", it: "Gestione documentale", en: "Document handling" },
+    sea_trials: { fr: "Essais de navigation", de: "Probefahrten", it: "Prove in acqua", en: "Sea trials" }
+  };
+  return labels[service]?.[locale] ?? labels[service]?.fr ?? service;
+}
+
+function specialtyLabel(locale: string, specialty: string) {
+  const labels: Record<string, Record<string, string>> = {
+    motor_boats: { fr: "Bateaux à moteur", de: "Motorboote", it: "Barche a motore", en: "Motor boats" },
+    sailing_boats: { fr: "Voiliers", de: "Segelboote", it: "Barche a vela", en: "Sailing boats" },
+    yachts: { fr: "Yachts", de: "Yachten", it: "Yacht", en: "Yachts" },
+    jet_skis: { fr: "Motos nautiques", de: "Jetskis", it: "Moto d'acqua", en: "Jet skis" },
+    electric_boats: { fr: "Bateaux électriques", de: "Elektroboote", it: "Barche elettriche", en: "Electric boats" },
+    used_boats: { fr: "Bateaux d'occasion", de: "Gebrauchtboote", it: "Barche usate", en: "Used boats" },
+    new_boats: { fr: "Bateaux neufs", de: "Neue Boote", it: "Barche nuove", en: "New boats" }
+  };
+  return labels[specialty]?.[locale] ?? labels[specialty]?.fr ?? specialty;
 }

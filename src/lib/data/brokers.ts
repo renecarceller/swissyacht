@@ -1,4 +1,4 @@
-import type { BrokerBadge, BrokerService, Listing, ListingFilters, Locale, ProfessionalProfile, ProfessionalType } from "@/types/domain";
+import type { BrokerBadge, BrokerService, BrokerSpecialty, Listing, ListingFilters, Locale, ProfessionalProfile, ProfessionalType } from "@/types/domain";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { demoProfessionalProfiles } from "@/lib/data/demo";
 import { getPublicListingsAsync, sortListings } from "@/lib/data/listings";
@@ -20,6 +20,16 @@ function toBrokerServices(value: unknown): BrokerService[] {
   return value.filter((item): item is BrokerService => typeof item === "string");
 }
 
+function toBrokerSpecialties(value: unknown): BrokerSpecialty[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is BrokerSpecialty => typeof item === "string");
+}
+
+function toRepresentedBrands(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
 function toBrokerBadges(value: unknown): BrokerBadge[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is BrokerBadge => typeof item === "string");
@@ -29,22 +39,43 @@ function toProfessionalType(value: unknown): ProfessionalType {
   return value === "dealer" || value === "marina" || value === "shipyard" || value === "rental" || value === "services" || value === "other" ? value : "broker";
 }
 
+function isSchemaCompatibilityError(error: unknown) {
+  const issue = error as { message?: string; code?: string; details?: string } | null;
+  const text = `${issue?.code || ""} ${issue?.message || ""} ${issue?.details || ""}`.toLowerCase();
+  return text.includes("pgrst204") || text.includes("schema cache") || text.includes("could not find") || text.includes("does not exist");
+}
+
 async function getSupabaseProfessionalProfiles() {
   try {
     const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("professional_profiles")
-      .select("*, broker_services(service_code), broker_badges(badge_code), broker_gallery(id, public_url, storage_path, alt_text, sort_order)")
+      .select("*, broker_services(service_code), broker_specialties(specialty_code), broker_represented_brands(brand_name), broker_badges(badge_code), broker_gallery(id, public_url, storage_path, alt_text, sort_order)")
       .is("deleted_at", null)
       .is("suspended_at", null)
       .not("published_at", "is", null)
       .order("is_featured", { ascending: false })
       .order("company_name", { ascending: true });
 
+    if (error && isSchemaCompatibilityError(error)) {
+      const fallback = await supabase
+        .from("professional_profiles")
+        .select("*, broker_services(service_code), broker_badges(badge_code), broker_gallery(id, public_url, storage_path, alt_text, sort_order)")
+        .is("deleted_at", null)
+        .is("suspended_at", null)
+        .not("published_at", "is", null)
+        .order("is_featured", { ascending: false })
+        .order("company_name", { ascending: true });
+      data = fallback.data;
+      error = fallback.error;
+    }
+
     if (error || !data) return [];
 
     return data.map((item) => {
       const services = Array.isArray(item.broker_services) ? item.broker_services.map((service: { service_code?: string }) => service.service_code).filter(Boolean) : [];
+      const specialties = Array.isArray(item.broker_specialties) ? item.broker_specialties.map((specialty: { specialty_code?: string }) => specialty.specialty_code).filter(Boolean) : [];
+      const representedBrands = Array.isArray(item.broker_represented_brands) ? item.broker_represented_brands.map((brand: { brand_name?: string }) => brand.brand_name).filter(Boolean) : [];
       const badges = Array.isArray(item.broker_badges) ? item.broker_badges.map((badge: { badge_code?: string }) => badge.badge_code).filter(Boolean) : [];
       const gallery = Array.isArray(item.broker_gallery) ? item.broker_gallery : [];
 
@@ -78,6 +109,8 @@ async function getSupabaseProfessionalProfiles() {
         socialLinks: item.social_links || {},
         serviceAreas: Array.isArray(item.service_areas) ? item.service_areas : [],
         services: toBrokerServices(services),
+        specialties: toBrokerSpecialties(specialties),
+        representedBrands: toRepresentedBrands(representedBrands),
         badges: toBrokerBadges(badges),
         gallery: gallery.map((image: { id: string; public_url?: string; storage_path?: string; alt_text?: string; sort_order?: number }) => ({
           id: image.id,
