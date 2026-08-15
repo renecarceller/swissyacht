@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LoginAccountForm } from "@/components/forms/login-account-form";
 import { RegisterAccountForm } from "@/components/forms/register-account-form";
 
 const storageKey = "swissyacht-welcome-closed";
@@ -10,6 +11,7 @@ const openEvent = "swissyacht:open-account-modal";
 export function WelcomeAccountModal({ locale }: { locale: string }) {
   const [open, setOpen] = useState(shouldOpenInitially);
   const [publishError] = useState(shouldShowPublishError);
+  const [mode, setMode] = useState<"register" | "login">("register");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -54,7 +56,23 @@ export function WelcomeAccountModal({ locale }: { locale: string }) {
           ) : null}
         </div>
         <div className="p-5 md:p-8">
-          <RegisterAccountForm locale={locale} compact />
+          <div className="mx-auto mb-6 flex w-full max-w-md rounded-md border border-[#d9e2ec] bg-white p-1">
+            <button
+              type="button"
+              onClick={() => setMode("register")}
+              className={`flex-1 rounded-md px-4 py-3 text-sm font-bold transition ${mode === "register" ? "bg-[#8bd3ff] text-navy shadow-[0_3px_0_#58b9e8]" : "text-[#607085] hover:bg-[#e8f6ff]"}`}
+            >
+              {registerTab(locale)}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("login")}
+              className={`flex-1 rounded-md px-4 py-3 text-sm font-bold transition ${mode === "login" ? "bg-[#8bd3ff] text-navy shadow-[0_3px_0_#58b9e8]" : "text-[#607085] hover:bg-[#e8f6ff]"}`}
+            >
+              {loginTab(locale)}
+            </button>
+          </div>
+          {mode === "login" ? <LoginAccountForm locale={locale} /> : <RegisterAccountForm locale={locale} compact />}
         </div>
       </div>
     </div>
@@ -89,10 +107,30 @@ function welcomeLine(locale: string) {
 
 function publishErrorLine(locale: string) {
   const lines = {
-    fr: "Vous devez creer un compte ou vous connecter avant de publier une annonce.",
-    de: "Bitte erstellen Sie ein Konto oder melden Sie sich an, bevor Sie ein Inserat veroffentlichen.",
+    fr: "Vous devez créer un compte ou vous connecter avant de publier une annonce.",
+    de: "Bitte erstellen Sie ein Konto oder melden Sie sich an, bevor Sie ein Inserat veröffentlichen.",
     it: "Devi creare un account o accedere prima di pubblicare un annuncio.",
     en: "You need to create an account or sign in before publishing a listing."
   };
   return lines[locale as keyof typeof lines] ?? lines.fr;
+}
+
+function registerTab(locale: string) {
+  const labels = {
+    fr: "Créer un compte",
+    de: "Konto erstellen",
+    it: "Crea account",
+    en: "Create account"
+  };
+  return labels[locale as keyof typeof labels] ?? labels.fr;
+}
+
+function loginTab(locale: string) {
+  const labels = {
+    fr: "Se connecter",
+    de: "Anmelden",
+    it: "Accedi",
+    en: "Sign in"
+  };
+  return labels[locale as keyof typeof labels] ?? labels.fr;
 }

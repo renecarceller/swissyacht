@@ -92,6 +92,9 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
   const [actionState, formAction, pending] = useActionState(submitListingAction, { error: "" });
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<ListingDraft>(initialDraft);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const photosRef = useRef<PhotoPreview[]>([]);
+  const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const stepTitles = [
     text.sell.step1,
     text.sell.step2,
@@ -109,10 +112,19 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+
+  useEffect(() => {
+    return () => photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.url));
+  }, []);
+
   return (
     <form action={formAction} className="grid gap-5">
       <HiddenDraftInputs draft={draft} />
       <input type="hidden" name="locale" value={locale} />
+      <input ref={photoInputRef} type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple className="hidden" tabIndex={-1} />
       {actionState.error ? (
         <div className="rounded-md border border-[#8bd3ff] bg-[#e8f6ff] px-4 py-3 text-sm font-semibold text-navy">
           {actionState.error}
@@ -200,7 +212,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
 
       {step === 6 ? (
         <StepCard title={labels.photosTitle}>
-          <PhotoUploadField labels={labels} />
+          <PhotoUploadField labels={labels} photos={photos} setPhotos={setPhotos} inputRef={photoInputRef} />
         </StepCard>
       ) : null}
 
@@ -307,22 +319,21 @@ type PhotoPreview = {
   url: string;
 };
 
-function PhotoUploadField({ labels }: { labels: ReturnType<typeof stepFormLabels> }) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
+function PhotoUploadField({
+  labels,
+  photos,
+  setPhotos,
+  inputRef
+}: {
+  labels: ReturnType<typeof stepFormLabels>;
+  photos: PhotoPreview[];
+  setPhotos: React.Dispatch<React.SetStateAction<PhotoPreview[]>>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+}) {
   const finderInputRef = useRef<HTMLInputElement | null>(null);
   const libraryInputRef = useRef<HTMLInputElement | null>(null);
-  const photosRef = useRef<PhotoPreview[]>([]);
-  const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const [error, setError] = useState("");
   const [showSources, setShowSources] = useState(false);
-
-  useEffect(() => {
-    photosRef.current = photos;
-  }, [photos]);
-
-  useEffect(() => {
-    return () => photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.url));
-  }, []);
 
   const syncInputFiles = (nextPhotos: PhotoPreview[]) => {
     if (!inputRef.current) return;
@@ -380,9 +391,28 @@ function PhotoUploadField({ labels }: { labels: ReturnType<typeof stepFormLabels
 
   return (
     <div className="grid gap-4">
-      <input ref={inputRef} type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple className="hidden" tabIndex={-1} readOnly />
-      <input ref={finderInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={(event) => handleFiles(event.target.files)} />
-      <input ref={libraryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(event) => handleFiles(event.target.files)} />
+      <input
+        ref={finderInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          handleFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
+      <input
+        ref={libraryInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          handleFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
 
       <div className="rounded-md border border-dashed border-[#8bd3ff] bg-[#f6fbff] p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

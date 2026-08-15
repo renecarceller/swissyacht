@@ -18,9 +18,26 @@ export type ListingActionState = {
   error: string;
 };
 
+type SupabaseMutationError = {
+  message?: string;
+  code?: string;
+  details?: string;
+};
+
 type SaveListingResult =
   | { ok: true; slug: string; brand: string; model: string }
   | { ok: false; error: string };
+
+function isSchemaCompatibilityError(error: unknown) {
+  const issue = error as SupabaseMutationError | null;
+  const text = `${issue?.code || ""} ${issue?.message || ""} ${issue?.details || ""}`.toLowerCase();
+  return (
+    text.includes("pgrst204") ||
+    text.includes("schema cache") ||
+    text.includes("could not find") ||
+    text.includes("does not exist")
+  );
+}
 
 export async function submitListingAction(_state: ListingActionState, formData: FormData): Promise<ListingActionState> {
   const parsed = listingFormSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -68,15 +85,15 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const now = new Date().toISOString();
     const fullName = [data.user.user_metadata?.first_name, data.user.user_metadata?.last_name].filter(Boolean).join(" ") || values.contactName;
 
-    await admin.from("profiles").upsert({
+    const { error: profileError } = await admin.from("profiles").upsert({
       id: userId,
       role: data.user.user_metadata?.account_type === "professional" ? "professional" : "private",
-      account_type: data.user.user_metadata?.account_type === "professional" ? "professional" : "private",
       full_name: fullName,
       phone: values.contactPhone || null,
       preferred_locale: locale,
       updated_at: now
     });
+    if (profileError) throw new Error(profileError.message);
 
     const [{ id: categoryId }, { id: brandId }, { id: modelId }, { id: cantonId }, { id: lakeId }] = await Promise.all([
       findReferenceId("categories", values.category),
@@ -360,7 +377,7 @@ async function getProfessionalProfileForUser(userId: string): Promise<Profession
 
   if (data) return data as ProfessionalProfileOwner;
 
-  const { data: membership } = await admin
+  const { data: membership, error: membershipError } = await admin
     .from("professional_members")
     .select("professional_profile_id")
     .eq("user_id", userId)
@@ -368,6 +385,9 @@ async function getProfessionalProfileForUser(userId: string): Promise<Profession
     .in("role", ["owner", "admin", "editor"])
     .limit(1)
     .maybeSingle();
+
+  if (membershipError && isSchemaCompatibilityError(membershipError)) return null;
+  if (membershipError) throw new Error(membershipError.message);
 
   const professionalProfileId = typeof membership?.professional_profile_id === "string" ? membership.professional_profile_id : null;
   if (!professionalProfileId) return null;

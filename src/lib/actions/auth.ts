@@ -11,9 +11,39 @@ export type AuthActionState = {
   error: string;
 };
 
+type SupabaseMutationError = {
+  message?: string;
+  code?: string;
+  details?: string;
+};
+
 function localeFromForm(formData: FormData) {
   const rawLocale = String(formData.get("locale") || "fr");
   return locales.includes(rawLocale as (typeof locales)[number]) ? rawLocale : "fr";
+}
+
+function isSchemaCompatibilityError(error: unknown) {
+  const issue = error as SupabaseMutationError | null;
+  const text = `${issue?.code || ""} ${issue?.message || ""} ${issue?.details || ""}`.toLowerCase();
+  return (
+    text.includes("pgrst204") ||
+    text.includes("schema cache") ||
+    text.includes("could not find") ||
+    text.includes("does not exist")
+  );
+}
+
+async function upsertProfileCompat(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  fullPayload: Record<string, unknown>,
+  fallbackPayload: Record<string, unknown>
+) {
+  const { error } = await admin.from("profiles").upsert(fullPayload);
+  if (!error) return null;
+  if (!isSchemaCompatibilityError(error)) return error;
+
+  const { error: fallbackError } = await admin.from("profiles").upsert(fallbackPayload);
+  return fallbackError;
 }
 
 export async function registerPrivateAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
@@ -49,18 +79,32 @@ export async function registerPrivateAccountAction(_state: AuthActionState, form
 
   try {
     const admin = createSupabaseAdminClient();
-    const { error: profileError } = await admin.from("profiles").upsert({
-      id: data.user.id,
-      role: "private",
-      account_type: "private",
-      first_name: values.firstName,
-      last_name: values.lastName,
-      full_name: `${values.firstName} ${values.lastName}`.trim(),
-      phone: values.phone,
-      preferred_locale: locale,
-      terms_accepted_at: new Date().toISOString(),
-      privacy_accepted_at: new Date().toISOString()
-    });
+    const fullName = `${values.firstName} ${values.lastName}`.trim();
+    const now = new Date().toISOString();
+    const profileError = await upsertProfileCompat(
+      admin,
+      {
+        id: data.user.id,
+        role: "private",
+        account_type: "private",
+        first_name: values.firstName,
+        last_name: values.lastName,
+        full_name: fullName,
+        phone: values.phone,
+        preferred_locale: locale,
+        terms_accepted_at: now,
+        privacy_accepted_at: now,
+        updated_at: now
+      },
+      {
+        id: data.user.id,
+        role: "private",
+        full_name: fullName,
+        phone: values.phone,
+        preferred_locale: locale,
+        updated_at: now
+      }
+    );
 
     if (profileError) {
       console.error("Private profile creation failed", profileError);
@@ -69,6 +113,43 @@ export async function registerPrivateAccountAction(_state: AuthActionState, form
   } catch (error) {
     console.error("Private profile creation failed", error);
     return { error: authErrorMessage(locale, "profile") };
+  }
+
+  redirect(`/${locale}/dashboard` as never);
+}
+
+export async function loginAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  const locale = localeFromForm(formData);
+  const email = String(formData.get("email") || "").trim();
+  const password = String(formData.get("password") || "");
+
+  if (!email || !password) {
+    return { error: authErrorMessage(locale, "login") };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { error: authErrorMessage(locale, "supabase") };
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) {
+    console.error("Login failed", error);
+    return { error: authErrorMessage(locale, "login") };
+  }
+
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .maybeSingle<{ role: string }>();
+
+    if (profile?.role === "admin") redirect(`/${locale}/admin` as never);
+    if (profile?.role === "professional") {
+      redirect(`/${locale}/dashboard/professional` as never);
+    }
+  } catch {
+    // If the profile cannot be read, keep the session and send the user to the general dashboard.
   }
 
   redirect(`/${locale}/dashboard` as never);
@@ -114,18 +195,31 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
 
   try {
     const admin = createSupabaseAdminClient();
-    const { error: profileError } = await admin.from("profiles").upsert({
-      id: data.user.id,
-      role: "professional",
-      account_type: "professional",
-      first_name: values.firstName,
-      last_name: values.lastName,
-      full_name: `${values.firstName} ${values.lastName}`.trim(),
-      phone: values.phone,
-      preferred_locale: locale,
-      terms_accepted_at: now,
-      privacy_accepted_at: now
-    });
+    const fullName = `${values.firstName} ${values.lastName}`.trim();
+    const profileError = await upsertProfileCompat(
+      admin,
+      {
+        id: data.user.id,
+        role: "professional",
+        account_type: "professional",
+        first_name: values.firstName,
+        last_name: values.lastName,
+        full_name: fullName,
+        phone: values.phone,
+        preferred_locale: locale,
+        terms_accepted_at: now,
+        privacy_accepted_at: now,
+        updated_at: now
+      },
+      {
+        id: data.user.id,
+        role: "professional",
+        full_name: fullName,
+        phone: values.phone,
+        preferred_locale: locale,
+        updated_at: now
+      }
+    );
 
     if (profileError) {
       console.error("Professional profile user creation failed", profileError);
@@ -144,7 +238,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
         values.services.length * 3
     );
 
-    const { data: professionalProfile, error: companyError } = await admin
+    let { data: professionalProfile, error: companyError } = await admin
       .from("professional_profiles")
       .insert({
         user_id: data.user.id,
@@ -174,6 +268,29 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
       .select("id")
       .single();
 
+    if (companyError && isSchemaCompatibilityError(companyError)) {
+      const fallback = await admin
+        .from("professional_profiles")
+        .insert({
+          user_id: data.user.id,
+          company_name: values.companyName,
+          slug,
+          logo_path: values.logoUrl || null,
+          address_line: values.addressLine,
+          postal_code: values.postalCode,
+          city: values.city,
+          canton: values.canton,
+          website: values.website || null,
+          phones: [values.publicPhone || values.phone].filter(Boolean),
+          languages: values.languages.length ? values.languages : [locale],
+          description: values.description || null
+        })
+        .select("id")
+        .single();
+      professionalProfile = fallback.data;
+      companyError = fallback.error;
+    }
+
     if (companyError || !professionalProfile) {
       console.error("Professional company profile creation failed", companyError);
       return { error: authErrorMessage(locale, "profile") };
@@ -185,7 +302,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
       role: "owner",
       accepted_at: now
     });
-    if (memberError) {
+    if (memberError && !isSchemaCompatibilityError(memberError)) {
       console.error("Professional membership creation failed", memberError);
       return { error: authErrorMessage(locale, "profile") };
     }
@@ -197,7 +314,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
           service_code: service
         }))
       );
-      if (servicesError) {
+      if (servicesError && !isSchemaCompatibilityError(servicesError)) {
         console.error("Professional services creation failed", servicesError);
         return { error: authErrorMessage(locale, "profile") };
       }
@@ -210,7 +327,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
   redirect(`/${locale}/dashboard/professional` as never);
 }
 
-function authErrorMessage(locale: string, reason: "invalid" | "supabase" | "register" | "profile") {
+function authErrorMessage(locale: string, reason: "invalid" | "supabase" | "register" | "profile" | "login") {
   const messages = {
     invalid: {
       fr: "Veuillez vérifier les champs obligatoires.",
@@ -235,6 +352,12 @@ function authErrorMessage(locale: string, reason: "invalid" | "supabase" | "regi
       de: "Das Konto wurde erstellt, aber das Profil konnte nicht abgeschlossen werden. Prüfen Sie die Supabase-Migrationen.",
       it: "L'account è stato creato, ma il profilo non è stato completato. Verifica le migrazioni Supabase.",
       en: "The account was created, but the profile could not be completed. Check the Supabase migrations."
+    },
+    login: {
+      fr: "Connexion impossible. Vérifiez votre email et votre mot de passe.",
+      de: "Anmeldung nicht möglich. Prüfen Sie E-Mail und Passwort.",
+      it: "Accesso non riuscito. Verifica email e password.",
+      en: "Sign in failed. Check your email and password."
     }
   };
 
