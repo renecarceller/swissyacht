@@ -52,7 +52,7 @@ export function SiteHeader({ locale, unreadMessages = 0 }: { locale: string; unr
           <Link href="/dashboard/favorites" locale={locale} className="grid size-10 place-items-center rounded-md text-[#8bd3ff] transition hover:bg-[#eef9ff]" aria-label={text.dashboard.favorites}>
             <Heart size={23} className="text-[#8bd3ff]" fill="#8bd3ff" stroke="#8bd3ff" strokeWidth={2.2} />
           </Link>
-          <button type="button" onClick={openAccountModal} className="grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={text.nav.account}>
+          <button type="button" onClick={() => openAccountModal()} className="grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={text.nav.account}>
             <CircleUserRound size={25} strokeWidth={2.1} />
           </button>
           <div className="relative">
@@ -82,7 +82,7 @@ export function SiteHeader({ locale, unreadMessages = 0 }: { locale: string; unr
             ) : null}
           </div>
         </div>
-        <button type="button" onClick={openAccountModal} className="grid size-12 place-items-center rounded-full text-[#2f3033] transition hover:bg-[#eef6fc] min-[520px]:hidden" aria-label={text.nav.account}>
+        <button type="button" onClick={() => openAccountModal()} className="grid size-12 place-items-center rounded-full text-[#2f3033] transition hover:bg-[#eef6fc] min-[520px]:hidden" aria-label={text.nav.account}>
           <CircleUserRound className="size-10" strokeWidth={2.1} />
         </button>
       </div>

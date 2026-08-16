@@ -49,7 +49,7 @@ export function ListingMessageBox({
                 <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} locale={locale} className="flex h-11 items-center justify-center rounded-md bg-[#8bd3ff] font-bold text-[#06233f] shadow-[0_3px_0_#58b9e8]">
                   {text.login}
                 </Link>
-                <button type="button" onClick={openAccountModal} className="flex h-11 items-center justify-center rounded-md border border-[#cbd7e4] font-bold text-navy">
+                <button type="button" onClick={() => openAccountModal(returnTo)} className="flex h-11 items-center justify-center rounded-md border border-[#cbd7e4] font-bold text-navy">
                   {text.create}
                 </button>
               </div>
@@ -92,21 +92,21 @@ function labels(locale: string) {
     fr: {
       sendMessage: "Envoyer un message",
       messageLabel: "Votre message",
-      placeholder: "Ecrivez votre message au vendeur...",
+      placeholder: "Écrivez votre message au vendeur...",
       sending: "Envoi...",
-      loginTitle: "Connectez-vous pour ecrire au vendeur",
-      loginText: "Le chat interne est reserve aux comptes Swissnaut. Apres connexion, vous reviendrez automatiquement sur cette annonce.",
+      loginTitle: "Connectez-vous pour écrire au vendeur",
+      loginText: "Le chat interne est réservé aux comptes Swissnaut. Après connexion, vous reviendrez automatiquement sur cette annonce.",
       login: "Se connecter",
-      create: "Creer un compte",
+      create: "Créer un compte",
       close: "Fermer"
     },
     de: {
       sendMessage: "Nachricht senden",
       messageLabel: "Ihre Nachricht",
-      placeholder: "Schreiben Sie Ihre Nachricht an den Verkaeufer...",
+      placeholder: "Schreiben Sie Ihre Nachricht an den Verkäufer...",
       sending: "Senden...",
-      loginTitle: "Einloggen, um dem Verkaeufer zu schreiben",
-      loginText: "Der interne Chat ist Swissnaut-Konten vorbehalten. Nach dem Login kehren Sie automatisch zu diesem Inserat zurueck.",
+      loginTitle: "Einloggen, um dem Verkäufer zu schreiben",
+      loginText: "Der interne Chat ist Swissnaut-Konten vorbehalten. Nach dem Login kehren Sie automatisch zu diesem Inserat zurück.",
       login: "Anmelden",
       create: "Konto erstellen",
       close: "Schliessen"
@@ -117,7 +117,7 @@ function labels(locale: string) {
       placeholder: "Scrivi il tuo messaggio al venditore...",
       sending: "Invio...",
       loginTitle: "Accedi per scrivere al venditore",
-      loginText: "La chat interna e riservata agli account Swissnaut. Dopo l'accesso tornerai automaticamente a questo annuncio.",
+      loginText: "La chat interna è riservata agli account Swissnaut. Dopo l'accesso tornerai automaticamente a questo annuncio.",
       login: "Accedi",
       create: "Crea account",
       close: "Chiudi"

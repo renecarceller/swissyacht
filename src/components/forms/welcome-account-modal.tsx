@@ -12,6 +12,7 @@ export function WelcomeAccountModal({ locale }: { locale: string }) {
   const [open, setOpen] = useState(shouldOpenInitially);
   const [publishError] = useState(shouldShowPublishError);
   const [mode, setMode] = useState<"register" | "login">("register");
+  const [returnTo, setReturnTo] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -23,7 +24,11 @@ export function WelcomeAccountModal({ locale }: { locale: string }) {
       window.history.replaceState(null, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
     }
 
-    const handleOpen = () => setOpen(true);
+    const handleOpen = (event: Event) => {
+      const detail = event instanceof CustomEvent ? event.detail : null;
+      setReturnTo(typeof detail?.returnTo === "string" ? detail.returnTo : "");
+      setOpen(true);
+    };
     window.addEventListener(openEvent, handleOpen);
     return () => window.removeEventListener(openEvent, handleOpen);
   }, []);
@@ -72,15 +77,15 @@ export function WelcomeAccountModal({ locale }: { locale: string }) {
               {loginTab(locale)}
             </button>
           </div>
-          {mode === "login" ? <LoginAccountForm locale={locale} /> : <RegisterAccountForm locale={locale} compact />}
+          {mode === "login" ? <LoginAccountForm locale={locale} returnTo={returnTo} /> : <RegisterAccountForm locale={locale} compact returnTo={returnTo} />}
         </div>
       </div>
     </div>
   );
 }
 
-export function openAccountModal() {
-  window.dispatchEvent(new Event(openEvent));
+export function openAccountModal(returnTo?: string) {
+  window.dispatchEvent(new CustomEvent(openEvent, { detail: { returnTo } }));
 }
 
 function shouldOpenInitially() {

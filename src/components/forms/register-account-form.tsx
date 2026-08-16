@@ -30,7 +30,7 @@ const brokerServices = [
 
 const brokerSpecialties = ["motor_boats", "sailing_boats", "yachts", "jet_skis", "electric_boats", "used_boats", "new_boats"];
 
-export function RegisterAccountForm({ locale, compact = false }: { locale: string; compact?: boolean }) {
+export function RegisterAccountForm({ locale, compact = false, returnTo = "" }: { locale: string; compact?: boolean; returnTo?: string }) {
   const [accountType, setAccountType] = useState<"private" | "professional" | null>(null);
   const [privateState, privateAction, privatePending] = useActionState(registerPrivateAccountAction, { error: "" });
   const [professionalState, professionalAction, professionalPending] = useActionState(registerProfessionalAccountAction, { error: "" });
@@ -75,6 +75,7 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
       {accountType === "private" ? (
         <form action={privateAction} className={cn("rounded-md border border-[#d9e2ec] bg-white", compact ? "p-4 md:p-5" : "p-6")}>
           <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="returnTo" value={returnTo} />
           <h1 className="mb-5 flex items-center gap-2 text-2xl font-bold text-navy"><UserRound />{labels.privateRegister}</h1>
           {privateState.error ? <FormError message={privateState.error} /> : null}
           <div className="grid gap-4 md:grid-cols-2">
@@ -91,6 +92,7 @@ export function RegisterAccountForm({ locale, compact = false }: { locale: strin
       ) : (
         <form action={professionalAction} className={cn("grid", compact ? "gap-3" : "gap-5")}>
           <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="returnTo" value={returnTo} />
           {professionalState.error ? <FormError message={professionalState.error} /> : null}
           <Step title={labels.accessData}>
             <div className="grid gap-4 md:grid-cols-2">

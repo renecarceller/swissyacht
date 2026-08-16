@@ -48,6 +48,7 @@ async function upsertProfileCompat(
 
 export async function registerPrivateAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const locale = localeFromForm(formData);
+  const returnTo = safeReturnTo(locale, formData.get("returnTo"));
   const parsed = privateRegisterSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!parsed.success) {
@@ -115,7 +116,7 @@ export async function registerPrivateAccountAction(_state: AuthActionState, form
     return { error: authErrorMessage(locale, "profile") };
   }
 
-  redirect(`/${locale}/dashboard` as never);
+  redirect((returnTo || `/${locale}/dashboard`) as never);
 }
 
 export async function loginAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
@@ -165,6 +166,7 @@ function safeReturnTo(locale: string, value: FormDataEntryValue | null) {
 
 export async function registerProfessionalAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const locale = localeFromForm(formData);
+  const returnTo = safeReturnTo(locale, formData.get("returnTo"));
   const parsed = professionalRegisterSchema.safeParse({
     ...Object.fromEntries(formData.entries()),
     languages: formData.getAll("languages").map(String),
@@ -380,7 +382,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
     return { error: authErrorMessage(locale, "profile") };
   }
 
-  redirect(`/${locale}/dashboard/professional` as never);
+  redirect((returnTo || `/${locale}/dashboard/professional`) as never);
 }
 
 export async function updateProfessionalProfileAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {

@@ -166,25 +166,25 @@ function localeFromForm(formData: FormData) {
 function labels(locale: string) {
   const dictionary = {
     fr: {
-      empty: "Ecrivez un message avant de l'envoyer.",
+      empty: "Écrivez un message avant de l'envoyer.",
       listing: "Cette annonce n'est pas disponible.",
       conversation: "Cette conversation n'est pas disponible.",
-      ownListing: "Vous ne pouvez pas envoyer un message a votre propre annonce.",
-      generic: "Le message n'a pas pu etre envoye. Reessayez."
+      ownListing: "Vous ne pouvez pas envoyer un message à votre propre annonce.",
+      generic: "Le message n'a pas pu être envoyé. Réessayez."
     },
     de: {
       empty: "Schreiben Sie eine Nachricht, bevor Sie sie senden.",
-      listing: "Dieses Inserat ist nicht verfuegbar.",
-      conversation: "Diese Unterhaltung ist nicht verfuegbar.",
-      ownListing: "Sie koennen Ihrer eigenen Anzeige keine Nachricht senden.",
+      listing: "Dieses Inserat ist nicht verfügbar.",
+      conversation: "Diese Unterhaltung ist nicht verfügbar.",
+      ownListing: "Sie können Ihrer eigenen Anzeige keine Nachricht senden.",
       generic: "Die Nachricht konnte nicht gesendet werden. Bitte erneut versuchen."
     },
     it: {
       empty: "Scrivi un messaggio prima di inviarlo.",
-      listing: "Questo annuncio non e disponibile.",
-      conversation: "Questa conversazione non e disponibile.",
+      listing: "Questo annuncio non è disponibile.",
+      conversation: "Questa conversazione non è disponibile.",
       ownListing: "Non puoi inviare un messaggio al tuo annuncio.",
-      generic: "Il messaggio non e stato inviato. Riprova."
+      generic: "Il messaggio non è stato inviato. Riprova."
     },
     en: {
       empty: "Write a message before sending it.",
