@@ -2,14 +2,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Building2, Calendar, Eye, Mail, MapPin, Phone, Ruler, Share2, ShieldAlert, ShipWheel } from "lucide-react";
-import { InquiryForm } from "@/components/forms/inquiry-form";
+import { ListingMessageBox } from "@/components/messages/listing-message-box";
 import { ListingCard } from "@/components/listings/listing-card";
 import { FavoriteButton } from "@/components/listings/favorite-button";
+import { ListingGallery } from "@/components/listings/listing-gallery";
 import { Link } from "@/i18n/routing";
 import { getListingBySlugAsync, getSimilarListingsAsync } from "@/lib/data/listings";
 import { listingJsonLd } from "@/lib/seo/json-ld";
 import { formatChf } from "@/lib/utils";
 import { refLabel, ui } from "@/i18n/ui";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({
   params
@@ -38,6 +40,8 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const text = ui(locale);
   const specLabels = text.listing.specs.split("|");
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
   return (
     <main className="container-shell py-8">
@@ -45,12 +49,7 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
       <div className="mb-4 text-sm text-[#607085]">{text.listing.breadcrumbHome} / {text.listing.breadcrumbBoats} / {listing.brand} / {listing.title}</div>
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <section className="grid gap-6">
-          <div className="overflow-hidden rounded-md border border-[#d9e2ec] bg-white">
-            <img src={listing.images[0].url} alt={listing.images[0].alt} className="h-[420px] w-full object-cover" />
-            <div className="grid grid-cols-3 gap-2 p-2">
-              {listing.images.slice(1).map((image) => <img key={image.id} src={image.url} alt={image.alt} className="h-28 w-full rounded object-cover" />)}
-            </div>
-          </div>
+          <ListingGallery images={listing.images} />
           <section className="rounded-md border border-[#d9e2ec] bg-white p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -120,8 +119,16 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
               </div>
             </div>
             <div className="mt-4 grid gap-2">
-              <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />{text.listing.showPhone}</button>
-              <a href={`mailto:${listing.seller.email}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Mail size={17} />{text.listing.contactSeller}</a>
+              <ListingMessageBox listing={listing} locale={locale} isAuthenticated={Boolean(user)} />
+              {listing.seller.phone ? (
+                <a href={`tel:${listing.seller.phone}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />{text.listing.showPhone}</a>
+              ) : null}
+              {listing.seller.whatsapp ? (
+                <a href={`https://wa.me/${listing.seller.whatsapp.replace(/[^0-9]/g, "")}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />WhatsApp</a>
+              ) : null}
+              {listing.seller.email ? (
+                <a href={`mailto:${listing.seller.email}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Mail size={17} />Email</a>
+              ) : null}
               <FavoriteButton listingId={listing.id} label={text.listing.saveFavorite} variant="action" />
               <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Share2 size={17} />{text.listing.share}</button>
               {listing.seller.professionalSlug ? (
@@ -135,7 +142,6 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
             <p className="mt-4 font-mono text-xs text-[#607085]">{text.listing.listingId}: {listing.id}</p>
             <p className="mt-1 text-xs text-[#607085]">{text.listing.published}: {new Date(listing.publishedAt).toLocaleDateString(`${locale}-CH`)}</p>
           </div>
-          <InquiryForm listing={listing} locale={locale} />
           <div className="rounded-md border border-[#f2c7cc] bg-[#fff8f8] p-4 text-sm leading-6 text-[#7a2430]">
             <div className="mb-2 flex items-center gap-2 font-bold"><ShieldAlert size={18} />{text.listing.fraudTitle}</div>
             {text.listing.fraudText}

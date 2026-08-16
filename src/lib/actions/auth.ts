@@ -122,6 +122,7 @@ export async function loginAccountAction(_state: AuthActionState, formData: Form
   const locale = localeFromForm(formData);
   const email = String(formData.get("email") || "").trim();
   const password = String(formData.get("password") || "");
+  const returnTo = safeReturnTo(locale, formData.get("returnTo"));
 
   if (!email || !password) {
     return { error: authErrorMessage(locale, "login") };
@@ -136,6 +137,7 @@ export async function loginAccountAction(_state: AuthActionState, formData: Form
     return { error: authErrorMessage(locale, "login") };
   }
 
+  let role = "";
   try {
     const admin = createSupabaseAdminClient();
     const { data: profile } = await admin
@@ -143,16 +145,22 @@ export async function loginAccountAction(_state: AuthActionState, formData: Form
       .select("role")
       .eq("id", data.user.id)
       .maybeSingle<{ role: string }>();
-
-    if (profile?.role === "admin") redirect(`/${locale}/admin` as never);
-    if (profile?.role === "professional") {
-      redirect(`/${locale}/dashboard/professional` as never);
-    }
+    role = profile?.role || "";
   } catch {
     // If the profile cannot be read, keep the session and send the user to the general dashboard.
   }
 
-  redirect(`/${locale}/dashboard` as never);
+  if (returnTo) redirect(returnTo as never);
+  if (role === "admin") redirect(`/${locale}/admin` as never);
+  if (role === "professional") redirect(`/${locale}/dashboard/professional` as never);
+  redirect((returnTo || `/${locale}/dashboard`) as never);
+}
+
+function safeReturnTo(locale: string, value: FormDataEntryValue | null) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw === `/${locale}` || raw.startsWith(`/${locale}/`)) return raw;
+  return "";
 }
 
 export async function registerProfessionalAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {

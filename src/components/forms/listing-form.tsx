@@ -114,6 +114,10 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
 
   useEffect(() => {
     photosRef.current = photos;
+    if (!photoInputRef.current) return;
+    const transfer = new DataTransfer();
+    photos.forEach((photo) => transfer.items.add(photo.file));
+    photoInputRef.current.files = transfer.files;
   }, [photos]);
 
   useEffect(() => {

@@ -79,6 +79,10 @@ type SupabaseListingRow = Record<string, unknown> & {
     logo_path?: string | null;
     city?: string | null;
     canton?: string | null;
+    public_email?: string | null;
+    public_phone?: string | null;
+    whatsapp_phone?: string | null;
+    whatsapp_enabled?: boolean | null;
     broker_badges?: { badge_code?: string | null }[] | null;
   } | null;
   listing_images?: {
@@ -399,7 +403,7 @@ async function getSupabaseListings() {
         lakes(name),
         cities(name),
         marinas(name),
-        professional_profiles(id, slug, company_name, logo_path, city, canton, broker_badges(badge_code)),
+        professional_profiles(id, slug, company_name, logo_path, city, canton, public_email, public_phone, whatsapp_phone, whatsapp_enabled, broker_badges(badge_code)),
         listing_images(id, public_url, storage_path, alt_text, is_primary, sort_order)
       `)
       .is("deleted_at", null)
@@ -442,6 +446,9 @@ function toListing(item: SupabaseListingRow) {
         sortOrder: index
       }));
   const sellerType = item.seller_type === "professional" ? "professional" : "private";
+  const sellerPhone = sellerType === "professional" ? broker?.public_phone || item.contact_phone : item.contact_phone;
+  const sellerEmail = sellerType === "professional" ? broker?.public_email || item.contact_email : item.contact_email;
+  const sellerWhatsapp = sellerType === "professional" && broker?.whatsapp_enabled ? broker?.whatsapp_phone : undefined;
 
   return {
     id: item.id,
@@ -495,8 +502,9 @@ function toListing(item: SupabaseListingRow) {
       logoUrl: assetUrl(broker?.logo_path),
       city: broker?.city || undefined,
       canton: broker?.canton || undefined,
-      phone: item.contact_phone || undefined,
-      email: item.contact_email,
+      phone: sellerPhone || undefined,
+      whatsapp: sellerWhatsapp || undefined,
+      email: sellerEmail,
       languages: ["fr"],
       verified: brokerBadges.includes("verified_broker")
     },

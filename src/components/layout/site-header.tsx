@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { CircleUserRound, Heart, Menu, ShipWheel } from "lucide-react";
+import { CircleUserRound, Heart, Menu, MessageCircle, ShipWheel } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { openAccountModal } from "@/components/forms/welcome-account-modal";
 import { ui } from "@/i18n/ui";
 
-export function SiteHeader({ locale }: { locale: string }) {
+export function SiteHeader({ locale, unreadMessages = 0 }: { locale: string; unreadMessages?: number }) {
   const text = ui(locale);
   const [languageOpen, setLanguageOpen] = useState(false);
 
@@ -41,6 +41,14 @@ export function SiteHeader({ locale }: { locale: string }) {
           {text.nav.publish}
         </Link>
         <div className="hidden items-center justify-end gap-2 min-[520px]:flex">
+          <Link href="/dashboard/messages" locale={locale} className="relative grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={headerLabels(locale).messages}>
+            <MessageCircle size={23} strokeWidth={2.1} />
+            {unreadMessages > 0 ? (
+              <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[#e51f35] px-1 text-[11px] font-bold text-white">
+                {unreadMessages > 99 ? "99+" : unreadMessages}
+              </span>
+            ) : null}
+          </Link>
           <Link href="/dashboard/favorites" locale={locale} className="grid size-10 place-items-center rounded-md text-[#8bd3ff] transition hover:bg-[#eef9ff]" aria-label={text.dashboard.favorites}>
             <Heart size={23} className="text-[#8bd3ff]" fill="#8bd3ff" stroke="#8bd3ff" strokeWidth={2.2} />
           </Link>
@@ -80,4 +88,14 @@ export function SiteHeader({ locale }: { locale: string }) {
       </div>
     </header>
   );
+}
+
+function headerLabels(locale: string) {
+  const labels = {
+    fr: { messages: "Messages" },
+    de: { messages: "Nachrichten" },
+    it: { messages: "Messaggi" },
+    en: { messages: "Messages" }
+  };
+  return labels[locale as keyof typeof labels] ?? labels.fr;
 }

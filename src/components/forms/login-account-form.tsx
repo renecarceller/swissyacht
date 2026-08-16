@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { ui } from "@/i18n/ui";
 
-export function LoginAccountForm({ locale }: { locale: string }) {
+export function LoginAccountForm({ locale, returnTo = "" }: { locale: string; returnTo?: string }) {
   const [state, action, pending] = useActionState(loginAccountAction, { error: "" });
   const text = ui(locale);
   const labels = loginLabels(locale);
@@ -15,6 +15,7 @@ export function LoginAccountForm({ locale }: { locale: string }) {
   return (
     <form action={action} className="mx-auto w-full max-w-md rounded-md border border-[#d9e2ec] bg-white p-5 shadow-sm">
       <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="returnTo" value={returnTo} />
       <div className="mb-5 flex items-center gap-2 text-2xl font-bold text-navy">
         <Lock className="h-6 w-6" />
         {labels.title}

@@ -6,6 +6,7 @@ import { routing } from "@/i18n/routing";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { WelcomeAccountModal } from "@/components/forms/welcome-account-modal";
+import { getUnreadMessageCount } from "@/lib/data/messages";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -32,10 +33,11 @@ export default async function LocaleLayout({
   if (!routing.locales.includes(locale as never)) notFound();
   setRequestLocale(locale);
   const messages = await getMessages();
+  const unreadMessages = await getUnreadMessageCount();
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <SiteHeader locale={locale} />
+      <SiteHeader locale={locale} unreadMessages={unreadMessages} />
       {children}
       <SiteFooter locale={locale} />
       <WelcomeAccountModal locale={locale} />
