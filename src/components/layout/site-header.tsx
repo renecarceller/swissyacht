@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { CircleUserRound, Heart, Menu, MessageCircle, ShipWheel } from "lucide-react";
+import { CircleUserRound, Heart, LogOut, Menu, MessageCircle, ShipWheel } from "lucide-react";
 import { Link } from "@/i18n/routing";
+import { logoutAccountAction } from "@/lib/actions/auth";
 import { openAccountModal } from "@/components/forms/welcome-account-modal";
 import { ui } from "@/i18n/ui";
 
@@ -36,6 +37,31 @@ export function SiteHeader({
       <CircleUserRound className="size-10" strokeWidth={2.1} />
     </button>
   );
+  const logoutButton = accountHref ? (
+    <form action={logoutAccountAction}>
+      <input type="hidden" name="locale" value={locale} />
+      <button
+        type="submit"
+        className="inline-flex h-10 items-center gap-2 rounded-md border border-[#d9e2ec] bg-white px-3 text-sm font-semibold text-navy transition hover:bg-[#e8f3fb]"
+        aria-label={text.nav.logout}
+      >
+        <LogOut size={18} strokeWidth={2.1} />
+        <span className="hidden xl:inline">{text.nav.logout}</span>
+      </button>
+    </form>
+  ) : null;
+  const mobileLogoutButton = accountHref ? (
+    <form action={logoutAccountAction} className="min-[520px]:hidden">
+      <input type="hidden" name="locale" value={locale} />
+      <button
+        type="submit"
+        className="grid size-12 place-items-center rounded-full text-navy transition hover:bg-[#eef6fc]"
+        aria-label={text.nav.logout}
+      >
+        <LogOut className="size-7" strokeWidth={2.1} />
+      </button>
+    </form>
+  ) : null;
 
   return (
     <header className="sticky top-0 z-50 w-full max-w-full border-b border-[#d9e2ec] bg-white/95 backdrop-blur">
@@ -70,6 +96,7 @@ export function SiteHeader({
             <Heart size={23} className="text-[#8bd3ff]" fill="#8bd3ff" stroke="#8bd3ff" strokeWidth={2.2} />
           </Link>
           {accountButton}
+          {logoutButton}
           <div className="relative">
             <button
               type="button"
@@ -97,7 +124,10 @@ export function SiteHeader({
             ) : null}
           </div>
         </div>
-        {mobileAccountButton}
+        <div className="flex min-w-0 items-center justify-end gap-1 min-[520px]:hidden">
+          {mobileAccountButton}
+          {mobileLogoutButton}
+        </div>
       </div>
     </header>
   );

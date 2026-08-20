@@ -157,6 +157,17 @@ export async function loginAccountAction(_state: AuthActionState, formData: Form
   redirect((returnTo || `/${locale}/dashboard`) as never);
 }
 
+export async function logoutAccountAction(formData: FormData) {
+  const locale = localeFromForm(formData);
+  const supabase = await createSupabaseServerClient();
+
+  if (supabase) {
+    await supabase.auth.signOut();
+  }
+
+  redirect(`/${locale}` as never);
+}
+
 function safeReturnTo(locale: string, value: FormDataEntryValue | null) {
   const raw = String(value || "").trim();
   if (!raw) return "";
