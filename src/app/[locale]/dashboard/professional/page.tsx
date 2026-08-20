@@ -1,4 +1,5 @@
 import { BarChart3, Building2, Inbox, ShipWheel, Upload, Users } from "lucide-react";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Link } from "@/i18n/routing";
 
 export default async function ProfessionalDashboardPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -15,9 +16,12 @@ export default async function ProfessionalDashboardPage({ params }: { params: Pr
 
   return (
     <main className="container-shell py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-navy">{labels.title}</h1>
-        <p className="mt-2 max-w-2xl text-[#607085]">{labels.intro}</p>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-navy">{labels.title}</h1>
+          <p className="mt-2 max-w-2xl text-[#607085]">{labels.intro}</p>
+        </div>
+        <SignOutButton locale={locale} className="shrink-0" />
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {cards.map(([Icon, title, text, href]) => (

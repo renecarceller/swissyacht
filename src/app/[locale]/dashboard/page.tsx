@@ -1,4 +1,5 @@
 import { BarChart3, Heart, Inbox, ShipWheel } from "lucide-react";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Link } from "@/i18n/routing";
 import { demoListings } from "@/lib/data/demo";
 import { ui } from "@/i18n/ui";
@@ -15,8 +16,13 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
   return (
     <main className="container-shell py-8">
-      <h1 className="text-3xl font-bold text-navy">{text.dashboard.title}</h1>
-      <p className="mt-2 text-[#607085]">{text.dashboard.intro}</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-navy">{text.dashboard.title}</h1>
+          <p className="mt-2 text-[#607085]">{text.dashboard.intro}</p>
+        </div>
+        <SignOutButton locale={locale} className="shrink-0" />
+      </div>
       <div className="mt-6 grid gap-4 md:grid-cols-4">
         {cards.map(([Icon, title, text, href]) => (
           <Link key={String(title)} href={String(href)} locale={locale} className="rounded-md border border-[#d9e2ec] bg-white p-5">

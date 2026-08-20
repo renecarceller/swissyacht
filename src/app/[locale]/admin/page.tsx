@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { ShieldCheck, Trash2, Users, Building2, Ship } from "lucide-react";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { archiveListingAsDirectorFormAction } from "@/lib/actions/admin";
 import { getAdminOverview, getDirectorAccess } from "@/lib/data/admin";
 import { formatChf } from "@/lib/utils";
@@ -138,6 +139,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
           <h1 className="mt-4 text-3xl font-bold text-navy md:text-4xl">{copy.title}</h1>
           <p className="mt-2 max-w-3xl text-[#607085]">{copy.intro}</p>
         </div>
+        <SignOutButton locale={locale} className="shrink-0" />
       </div>
 
       <section className="mt-8 grid gap-4 md:grid-cols-4">
