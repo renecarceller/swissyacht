@@ -8,13 +8,18 @@ import { RegisterAccountForm } from "@/components/forms/register-account-form";
 const storageKey = "swissyacht-welcome-closed";
 const openEvent = "swissyacht:open-account-modal";
 
-export function WelcomeAccountModal({ locale }: { locale: string }) {
-  const [open, setOpen] = useState(shouldOpenInitially);
+export function WelcomeAccountModal({ locale, isAuthenticated = false }: { locale: string; isAuthenticated?: boolean }) {
+  const [open, setOpen] = useState(() => !isAuthenticated && shouldOpenInitially());
   const [publishError] = useState(shouldShowPublishError);
   const [mode, setMode] = useState<"register" | "login">("register");
   const [returnTo, setReturnTo] = useState("");
 
   useEffect(() => {
+    if (isAuthenticated) {
+      setOpen(false);
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
 
     if (params.get("account") === "1") {
@@ -27,11 +32,11 @@ export function WelcomeAccountModal({ locale }: { locale: string }) {
     const handleOpen = (event: Event) => {
       const detail = event instanceof CustomEvent ? event.detail : null;
       setReturnTo(typeof detail?.returnTo === "string" ? detail.returnTo : "");
-      setOpen(true);
+      setOpen(!isAuthenticated);
     };
     window.addEventListener(openEvent, handleOpen);
     return () => window.removeEventListener(openEvent, handleOpen);
-  }, []);
+  }, [isAuthenticated]);
 
   const close = () => {
     window.localStorage.setItem(storageKey, "true");

@@ -7,6 +7,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { WelcomeAccountModal } from "@/components/forms/welcome-account-modal";
 import { getUnreadMessageCount } from "@/lib/data/messages";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -33,14 +35,42 @@ export default async function LocaleLayout({
   if (!routing.locales.includes(locale as never)) notFound();
   setRequestLocale(locale);
   const messages = await getMessages();
-  const unreadMessages = await getUnreadMessageCount();
+  const [unreadMessages, accountHref] = await Promise.all([
+    getUnreadMessageCount(),
+    getAccountHref(locale)
+  ]);
+  const isAuthenticated = Boolean(accountHref);
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <SiteHeader locale={locale} unreadMessages={unreadMessages} />
+      <SiteHeader locale={locale} unreadMessages={unreadMessages} accountHref={accountHref} />
       {children}
       <SiteFooter locale={locale} />
-      <WelcomeAccountModal locale={locale} />
+      <WelcomeAccountModal locale={locale} isAuthenticated={isAuthenticated} />
     </NextIntlClientProvider>
   );
+}
+
+async function getAccountHref(locale: string) {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return undefined;
+
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return undefined;
+
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .maybeSingle<{ role: string | null }>();
+
+    if (profile?.role === "admin") return `/${locale}/admin`;
+    if (profile?.role === "professional") return `/${locale}/dashboard/professional`;
+  } catch {
+    // Keep the signed-in navigation usable even if the profile lookup fails.
+  }
+
+  return `/${locale}/dashboard`;
 }

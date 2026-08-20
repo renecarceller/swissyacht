@@ -7,23 +7,40 @@ import { Link } from "@/i18n/routing";
 import { openAccountModal } from "@/components/forms/welcome-account-modal";
 import { ui } from "@/i18n/ui";
 
-export function SiteHeader({ locale, unreadMessages = 0 }: { locale: string; unreadMessages?: number }) {
+export function SiteHeader({
+  locale,
+  unreadMessages = 0,
+  accountHref
+}: {
+  locale: string;
+  unreadMessages?: number;
+  accountHref?: string;
+}) {
   const text = ui(locale);
   const [languageOpen, setLanguageOpen] = useState(false);
+  const accountButton = accountHref ? (
+    <a href={accountHref} className="grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={text.nav.account}>
+      <CircleUserRound size={25} strokeWidth={2.1} />
+    </a>
+  ) : (
+    <button type="button" onClick={() => openAccountModal()} className="grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={text.nav.account}>
+      <CircleUserRound size={25} strokeWidth={2.1} />
+    </button>
+  );
+  const mobileAccountButton = accountHref ? (
+    <a href={accountHref} className="grid size-12 place-items-center rounded-full text-[#2f3033] transition hover:bg-[#eef6fc] min-[520px]:hidden" aria-label={text.nav.account}>
+      <CircleUserRound className="size-10" strokeWidth={2.1} />
+    </a>
+  ) : (
+    <button type="button" onClick={() => openAccountModal()} className="grid size-12 place-items-center rounded-full text-[#2f3033] transition hover:bg-[#eef6fc] min-[520px]:hidden" aria-label={text.nav.account}>
+      <CircleUserRound className="size-10" strokeWidth={2.1} />
+    </button>
+  );
 
   return (
     <header className="sticky top-0 z-50 w-full max-w-full border-b border-[#d9e2ec] bg-white/95 backdrop-blur">
       <div className="container-shell grid h-24 min-w-0 grid-cols-[1fr_auto] items-center gap-4 min-[520px]:h-16 min-[520px]:grid-cols-[1fr_auto_1fr]">
-        <Link
-          href="/"
-          locale={locale}
-          className="flex min-w-0 items-center gap-3 font-bold text-navy min-[520px]:gap-2"
-          onClick={(event) => {
-            if (!window.location.search) return;
-            event.preventDefault();
-            window.location.href = `/${locale}${window.location.search}`;
-          }}
-        >
+        <Link href="/" locale={locale} className="flex min-w-0 items-center gap-3 font-bold text-navy min-[520px]:gap-2">
           <span className="relative size-12 overflow-hidden rounded-md border border-[#d9e2ec] bg-white min-[520px]:size-9">
             <Image
               src="/images/swissyacht-sw-logo.jpg"
@@ -52,9 +69,7 @@ export function SiteHeader({ locale, unreadMessages = 0 }: { locale: string; unr
           <Link href="/dashboard/favorites" locale={locale} className="grid size-10 place-items-center rounded-md text-[#8bd3ff] transition hover:bg-[#eef9ff]" aria-label={text.dashboard.favorites}>
             <Heart size={23} className="text-[#8bd3ff]" fill="#8bd3ff" stroke="#8bd3ff" strokeWidth={2.2} />
           </Link>
-          <button type="button" onClick={() => openAccountModal()} className="grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={text.nav.account}>
-            <CircleUserRound size={25} strokeWidth={2.1} />
-          </button>
+          {accountButton}
           <div className="relative">
             <button
               type="button"
@@ -82,9 +97,7 @@ export function SiteHeader({ locale, unreadMessages = 0 }: { locale: string; unr
             ) : null}
           </div>
         </div>
-        <button type="button" onClick={() => openAccountModal()} className="grid size-12 place-items-center rounded-full text-[#2f3033] transition hover:bg-[#eef6fc] min-[520px]:hidden" aria-label={text.nav.account}>
-          <CircleUserRound className="size-10" strokeWidth={2.1} />
-        </button>
+        {mobileAccountButton}
       </div>
     </header>
   );

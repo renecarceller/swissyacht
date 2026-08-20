@@ -28,6 +28,8 @@ type SaveListingResult =
   | { ok: true; slug: string; brand: string; model: string }
   | { ok: false; error: string };
 
+type ListingInsertPayload = Record<string, unknown>;
+
 function isSchemaCompatibilityError(error: unknown) {
   const issue = error as SupabaseMutationError | null;
   const text = `${issue?.code || ""} ${issue?.message || ""} ${issue?.details || ""}`.toLowerCase();
@@ -84,10 +86,16 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const userId = data.user.id;
     const now = new Date().toISOString();
     const fullName = [data.user.user_metadata?.first_name, data.user.user_metadata?.last_name].filter(Boolean).join(" ") || values.contactName;
+    const { data: existingProfile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle<{ role: string | null }>();
+    const profileRole = existingProfile?.role || (data.user.user_metadata?.account_type === "professional" ? "professional" : "private");
 
     const { error: profileError } = await admin.from("profiles").upsert({
       id: userId,
-      role: data.user.user_metadata?.account_type === "professional" ? "professional" : "private",
+      role: profileRole,
       full_name: fullName,
       phone: values.contactPhone || null,
       preferred_locale: locale,
@@ -108,58 +116,56 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const sellerType = professionalProfile ? "professional" : "private";
     const title = `${values.brand.trim()} ${values.model.trim()}`.trim();
 
-    const { data: listing, error } = await admin
-      .from("listings")
-      .insert({
-        owner_id: userId,
-        professional_profile_id: professionalProfile?.id || null,
-        category_id: categoryId,
-        brand_id: brandId,
-        model_id: modelId,
-        canton_id: cantonId,
-        lake_id: lakeId,
-        city_id: cityId,
-        marina_id: marinaId,
-        slug,
-        title,
-        status,
-        seller_type: sellerType,
-        boat_type: values.boatType || values.category,
-        brand_name: values.brand.trim(),
-        model_name: values.model.trim(),
-        year: values.year,
-        condition: values.condition,
-        price_chf: values.priceChf,
-        vat_included: values.vatIncluded,
-        negotiable: values.negotiable,
-        financing_available: values.financingAvailable,
-        fuel_type: values.fuelType,
-        engine_type: values.engineType,
-        engine_count: values.engineCount,
-        power_hp: values.powerHp,
-        engine_hours: values.engineHours,
-        length_m: values.lengthM,
-        beam_m: values.beamM,
-        weight_kg: values.weightKg,
-        hull_material: values.hullMaterial,
-        color: values.color,
-        people_capacity: values.peopleCapacity,
-        cabins: values.cabins,
-        berths: values.berths,
-        bathrooms: values.bathrooms,
-        kitchen: values.kitchen,
-        overnight_accommodation: values.overnightAccommodation,
-        license_required: values.powerHp > 8,
-        electric: values.fuelType === "Electric",
-        description: values.description,
-        equipment: values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [],
-        contact_name: professionalProfile?.company_name || values.contactName,
-        contact_email: values.contactEmail,
-        contact_phone: values.contactPhone || null,
-        published_at: status === "published" ? now : null
-      })
-      .select("id, slug")
-      .single();
+    const listingPayload: ListingInsertPayload = {
+      owner_id: userId,
+      professional_profile_id: professionalProfile?.id || null,
+      category_id: categoryId,
+      brand_id: brandId,
+      model_id: modelId,
+      canton_id: cantonId,
+      lake_id: lakeId,
+      city_id: cityId,
+      marina_id: marinaId,
+      slug,
+      title,
+      status,
+      seller_type: sellerType,
+      boat_type: values.boatType || values.category,
+      brand_name: values.brand.trim(),
+      model_name: values.model.trim(),
+      year: values.year,
+      condition: values.condition,
+      price_chf: values.priceChf,
+      vat_included: values.vatIncluded,
+      negotiable: values.negotiable,
+      financing_available: values.financingAvailable,
+      fuel_type: values.fuelType,
+      engine_type: values.engineType,
+      engine_count: values.engineCount,
+      power_hp: values.powerHp,
+      engine_hours: values.engineHours,
+      length_m: values.lengthM,
+      beam_m: values.beamM,
+      weight_kg: values.weightKg,
+      hull_material: values.hullMaterial,
+      color: values.color,
+      people_capacity: values.peopleCapacity,
+      cabins: values.cabins,
+      berths: values.berths,
+      bathrooms: values.bathrooms,
+      kitchen: values.kitchen,
+      overnight_accommodation: values.overnightAccommodation,
+      license_required: values.powerHp > 8,
+      electric: values.fuelType === "Electric",
+      description: values.description,
+      equipment: values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [],
+      contact_name: professionalProfile?.company_name || values.contactName,
+      contact_email: values.contactEmail,
+      contact_phone: values.contactPhone || null,
+      published_at: status === "published" ? now : null
+    };
+
+    const { data: listing, error } = await insertListingWithCompatibility(listingPayload);
 
     if (error) throw new Error(error.message);
     if (!listing?.slug) throw new Error("Supabase did not return the listing slug.");
@@ -187,6 +193,30 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const listing = await saveUserListing(values, slug, status, await filesToDataUrls(photoFiles));
     return { ok: true, ...listing };
   }
+}
+
+async function insertListingWithCompatibility(payload: ListingInsertPayload) {
+  const admin = createSupabaseAdminClient();
+  let result = await admin
+    .from("listings")
+    .insert(payload)
+    .select("id, slug")
+    .single();
+
+  if (!result.error || !isSchemaCompatibilityError(result.error)) return result;
+
+  const compatiblePayload = { ...payload };
+  for (const key of ["people_capacity", "cabins", "berths", "bathrooms", "kitchen", "overnight_accommodation", "allow_trade_in"]) {
+    delete compatiblePayload[key];
+  }
+
+  result = await admin
+    .from("listings")
+    .insert(compatiblePayload)
+    .select("id, slug")
+    .single();
+
+  return result;
 }
 
 function listingErrorMessage(locale: string, reason: "invalid" | "supabase") {
