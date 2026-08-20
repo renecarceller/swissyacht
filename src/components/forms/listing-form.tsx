@@ -115,9 +115,13 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
   useEffect(() => {
     photosRef.current = photos;
     if (!photoInputRef.current) return;
-    const transfer = new DataTransfer();
-    photos.forEach((photo) => transfer.items.add(photo.file));
-    photoInputRef.current.files = transfer.files;
+    try {
+      const transfer = new DataTransfer();
+      photos.forEach((photo) => transfer.items.add(photo.file));
+      photoInputRef.current.files = transfer.files;
+    } catch {
+      // Some mobile browsers do not allow rebuilding a file input programmatically.
+    }
   }, [photos]);
 
   useEffect(() => {
@@ -214,11 +218,11 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
         </StepCard>
       ) : null}
 
-      {step === 6 ? (
+      <div className={step === 6 ? "block" : "hidden"} aria-hidden={step !== 6}>
         <StepCard title={labels.photosTitle}>
           <PhotoUploadField labels={labels} photos={photos} setPhotos={setPhotos} inputRef={photoInputRef} />
         </StepCard>
-      ) : null}
+      </div>
 
       {step === 7 ? (
         <StepCard title={labels.contactTitle}>
@@ -341,9 +345,13 @@ function PhotoUploadField({
 
   const syncInputFiles = (nextPhotos: PhotoPreview[]) => {
     if (!inputRef.current) return;
-    const transfer = new DataTransfer();
-    nextPhotos.forEach((photo) => transfer.items.add(photo.file));
-    inputRef.current.files = transfer.files;
+    try {
+      const transfer = new DataTransfer();
+      nextPhotos.forEach((photo) => transfer.items.add(photo.file));
+      inputRef.current.files = transfer.files;
+    } catch {
+      // Keeping the original file inputs mounted preserves selected files on iOS/Safari.
+    }
   };
 
   const updatePhotos = (nextPhotos: PhotoPreview[]) => {
@@ -398,6 +406,7 @@ function PhotoUploadField({
       <input
         ref={finderInputRef}
         type="file"
+        name="photos"
         accept="image/jpeg,image/png,image/webp"
         multiple
         className="hidden"
@@ -409,6 +418,7 @@ function PhotoUploadField({
       <input
         ref={libraryInputRef}
         type="file"
+        name="photos"
         accept="image/*"
         multiple
         className="hidden"

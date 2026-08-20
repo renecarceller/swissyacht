@@ -239,9 +239,17 @@ function listingErrorMessage(locale: string, reason: "invalid" | "supabase") {
 }
 
 function getListingPhotoFiles(formData: FormData) {
+  const seen = new Set<string>();
+
   return formData
     .getAll("photos")
     .filter((item): item is File => item instanceof File && item.size > 0)
+    .filter((file) => {
+      const key = `${file.name}-${file.size}-${file.lastModified}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .slice(0, 8);
 }
 

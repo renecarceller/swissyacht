@@ -79,6 +79,8 @@ type SupabaseListingRow = Record<string, unknown> & {
     logo_path?: string | null;
     city?: string | null;
     canton?: string | null;
+    phones?: string[] | null;
+    website?: string | null;
     public_email?: string | null;
     public_phone?: string | null;
     whatsapp_phone?: string | null;
@@ -392,7 +394,7 @@ export async function getPublicListingsAsync() {
 async function getSupabaseListings() {
   try {
     const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("listings")
       .select(`
         *,
@@ -403,12 +405,25 @@ async function getSupabaseListings() {
         lakes(name),
         cities(name),
         marinas(name),
-        professional_profiles(id, slug, company_name, logo_path, city, canton, public_email, public_phone, whatsapp_phone, whatsapp_enabled, broker_badges(badge_code)),
+        professional_profiles(id, slug, company_name, logo_path, city, canton, phones, website),
         listing_images(id, public_url, storage_path, alt_text, is_primary, sort_order)
       `)
       .is("deleted_at", null)
       .order("published_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
+
+    if (error || !data) {
+      console.warn("Supabase listing relation read failed; using compact listing read", error);
+      const fallback = await supabase
+        .from("listings")
+        .select("*")
+        .is("deleted_at", null)
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error || !data) return [];
 
@@ -446,7 +461,8 @@ function toListing(item: SupabaseListingRow) {
         sortOrder: index
       }));
   const sellerType = item.seller_type === "professional" ? "professional" : "private";
-  const sellerPhone = sellerType === "professional" ? broker?.public_phone || item.contact_phone : item.contact_phone;
+  const primaryBrokerPhone = Array.isArray(broker?.phones) ? broker?.phones?.[0] : undefined;
+  const sellerPhone = sellerType === "professional" ? broker?.public_phone || primaryBrokerPhone || item.contact_phone : item.contact_phone;
   const sellerEmail = sellerType === "professional" ? broker?.public_email || item.contact_email : item.contact_email;
   const sellerWhatsapp = sellerType === "professional" && broker?.whatsapp_enabled ? broker?.whatsapp_phone : undefined;
 
