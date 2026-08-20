@@ -12,6 +12,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type ProfessionalProfileOwner = {
   id: string;
   company_name: string | null;
+  public_email?: string | null;
+  public_phone?: string | null;
+  phones?: string[] | null;
 };
 
 export type ListingActionState = {
@@ -85,19 +88,21 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const admin = createSupabaseAdminClient();
     const userId = data.user.id;
     const now = new Date().toISOString();
-    const fullName = [data.user.user_metadata?.first_name, data.user.user_metadata?.last_name].filter(Boolean).join(" ") || values.contactName;
     const { data: existingProfile } = await admin
       .from("profiles")
-      .select("role")
+      .select("role, full_name, phone")
       .eq("id", userId)
-      .maybeSingle<{ role: string | null }>();
+      .maybeSingle<{ role: string | null; full_name: string | null; phone: string | null }>();
     const profileRole = existingProfile?.role || (data.user.user_metadata?.account_type === "professional" ? "professional" : "private");
+    const userMetadataName = [data.user.user_metadata?.first_name, data.user.user_metadata?.last_name].filter(Boolean).join(" ");
+    const fullName = existingProfile?.full_name || userMetadataName || data.user.email || "Swissnaut user";
+    const profilePhone = existingProfile?.phone || "";
 
     const { error: profileError } = await admin.from("profiles").upsert({
       id: userId,
       role: profileRole,
       full_name: fullName,
-      phone: values.contactPhone || null,
+      phone: profilePhone || null,
       preferred_locale: locale,
       updated_at: now
     });
@@ -115,6 +120,10 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const professionalProfile = await getProfessionalProfileForUser(userId);
     const sellerType = professionalProfile ? "professional" : "private";
     const title = `${values.brand.trim()} ${values.model.trim()}`.trim();
+    const professionalPhone = professionalProfile?.public_phone || professionalProfile?.phones?.[0] || "";
+    const contactName = professionalProfile?.company_name || fullName;
+    const contactEmail = professionalProfile?.public_email || data.user.email || values.contactEmail || "";
+    const contactPhone = professionalPhone || profilePhone || values.contactPhone || "";
 
     const listingPayload: ListingInsertPayload = {
       owner_id: userId,
@@ -159,9 +168,9 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
       electric: values.fuelType === "Electric",
       description: values.description,
       equipment: values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [],
-      contact_name: professionalProfile?.company_name || values.contactName,
-      contact_email: values.contactEmail,
-      contact_phone: values.contactPhone || null,
+      contact_name: contactName,
+      contact_email: contactEmail,
+      contact_phone: contactPhone || null,
       published_at: status === "published" ? now : null
     };
 
@@ -407,7 +416,7 @@ async function getProfessionalProfileForUser(userId: string): Promise<Profession
   const admin = createSupabaseAdminClient();
   const { data } = await admin
     .from("professional_profiles")
-    .select("id, company_name")
+    .select("id, company_name, public_email, public_phone, phones")
     .eq("user_id", userId)
     .is("deleted_at", null)
     .is("suspended_at", null)
@@ -432,7 +441,7 @@ async function getProfessionalProfileForUser(userId: string): Promise<Profession
 
   const { data: memberProfile } = await admin
     .from("professional_profiles")
-    .select("id, company_name")
+    .select("id, company_name, public_email, public_phone, phones")
     .eq("id", professionalProfileId)
     .is("deleted_at", null)
     .is("suspended_at", null)

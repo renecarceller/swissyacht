@@ -51,8 +51,8 @@ export const listingFormSchema = z.object({
   overnightAccommodation: booleanStringSchema.default(false),
   description: z.string().min(80).max(8000),
   equipment: z.string().optional().default(""),
-  contactName: z.string().min(2),
-  contactEmail: z.string().email(),
+  contactName: z.string().optional().default(""),
+  contactEmail: z.string().optional().default(""),
   contactPhone: z.string().optional().default(""),
   saveAsDraft: booleanStringSchema.default(false)
 });
