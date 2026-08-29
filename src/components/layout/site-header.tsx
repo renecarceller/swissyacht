@@ -84,6 +84,15 @@ export function SiteHeader({
           {text.nav.publish}
         </Link>
         <div className="hidden items-center justify-end gap-2 min-[520px]:flex">
+          <Link
+            href="/pmb"
+            locale={locale}
+            title={text.pmb.navTitle}
+            aria-label={text.pmb.navTitle}
+            className="hidden h-10 items-center rounded-md border border-[#d9e2ec] bg-white px-3 text-sm font-bold text-navy transition hover:bg-[#e8f3fb] lg:inline-flex"
+          >
+            {text.pmb.navLabel}
+          </Link>
           <Link href="/dashboard/messages" locale={locale} className="relative grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={headerLabels(locale).messages}>
             <MessageCircle size={23} strokeWidth={2.1} />
             {unreadMessages > 0 ? (
@@ -109,6 +118,15 @@ export function SiteHeader({
             </button>
             {languageOpen ? (
               <div className="absolute right-0 top-12 z-[90] w-24 overflow-hidden rounded-md border border-[#d9e2ec] bg-white shadow-xl">
+                <Link
+                  href="/pmb"
+                  locale={locale}
+                  onClick={() => setLanguageOpen(false)}
+                  className="block border-b border-[#d9e2ec] px-4 py-3 text-center text-sm font-bold text-navy hover:bg-[#f6fbff]"
+                  title={text.pmb.navTitle}
+                >
+                  PMB
+                </Link>
                 {["fr", "de", "it", "en"].map((item) => (
                   <Link
                     key={item}
@@ -125,6 +143,15 @@ export function SiteHeader({
           </div>
         </div>
         <div className="flex min-w-0 items-center justify-end gap-1 min-[520px]:hidden">
+          <Link
+            href="/pmb"
+            locale={locale}
+            title={text.pmb.navTitle}
+            aria-label={text.pmb.navTitle}
+            className="grid h-10 min-w-12 place-items-center rounded-md border border-[#d9e2ec] bg-[#eef9ff] px-2 text-sm font-bold text-navy"
+          >
+            PMB
+          </Link>
           {mobileAccountButton}
           {mobileLogoutButton}
         </div>
