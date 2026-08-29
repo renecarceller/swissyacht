@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import type { ReactNode } from "react";
-import { ShieldCheck, Trash2, Users, Building2, Ship } from "lucide-react";
+import { Eye, ShieldCheck, Trash2, Users, Building2, Ship } from "lucide-react";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { archiveListingAsDirectorFormAction } from "@/lib/actions/admin";
 import { getAdminOverview, getDirectorAccess } from "@/lib/data/admin";
+import { statusLabel } from "@/i18n/ui";
 import { formatChf } from "@/lib/utils";
 
 const labels = {
@@ -27,6 +29,7 @@ const labels = {
     seller: "Vendeur",
     price: "Prix",
     created: "Créé le",
+    inspect: "Voir",
     delete: "Supprimer",
     empty: "Aucune donnée pour le moment."
   },
@@ -50,6 +53,7 @@ const labels = {
     seller: "Verkäufer",
     price: "Preis",
     created: "Erstellt am",
+    inspect: "Ansehen",
     delete: "Löschen",
     empty: "Noch keine Daten."
   },
@@ -73,6 +77,7 @@ const labels = {
     seller: "Venditore",
     price: "Prezzo",
     created: "Creato il",
+    inspect: "Vedi",
     delete: "Elimina",
     empty: "Nessun dato al momento."
   },
@@ -96,6 +101,7 @@ const labels = {
     seller: "Seller",
     price: "Price",
     created: "Created",
+    inspect: "View",
     delete: "Delete",
     empty: "No data yet."
   }
@@ -189,7 +195,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
                   <Cell strong>{profile.companyName}</Cell>
                   <Cell>{profile.publicEmail || profile.ownerEmail || "-"}</Cell>
                   <Cell>{[profile.city, profile.canton].filter(Boolean).join(", ") || "-"}</Cell>
-                  <Cell>{profile.suspendedAt ? "suspended" : profile.publishedAt ? "published" : "draft"}</Cell>
+                  <Cell>{statusLabel(locale, profile.suspendedAt ? "suspended" : profile.publishedAt ? "published" : "draft")}</Cell>
                 </tr>
               ))}
             </tbody>
@@ -215,16 +221,25 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
                 <Cell strong>{listing.title}</Cell>
                 <Cell>{listing.brokerName || listing.ownerName || listing.ownerEmail || listing.sellerType}</Cell>
                 <Cell>{formatChf(listing.priceChf)}</Cell>
-                <Cell>{listing.status}</Cell>
+                <Cell>{statusLabel(locale, listing.status)}</Cell>
                 <Cell>{formatDate(listing.createdAt, locale)}</Cell>
                 <Cell>
-                  <form action={archiveListingAsDirectorFormAction}>
-                    <input type="hidden" name="listingId" value={listing.id} />
-                    <button className="inline-flex items-center gap-2 rounded-md bg-sky px-4 py-2 font-bold text-navy shadow-[0_4px_0_#55bde8]" type="submit">
-                      <Trash2 className="h-4 w-4" />
-                      {copy.delete}
-                    </button>
-                  </form>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      className="inline-flex items-center gap-2 rounded-md border border-[#d9e2ec] bg-white px-4 py-2 font-bold text-navy"
+                      href={`/${locale}/listing/${listing.slug}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                      {copy.inspect}
+                    </Link>
+                    <form action={archiveListingAsDirectorFormAction}>
+                      <input type="hidden" name="listingId" value={listing.id} />
+                      <button className="inline-flex items-center gap-2 rounded-md bg-sky px-4 py-2 font-bold text-navy shadow-[0_4px_0_#55bde8]" type="submit">
+                        <Trash2 className="h-4 w-4" />
+                        {copy.delete}
+                      </button>
+                    </form>
+                  </div>
                 </Cell>
               </tr>
             ))}

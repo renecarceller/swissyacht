@@ -30,6 +30,13 @@ export default async function BoatsPage({
   const result = await getListingsAsync(filters);
   const availableBrands = await getAvailableBrandsAsync();
   const text = ui(locale);
+  const visibleView = filters.view === "map" ? "cards" : filters.view;
+  const comingSoonLabel = {
+    fr: "Prochainement",
+    de: "Demnächst",
+    it: "Prossimamente",
+    en: "Coming soon"
+  }[locale] || "Prochainement";
 
   return (
     <main className="container-shell py-8">
@@ -39,9 +46,12 @@ export default async function BoatsPage({
           <p className="mt-2 text-[#607085]">{result.total} {text.search.resultsIn}</p>
         </div>
         <div className="flex items-center gap-2 rounded-md border border-[#d9e2ec] bg-white p-2">
-          <Link href={{ pathname: "/boats", query: { ...raw, view: "cards" } }} locale={locale} className="rounded p-2 text-navy"><Grid2X2 size={18} /></Link>
-          <Link href={{ pathname: "/boats", query: { ...raw, view: "list" } }} locale={locale} className="rounded p-2 text-navy"><List size={18} /></Link>
-          <span className="flex items-center gap-1 rounded p-2 text-sm text-[#607085]"><MapPinned size={18} />{text.search.mapFuture}</span>
+          <Link href={{ pathname: "/boats", query: { ...raw, view: "cards" } }} locale={locale} className={`rounded p-2 text-navy ${visibleView === "cards" ? "bg-[#e8f6ff]" : ""}`}><Grid2X2 size={18} /></Link>
+          <Link href={{ pathname: "/boats", query: { ...raw, view: "list" } }} locale={locale} className={`rounded p-2 text-navy ${visibleView === "list" ? "bg-[#e8f6ff]" : ""}`}><List size={18} /></Link>
+          <span className="flex cursor-not-allowed items-center gap-1 rounded bg-[#e8f6ff] p-2 text-sm font-semibold text-navy opacity-80" aria-disabled="true">
+            <MapPinned size={18} />
+            {comingSoonLabel}
+          </span>
         </div>
       </div>
       <form action={`/${locale}/boats`} className="grid gap-6 lg:grid-cols-[300px_1fr]">
@@ -53,8 +63,8 @@ export default async function BoatsPage({
             <span className="text-sm text-[#607085]">{text.search.page} {result.page} {text.search.of} {result.pages}</span>
             <SortPicker locale={locale} value={filters.sort || "date_desc"} />
           </div>
-          <div className={filters.view === "list" ? "grid gap-4" : "grid gap-5 xl:grid-cols-2"}>
-            {result.listings.map((listing) => <ListingCard key={listing.id} listing={listing} locale={locale} view={filters.view} />)}
+          <div className={visibleView === "list" ? "grid gap-4" : "grid gap-5 xl:grid-cols-2"}>
+            {result.listings.map((listing) => <ListingCard key={listing.id} listing={listing} locale={locale} view={visibleView === "list" ? "list" : "cards"} />)}
           </div>
           {result.total === 0 ? (
             <div className="rounded-md border border-[#d9e2ec] bg-white p-8 text-center text-[#607085]">{text.search.empty}</div>

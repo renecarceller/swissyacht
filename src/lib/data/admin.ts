@@ -34,6 +34,7 @@ export type AdminProfessionalRow = {
 
 export type AdminListingRow = {
   id: string;
+  slug: string;
   title: string;
   status: string;
   priceChf: number;
@@ -84,6 +85,7 @@ type ProfessionalRow = {
 
 type ListingRow = {
   id: string;
+  slug: string;
   title: string;
   status: string;
   price_chf: number;
@@ -93,8 +95,6 @@ type ListingRow = {
   created_at: string;
   published_at?: string | null;
   deleted_at?: string | null;
-  profiles?: { full_name?: string | null } | null;
-  professional_profiles?: { company_name?: string | null } | null;
 };
 
 export async function getDirectorAccess(): Promise<DirectorAccess> {
@@ -137,7 +137,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const admin = createSupabaseAdminClient();
   const emailByUserId = await getAuthEmailMap();
 
-  const [{ data: profiles }, { data: professionals }, { data: listings }] = await Promise.all([
+  const [{ data: profiles, error: profilesError }, { data: professionals, error: professionalsError }, { data: listings, error: listingsError }] = await Promise.all([
     admin
       .from("profiles")
       .select("id, role, full_name, phone, suspended_at, created_at, deleted_at")
@@ -145,28 +145,19 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       .order("created_at", { ascending: false }),
     admin
       .from("professional_profiles")
-      .select("id, user_id, company_name, city, canton, website, created_at, deleted_at")
+      .select("id, user_id, company_name, city, canton, website, public_email, suspended_at, published_at, created_at, deleted_at")
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     admin
       .from("listings")
-      .select(`
-        id,
-        title,
-        status,
-        price_chf,
-        owner_id,
-        seller_type,
-        professional_profile_id,
-        created_at,
-        published_at,
-        deleted_at,
-        profiles(full_name),
-        professional_profiles(company_name)
-      `)
+      .select("id, slug, title, status, price_chf, owner_id, seller_type, professional_profile_id, created_at, published_at")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
   ]);
+
+  if (profilesError) console.error("Director panel profiles read failed", profilesError);
+  if (professionalsError) console.error("Director panel professionals read failed", professionalsError);
+  if (listingsError) console.error("Director panel listings read failed", listingsError);
 
   const users = ((profiles || []) as ProfileRow[]).map((profile) => ({
     id: profile.id,
@@ -178,6 +169,8 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     suspendedAt: profile.suspended_at || null,
     createdAt: profile.created_at
   }));
+
+  const profileById = new Map(users.map((user) => [user.id, user]));
 
   const proRows = ((professionals || []) as ProfessionalRow[]).map((profile) => ({
     id: profile.id,
@@ -193,16 +186,19 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     createdAt: profile.created_at
   }));
 
+  const professionalById = new Map(proRows.map((profile) => [profile.id, profile]));
+
   const listingRows = ((listings || []) as ListingRow[]).map((listing) => ({
     id: listing.id,
+    slug: listing.slug,
     title: listing.title,
     status: listing.status,
     priceChf: Number(listing.price_chf),
     ownerId: listing.owner_id,
     ownerEmail: emailByUserId.get(listing.owner_id) || null,
-    ownerName: listing.profiles?.full_name || null,
+    ownerName: profileById.get(listing.owner_id)?.fullName || null,
     sellerType: listing.seller_type || "private",
-    brokerName: listing.professional_profiles?.company_name || null,
+    brokerName: listing.professional_profile_id ? professionalById.get(listing.professional_profile_id)?.companyName || null : null,
     createdAt: listing.created_at,
     publishedAt: listing.published_at || null
   }));

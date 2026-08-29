@@ -139,7 +139,7 @@ const baseListings = [
   ["fishing-aluminium-lucerne-12359", "Aluminium Fishing 520", "Fishing boats", "Fishing boat", "Alumacraft", "Classic 520", 2020, 31500, "Schwyz", "Lake Lucerne", "Brunnen", "Brunnen", 5.2, 2.05, "Petrol", "Outboard", 80]
 ] as const;
 
-const commonsFile = (filename: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}`;
+const commonsFile = (filename: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=2200`;
 
 const photoSets: Record<string, string[]> = {
   "Motor boats": [

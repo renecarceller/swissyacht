@@ -43,7 +43,7 @@ export async function archiveListingAsDirectorAction(
 
     if (error) throw new Error(error.message);
 
-    await admin.from("admin_actions").insert({
+    const { error: actionError } = await admin.from("admin_actions").insert({
       admin_id: access.adminId,
       target_table: "listings",
       target_id: listingId,
@@ -53,6 +53,7 @@ export async function archiveListingAsDirectorAction(
         reason: "removed_by_director"
       }
     });
+    if (actionError) console.error("Director action audit insert failed", actionError);
 
     for (const locale of locales) {
       revalidatePath(`/${locale}`);

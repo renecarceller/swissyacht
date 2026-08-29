@@ -259,5 +259,5 @@ export type ListingFilters = {
     | "brand_asc"
     | "brand_desc";
   page?: number;
-  view?: "cards" | "list";
+  view?: "cards" | "list" | "map";
 };

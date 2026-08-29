@@ -7,12 +7,13 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   experimental: {
     serverActions: {
-      bodySizeLimit: "20mb"
+      bodySizeLimit: "80mb"
     }
   },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "commons.wikimedia.org" },
       { protocol: "https", hostname: "*.supabase.co" }
     ]
   }

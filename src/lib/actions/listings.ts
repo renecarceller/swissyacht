@@ -316,8 +316,8 @@ function validateListingImage(file: File) {
   if (!acceptedTypes.includes(file.type)) {
     throw new Error("Formato de imagen no aceptado. Usa JPG, PNG o WebP.");
   }
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error("Una imagen supera 5 MB.");
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error("Una imagen supera 10 MB.");
   }
 }
 

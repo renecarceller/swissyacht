@@ -1281,14 +1281,15 @@ function BrandPicker({
 }) {
   const labels = brandPickerLabels(locale);
   const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const hasQuery = normalizedQuery.length > 0;
   const allBrands = useMemo(() => {
     return Array.from(new Set([...Object.keys(brandCounts), ...brands])).sort((a, b) => a.localeCompare(b));
   }, [brandCounts]);
   const filteredBrands = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return allBrands;
-    return allBrands.filter((brand) => brand.toLowerCase().includes(normalized));
-  }, [allBrands, query]);
+    if (!normalizedQuery) return [];
+    return allBrands.filter((brand) => brand.toLowerCase().startsWith(normalizedQuery));
+  }, [allBrands, normalizedQuery]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/55 p-0 sm:items-center sm:justify-center sm:p-6" role="dialog" aria-modal="true" aria-label={brandLabel}>
@@ -1327,45 +1328,49 @@ function BrandPicker({
             </div>
           ) : null}
 
-          <section className="mb-10">
-            <h4 className="mb-5 text-2xl font-bold text-[#2f3033] sm:text-4xl">{labels.popularMakes}</h4>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-              {popularBrands.map((brand) => (
-                <button
-                  type="button"
-                  key={brand}
-                  onClick={() => onSelect(brand)}
-                  className="flex h-24 items-center justify-center rounded-md border-2 border-[#d2d2d2] bg-white px-3 text-center text-xl font-extrabold text-[#06233f] transition hover:border-[#1b8ed1] hover:bg-[#eef8ff] sm:h-28 sm:text-2xl"
-                >
-                  <span>{brand}</span>
-                  <span className="ml-2 text-[#607085]">{brandCounts[brand] || 0}</span>
-                </button>
-              ))}
-            </div>
-          </section>
+          {!hasQuery ? (
+            <section className="mb-10">
+              <h4 className="mb-5 text-2xl font-bold text-[#2f3033] sm:text-4xl">{labels.popularMakes}</h4>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                {popularBrands.map((brand) => (
+                  <button
+                    type="button"
+                    key={brand}
+                    onClick={() => onSelect(brand)}
+                    className="flex h-24 items-center justify-center rounded-md border-2 border-[#d2d2d2] bg-white px-3 text-center text-xl font-extrabold text-[#06233f] transition hover:border-[#1b8ed1] hover:bg-[#eef8ff] sm:h-28 sm:text-2xl"
+                  >
+                    <span>{brand}</span>
+                    <span className="ml-2 text-[#607085]">{brandCounts[brand] || 0}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-          <section>
-            <h4 className="mb-4 text-2xl font-bold text-[#2f3033] sm:text-4xl">{labels.allMakes}</h4>
-            <div className="divide-y divide-[#dedede]">
-              {filteredBrands.map((brand) => (
-                <button
-                  type="button"
-                  key={brand}
-                  onClick={() => onSelect(brand)}
-                  className="flex w-full items-center justify-between gap-5 py-5 text-left text-2xl font-bold text-[#2f3033] transition hover:text-[#1b8ed1] sm:py-6 sm:text-4xl"
-                >
-                  <span>{brand}</span>
-                  <span className="flex items-center gap-5 text-[#777]">
-                    <span className="text-xl sm:text-3xl">{brandCounts[brand] || 0}</span>
-                    <ChevronRight className="size-7 text-[#999] sm:size-10" />
-                  </span>
-                </button>
-              ))}
-              {filteredBrands.length === 0 ? (
-                <p className="py-8 text-xl font-semibold text-[#777] sm:text-3xl">{labels.empty}</p>
-              ) : null}
-            </div>
-          </section>
+          {hasQuery ? (
+            <section>
+              <h4 className="mb-4 text-2xl font-bold text-[#2f3033] sm:text-4xl">{labels.allMakes}</h4>
+              <div className="divide-y divide-[#dedede]">
+                {filteredBrands.map((brand) => (
+                  <button
+                    type="button"
+                    key={brand}
+                    onClick={() => onSelect(brand)}
+                    className="flex w-full items-center justify-between gap-5 py-5 text-left text-2xl font-bold text-[#2f3033] transition hover:text-[#1b8ed1] sm:py-6 sm:text-4xl"
+                  >
+                    <span>{brand}</span>
+                    <span className="flex items-center gap-5 text-[#777]">
+                      <span className="text-xl sm:text-3xl">{brandCounts[brand] || 0}</span>
+                      <ChevronRight className="size-7 text-[#999] sm:size-10" />
+                    </span>
+                  </button>
+                ))}
+                {filteredBrands.length === 0 ? (
+                  <p className="py-8 text-xl font-semibold text-[#777] sm:text-3xl">{labels.empty}</p>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
         </div>
       </div>
     </div>

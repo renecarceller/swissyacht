@@ -154,7 +154,7 @@ export function parseFilters(searchParams: URLSearchParams): ListingFilters {
     withPhotos: booleanValue("withPhotos"),
     sort: sortValues.includes(searchParams.get("sort") as (typeof sortValues)[number]) ? (searchParams.get("sort") as ListingFilters["sort"]) : "date_desc",
     page: numberValue("page") || 1,
-    view: searchParams.get("view") === "list" ? "list" : "cards"
+    view: searchParams.get("view") === "list" ? "list" : searchParams.get("view") === "map" ? "map" : "cards"
   };
 }
 
@@ -243,6 +243,7 @@ export function getListings(filters: ListingFilters = {}) {
 
   return {
     listings: filtered.slice(offset, offset + PAGE_SIZE),
+    allListings: filtered,
     total: filtered.length,
     page,
     pageSize: PAGE_SIZE,
@@ -257,6 +258,7 @@ export async function getListingsAsync(filters: ListingFilters = {}) {
 
   return {
     listings: filtered.slice(offset, offset + PAGE_SIZE),
+    allListings: filtered,
     total: filtered.length,
     page,
     pageSize: PAGE_SIZE,

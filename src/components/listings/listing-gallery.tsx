@@ -1,7 +1,6 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
+import Image from "next/image";
 import { useState } from "react";
 import type { ListingImage } from "@/types/domain";
 
@@ -13,7 +12,17 @@ export function ListingGallery({ images }: { images: ListingImage[] }) {
 
   return (
     <div className="overflow-hidden rounded-md border border-[#d9e2ec] bg-white">
-      <img src={selected.url} alt={selected.alt} className="h-[420px] w-full object-cover" />
+      <div className="relative h-[420px] w-full bg-[#eef6fc]">
+        <Image
+          src={selected.url}
+          alt={selected.alt}
+          fill
+          priority
+          unoptimized
+          sizes="(max-width: 768px) 100vw, 900px"
+          className="object-cover"
+        />
+      </div>
       {images.length > 1 ? (
         <div className="grid grid-cols-3 gap-2 p-2">
           {images.map((image) => (
@@ -24,7 +33,16 @@ export function ListingGallery({ images }: { images: ListingImage[] }) {
               className={`overflow-hidden rounded border text-left transition ${image.id === selected.id ? "border-[#8bd3ff] ring-2 ring-[#8bd3ff]" : "border-transparent hover:border-[#cbd7e4]"}`}
               aria-label={image.alt}
             >
-              <img src={image.url} alt={image.alt} className="h-28 w-full object-cover" />
+              <span className="relative block h-28 w-full bg-[#eef6fc]">
+                <Image
+                  src={image.url}
+                  alt={image.alt}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 33vw, 280px"
+                  className="object-cover"
+                />
+              </span>
             </button>
           ))}
         </div>
