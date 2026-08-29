@@ -92,8 +92,7 @@ export function openAccountModal(returnTo?: string) {
 
 function shouldOpenInitially() {
   if (typeof window === "undefined") return false;
-  const params = new URLSearchParams(window.location.search);
-  return params.get("account") === "1" || window.localStorage.getItem(storageKey) !== "true";
+  return true;
 }
 
 function shouldShowPublishError() {
