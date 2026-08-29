@@ -78,13 +78,13 @@ GitHub Actions deployment is configured in `.github/workflows/cloudflare-workers
 
 - Localized public shell with responsive navigation and footer.
 - Home page with hero image, quick search, categories, featured listings, professionals section, selling flow, popular lakes.
-- Search page with URL filters, sorting, result counts, card/list view, pagination, and future map placeholder.
+- Search page with URL filters, sorting, result counts, card/list view, pagination, and map access prepared for a future release.
 - Listing detail page with gallery, price, technical specs, seller details, inquiry form, phone/favorite/share actions, fraud notice, similar listings, structured data.
 - Multi-step listing publication form with validation and draft/pending review workflow.
-- User dashboard, listings, messages, favorites, profile, settings/subscription placeholders.
+- User dashboard, listings, messages, favorites, profile, settings, and subscription area prepared for future monetization.
 - Professional profile page architecture.
 - Admin moderation surface.
-- Legal placeholder pages requiring Swiss legal review.
+- Legal pages for legal notice, terms, privacy, cookies, fraud prevention, contact, and publishing rules.
 - Supabase schema, RLS, storage, grants, and seed lookup data.
 - Sitemap, robots, Open Graph metadata, clean localized URLs.
 - Tests for validation, filters, permissions, publishing workflow, and inquiries.
@@ -104,4 +104,4 @@ GitHub Actions deployment is configured in `.github/workflows/cloudflare-workers
 - New listings submit as `pending_review`; only admins can publish them.
 - RLS is the primary access-control boundary; server helpers mirror key permission logic for tests.
 - Tables receive explicit grants because new Supabase projects may not expose tables to the Data API automatically.
-- Legal text is intentionally placeholder-only until reviewed by Swiss legal counsel.
+- Legal content avoids invented operator details and should be reviewed with the final Swiss company data before public launch.

@@ -2,6 +2,7 @@
 
 import { Building2, Check, ShipWheel, UserRound } from "lucide-react";
 import { useActionState, useState } from "react";
+import { Link } from "@/i18n/routing";
 import { registerPrivateAccountAction, registerProfessionalAccountAction } from "@/lib/actions/auth";
 import { cantons } from "@/lib/data/reference";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,7 @@ export function RegisterAccountForm({ locale, compact = false, returnTo = "" }: 
             <Field label={text.common.phone}><Input name="phone" required /></Field>
             <Field label={text.common.password}><Input type="password" name="password" required minLength={8} /></Field>
           </div>
+          <LegalAcceptance locale={locale} labels={labels} />
           <Button disabled={privatePending} className="mt-6 bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">
             {privatePending ? labels.creating : labels.createPrivate}
           </Button>
@@ -168,6 +170,7 @@ export function RegisterAccountForm({ locale, compact = false, returnTo = "" }: 
               </div>
             </div>
           </Step>
+          <LegalAcceptance locale={locale} labels={labels} />
           <div className="rounded-md border border-[#d9e2ec] bg-white p-5 text-right">
             <Button disabled={professionalPending} className="bg-[#8bd3ff] text-[#06233f] shadow-[0_4px_0_#58b9e8] hover:bg-[#aee2ff]">
               {professionalPending ? labels.creating : labels.createProfessional}
@@ -215,6 +218,25 @@ function Step({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+function LegalAcceptance({ locale, labels }: { locale: string; labels: ReturnType<typeof registerLabels> }) {
+  return (
+    <label className="mt-5 flex items-start gap-3 rounded-md border border-[#d9e2ec] bg-[#f7fbff] p-4 text-sm leading-6 text-[#40546b]">
+      <input name="legalAccepted" type="checkbox" required className="mt-1 size-4 shrink-0" />
+      <span>
+        {labels.legalAcceptStart}{" "}
+        <Link href="/legal/terms" locale={locale} className="font-semibold text-[#0f6fae] underline-offset-4 hover:underline">
+          {labels.termsLink}
+        </Link>{" "}
+        {labels.legalAcceptMiddle}{" "}
+        <Link href="/legal/privacy" locale={locale} className="font-semibold text-[#0f6fae] underline-offset-4 hover:underline">
+          {labels.privacyLink}
+        </Link>
+        .
+      </span>
+    </label>
+  );
+}
+
 function registerLabels(locale: string) {
   const dictionaries = {
     fr: {
@@ -258,7 +280,11 @@ function registerLabels(locale: string) {
       galleryUrls: "Galerie de l'entreprise",
       galleryUrlsPlaceholder: "URLs d'images, une par ligne",
       services: "Services offerts",
-      createProfessional: "Créer le compte professionnel"
+      createProfessional: "Créer le compte professionnel",
+      legalAcceptStart: "J'accepte les",
+      termsLink: "Conditions générales",
+      legalAcceptMiddle: "et reconnais avoir pris connaissance de la",
+      privacyLink: "Politique de confidentialité"
     },
     de: {
       choiceTitle: "Welche Kontoart möchten Sie erstellen?",
@@ -301,7 +327,11 @@ function registerLabels(locale: string) {
       galleryUrls: "Firmengalerie",
       galleryUrlsPlaceholder: "Bild-URLs, eine pro Zeile",
       services: "Angebotene Services",
-      createProfessional: "Profi-Konto erstellen"
+      createProfessional: "Profi-Konto erstellen",
+      legalAcceptStart: "Ich akzeptiere die",
+      termsLink: "Allgemeinen Bedingungen",
+      legalAcceptMiddle: "und bestätige, die",
+      privacyLink: "Datenschutzerklärung gelesen zu haben"
     },
     it: {
       choiceTitle: "Che tipo di account desidera creare?",
@@ -344,7 +374,11 @@ function registerLabels(locale: string) {
       galleryUrls: "Galleria azienda",
       galleryUrlsPlaceholder: "URL immagini, una per riga",
       services: "Servizi offerti",
-      createProfessional: "Crea account professionale"
+      createProfessional: "Crea account professionale",
+      legalAcceptStart: "Accetto le",
+      termsLink: "Condizioni generali",
+      legalAcceptMiddle: "e confermo di aver letto la",
+      privacyLink: "Privacy policy"
     },
     en: {
       choiceTitle: "What type of account would you like to create?",
@@ -387,7 +421,11 @@ function registerLabels(locale: string) {
       galleryUrls: "Company gallery",
       galleryUrlsPlaceholder: "Image URLs, one per line",
       services: "Services offered",
-      createProfessional: "Create professional account"
+      createProfessional: "Create professional account",
+      legalAcceptStart: "I accept the",
+      termsLink: "Terms and conditions",
+      legalAcceptMiddle: "and confirm that I have read the",
+      privacyLink: "Privacy policy"
     }
   };
 

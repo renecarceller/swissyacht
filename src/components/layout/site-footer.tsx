@@ -4,6 +4,7 @@ import { refLabel, ui } from "@/i18n/ui";
 
 export function SiteFooter({ locale }: { locale: string }) {
   const text = ui(locale);
+  const footerCopy = footerLabels(locale);
   const legal = [
     ["legal-notice", text.legal.legalNotice],
     ["terms", text.legal.terms],
@@ -23,12 +24,11 @@ export function SiteFooter({ locale }: { locale: string }) {
           </p>
         </div>
         <div>
-          <h2 className="font-semibold">Marketplace</h2>
+          <h2 className="font-semibold">{footerCopy.marketplace}</h2>
           <div className="mt-3 grid gap-2 text-sm text-[#b8c7d8]">
             <Link href="/boats" locale={locale}>{text.nav.buy}</Link>
             <Link href="/sell" locale={locale}>{text.nav.sell}</Link>
             <Link href="/professionals" locale={locale}>{text.nav.professionals}</Link>
-            <Link href="/dashboard" locale={locale}>{text.dashboard.title}</Link>
           </div>
         </div>
         <div>
@@ -42,7 +42,7 @@ export function SiteFooter({ locale }: { locale: string }) {
           </div>
         </div>
         <div>
-          <h2 className="font-semibold">Legal</h2>
+          <h2 className="font-semibold">{footerCopy.legal}</h2>
           <div className="mt-3 grid gap-2 text-sm text-[#b8c7d8]">
             {legal.map(([slug, label]) => (
               <Link key={slug} href={`/legal/${slug}`} locale={locale}>
@@ -54,4 +54,15 @@ export function SiteFooter({ locale }: { locale: string }) {
       </div>
     </footer>
   );
+}
+
+function footerLabels(locale: string) {
+  const dictionary = {
+    fr: { marketplace: "Marketplace", legal: "Légal" },
+    de: { marketplace: "Marktplatz", legal: "Rechtliches" },
+    it: { marketplace: "Marketplace", legal: "Legale" },
+    en: { marketplace: "Marketplace", legal: "Legal" }
+  };
+
+  return dictionary[locale as keyof typeof dictionary] ?? dictionary.fr;
 }

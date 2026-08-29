@@ -15,10 +15,7 @@ export function WelcomeAccountModal({ locale, isAuthenticated = false }: { local
   const [returnTo, setReturnTo] = useState("");
 
   useEffect(() => {
-    if (isAuthenticated) {
-      setOpen(false);
-      return;
-    }
+    if (isAuthenticated) return;
 
     const params = new URLSearchParams(window.location.search);
 
@@ -43,7 +40,7 @@ export function WelcomeAccountModal({ locale, isAuthenticated = false }: { local
     setOpen(false);
   };
 
-  if (!open) return null;
+  if (isAuthenticated || !open) return null;
 
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-[#031527]/70 p-3 backdrop-blur-md" role="dialog" aria-modal="true">

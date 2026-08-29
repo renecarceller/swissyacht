@@ -81,7 +81,8 @@ export const privateRegisterSchema = z.object({
   lastName: z.string().trim().min(2).max(120),
   email: z.string().email().max(180),
   phone: z.string().trim().min(4).max(60),
-  password: z.string().min(8).max(160)
+  password: z.string().min(8).max(160),
+  legalAccepted: z.literal("on")
 });
 
 export const professionalRegisterSchema = z.object({
@@ -109,7 +110,8 @@ export const professionalRegisterSchema = z.object({
   services: z.array(z.string()).default([]),
   specialties: z.array(z.string()).default([]),
   representedBrands: z.string().trim().max(1000).optional().default(""),
-  galleryUrls: z.string().trim().max(3000).optional().default("")
+  galleryUrls: z.string().trim().max(3000).optional().default(""),
+  legalAccepted: z.literal("on")
 });
 
 export const professionalProfileUpdateSchema = z.object({
