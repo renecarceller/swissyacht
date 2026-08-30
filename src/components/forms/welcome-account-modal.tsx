@@ -11,47 +11,42 @@ const openEvent = "swissyacht:open-account-modal";
 
 type AccountModalMode = "register" | "login";
 
+type InitialModalState = {
+  cleanupUrl: string;
+  forced: boolean;
+  mode: AccountModalMode;
+  open: boolean;
+  publishError: boolean;
+  returnTo: string;
+};
+
 export function WelcomeAccountModal({ locale, isAuthenticated = false }: { locale: string; isAuthenticated?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [publishError] = useState(shouldShowPublishError);
-  const [mode, setMode] = useState<AccountModalMode>("register");
-  const [returnTo, setReturnTo] = useState("");
+  const [initialState] = useState(() => readInitialModalState(locale, isAuthenticated));
+  const [open, setOpen] = useState(initialState.open);
+  const [publishError] = useState(initialState.publishError);
+  const [mode, setMode] = useState<AccountModalMode>(initialState.mode);
+  const [returnTo, setReturnTo] = useState(initialState.returnTo);
 
   useEffect(() => {
     if (isAuthenticated) {
-      setOpen(false);
       return;
     }
 
     let cancelled = false;
 
-    const params = new URLSearchParams(window.location.search);
-    const forcedAccountModal = params.get("account") === "1";
-
-    if (forcedAccountModal) {
-      const target = safeClientReturnTo(locale, params.get("returnTo"));
-      const initialMode = params.get("mode") === "login" ? "login" : "register";
-      setReturnTo(target);
-      setMode(initialMode);
-      setOpen(true);
-      params.delete("account");
-      params.delete("publishError");
-      params.delete("returnTo");
-      params.delete("mode");
-      const search = params.toString();
-      window.history.replaceState(null, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
+    if (initialState.cleanupUrl) {
+      window.history.replaceState(null, "", initialState.cleanupUrl);
     }
 
     const hideWhenBrowserSessionExists = async () => {
-      if (forcedAccountModal) return;
+      if (initialState.forced) return;
 
       try {
         const supabase = createSupabaseBrowserClient();
         const { data } = await supabase.auth.getSession();
-        if (!cancelled) setOpen(!data.session && shouldOpenInitially());
+        if (!cancelled && data.session) setOpen(false);
       } catch (error) {
         console.error("Supabase browser session check failed", error);
-        if (!cancelled) setOpen(shouldOpenInitially());
       }
     };
 
@@ -68,7 +63,7 @@ export function WelcomeAccountModal({ locale, isAuthenticated = false }: { local
       cancelled = true;
       window.removeEventListener(openEvent, handleOpen);
     };
-  }, [isAuthenticated, locale]);
+  }, [initialState.cleanupUrl, initialState.forced, isAuthenticated, locale]);
 
   const close = () => {
     window.localStorage.setItem(storageKey, "true");
@@ -125,15 +120,42 @@ export function openAccountModal(returnTo?: string, mode: AccountModalMode = "re
   window.dispatchEvent(new CustomEvent(openEvent, { detail: { returnTo, mode } }));
 }
 
-function shouldOpenInitially() {
-  if (typeof window === "undefined") return false;
-  return true;
-}
+function readInitialModalState(locale: string, isAuthenticated: boolean): InitialModalState {
+  const empty = {
+    cleanupUrl: "",
+    forced: false,
+    mode: "register" as AccountModalMode,
+    open: false,
+    publishError: false,
+    returnTo: ""
+  };
 
-function shouldShowPublishError() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || isAuthenticated) return empty;
+
   const params = new URLSearchParams(window.location.search);
-  return params.get("publishError") === "auth_required";
+  const forced = params.get("account") === "1";
+  const mode = params.get("mode") === "login" ? "login" : "register";
+  const returnTo = forced ? safeClientReturnTo(locale, params.get("returnTo")) : "";
+  const publishError = params.get("publishError") === "auth_required";
+  let cleanupUrl = "";
+
+  if (forced) {
+    params.delete("account");
+    params.delete("publishError");
+    params.delete("returnTo");
+    params.delete("mode");
+    const search = params.toString();
+    cleanupUrl = `${window.location.pathname}${search ? `?${search}` : ""}`;
+  }
+
+  return {
+    cleanupUrl,
+    forced,
+    mode,
+    open: true,
+    publishError,
+    returnTo
+  };
 }
 
 function safeClientReturnTo(locale: string, value: unknown) {

@@ -1,5 +1,6 @@
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -20,6 +21,8 @@ type SupabaseMutationError = {
 };
 
 type SignInFailureReason = "supabase" | "login" | "confirm";
+type AuthFailureReason = "invalid" | "register" | "profile" | "existing" | SignInFailureReason;
+type AuthUserCreationResult = { ok: true; user: SignedInUser } | { ok: false; reason: AuthFailureReason; error: string };
 type SignedInUser = {
   id: string;
   email?: string | null;
@@ -50,16 +53,31 @@ function isSchemaCompatibilityError(error: unknown) {
 }
 
 async function upsertProfileCompat(
-  admin: ReturnType<typeof createSupabaseAdminClient>,
+  client: SupabaseClient,
   fullPayload: Record<string, unknown>,
   fallbackPayload: Record<string, unknown>
 ) {
-  const { error } = await admin.from("profiles").upsert(fullPayload);
+  const { error } = await client.from("profiles").upsert(fullPayload);
   if (!error) return null;
   if (!isSchemaCompatibilityError(error)) return error;
 
-  const { error: fallbackError } = await admin.from("profiles").upsert(fallbackPayload);
+  const { error: fallbackError } = await client.from("profiles").upsert(fallbackPayload);
   return fallbackError;
+}
+
+function tryCreateSupabaseAdminClient() {
+  try {
+    return createSupabaseAdminClient();
+  } catch (error) {
+    console.error("Supabase admin client unavailable", error);
+    return null;
+  }
+}
+
+async function createSupabaseMutationClient() {
+  const admin = tryCreateSupabaseAdminClient();
+  if (admin) return admin;
+  return createSupabaseServerClient();
 }
 
 export async function registerPrivateAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
@@ -77,17 +95,32 @@ export async function registerPrivateAccountAction(_state: AuthActionState, form
   const authUser = await createConfirmedAuthUser(locale, email, values.password, {
     account_type: "private",
     first_name: values.firstName,
-    last_name: values.lastName
+    last_name: values.lastName,
+    phone: values.phone
   });
 
-  if (!authUser.ok) return { error: authUser.error };
+  if (!authUser.ok) {
+    if (authUser.reason === "existing") {
+      const existingSignIn = await signInConfirmedAccount(email, values.password);
+      if (existingSignIn.ok && existingSignIn.data.user) {
+        const role = await ensureProfileForSignedInUser(existingSignIn.data.user as SignedInUser, locale);
+        redirectAfterAuthenticated(locale, returnTo, role);
+      }
+    }
+
+    return { error: authUser.error };
+  }
+
+  const signedIn = await signInConfirmedAccount(email, values.password);
+  if (!signedIn.ok) return { error: authErrorMessage(locale, signedIn.reason ?? "login") };
 
   try {
-    const admin = createSupabaseAdminClient();
+    const supabase = await createSupabaseMutationClient();
+    if (!supabase) return { error: authErrorMessage(locale, "supabase") };
     const fullName = `${values.firstName} ${values.lastName}`.trim();
     const now = new Date().toISOString();
     const profileError = await upsertProfileCompat(
-      admin,
+      supabase,
       {
         id: authUser.user.id,
         role: "private",
@@ -119,9 +152,6 @@ export async function registerPrivateAccountAction(_state: AuthActionState, form
     console.error("Private profile creation failed", error);
     return { error: authErrorMessage(locale, "profile") };
   }
-
-  const signedIn = await signInConfirmedAccount(email, values.password);
-  if (!signedIn.ok) return { error: authErrorMessage(locale, signedIn.reason ?? "login") };
 
   redirect((returnTo || `/${locale}/dashboard`) as never);
 }
@@ -189,15 +219,30 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
     account_type: "professional",
     first_name: values.firstName,
     last_name: values.lastName,
+    phone: values.phone,
     company_name: values.companyName
   });
 
-  if (!authUser.ok) return { error: authUser.error };
+  if (!authUser.ok) {
+    if (authUser.reason === "existing") {
+      const existingSignIn = await signInConfirmedAccount(email, values.password);
+      if (existingSignIn.ok && existingSignIn.data.user) {
+        const role = await ensureProfileForSignedInUser(existingSignIn.data.user as SignedInUser, locale);
+        redirectAfterAuthenticated(locale, returnTo, role);
+      }
+    }
+
+    return { error: authUser.error };
+  }
+
+  const signedIn = await signInConfirmedAccount(email, values.password);
+  if (!signedIn.ok) return { error: authErrorMessage(locale, signedIn.reason ?? "login") };
 
   const now = new Date().toISOString();
 
   try {
-    const admin = createSupabaseAdminClient();
+    const admin = await createSupabaseMutationClient();
+    if (!admin) return { error: authErrorMessage(locale, "supabase") };
     const fullName = `${values.firstName} ${values.lastName}`.trim();
     const profileError = await upsertProfileCompat(
       admin,
@@ -374,15 +419,20 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
     return { error: authErrorMessage(locale, "profile") };
   }
 
-  const signedIn = await signInConfirmedAccount(email, values.password);
-  if (!signedIn.ok) return { error: authErrorMessage(locale, signedIn.reason ?? "login") };
-
   redirect((returnTo || `/${locale}/dashboard/professional`) as never);
 }
 
-async function createConfirmedAuthUser(locale: string, email: string, password: string, metadata: AccountMetadata) {
-  try {
-    const admin = createSupabaseAdminClient();
+function redirectAfterAuthenticated(locale: string, returnTo: string, role: string) {
+  if (returnTo) redirect(returnTo as never);
+  if (role === "admin") redirect(`/${locale}/admin` as never);
+  if (role === "professional") redirect(`/${locale}/dashboard/professional` as never);
+  redirect(`/${locale}/dashboard` as never);
+}
+
+async function createConfirmedAuthUser(locale: string, email: string, password: string, metadata: AccountMetadata): Promise<AuthUserCreationResult> {
+  const admin = tryCreateSupabaseAdminClient();
+
+  if (admin) {
     const { data, error } = await admin.auth.admin.createUser({
       email,
       password,
@@ -395,14 +445,32 @@ async function createConfirmedAuthUser(locale: string, email: string, password: 
 
     if (error || !data.user) {
       console.error("Confirmed auth user creation failed", error);
-      return { ok: false as const, error: authErrorMessage(locale, "register") };
+      const reason = isAuthUserAlreadyExistsError(error) ? "existing" : "register";
+      return { ok: false, reason, error: authErrorMessage(locale, reason) };
     }
 
     return { ok: true as const, user: data.user };
-  } catch (error) {
-    console.error("Confirmed auth user creation failed", error);
-    return { ok: false as const, error: authErrorMessage(locale, "supabase") };
   }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { ok: false, reason: "supabase", error: authErrorMessage(locale, "supabase") };
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: metadata
+    }
+  });
+
+  const identities = (data.user as { identities?: unknown[] } | null)?.identities;
+  if (error || !data.user || (Array.isArray(identities) && identities.length === 0)) {
+    console.error("Auth user signup failed", error);
+    const reason = isAuthUserAlreadyExistsError(error) || Array.isArray(identities) ? "existing" : "register";
+    return { ok: false, reason, error: authErrorMessage(locale, reason) };
+  }
+
+  return { ok: true as const, user: data.user };
 }
 
 async function signInConfirmedAccount(email: string, password: string) {
@@ -417,7 +485,7 @@ async function signInConfirmedAccount(email: string, password: string) {
     return { ok: false, reason: "supabase" as const, data: { user: null }, error };
   }
 
-  if (result.error && !result.data.user) {
+  if (result.error && !result.data.user && isEmailConfirmationError(result.error)) {
     const confirmed = await confirmExistingAuthUserEmail(email);
     if (confirmed) {
       try {
@@ -442,9 +510,16 @@ function isEmailConfirmationError(error: unknown) {
   return text.includes("email not confirmed") || text.includes("not confirmed") || text.includes("confirm");
 }
 
+function isAuthUserAlreadyExistsError(error: unknown) {
+  const issue = error as SupabaseMutationError | null;
+  const text = `${issue?.message || ""} ${issue?.code || ""} ${issue?.details || ""}`.toLowerCase();
+  return text.includes("already") || text.includes("exists") || text.includes("registered") || text.includes("duplicate");
+}
+
 async function confirmExistingAuthUserEmail(email: string) {
   try {
-    const admin = createSupabaseAdminClient();
+    const admin = tryCreateSupabaseAdminClient();
+    if (!admin) return false;
     const { data: users, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (listError) {
       console.error("Auth user lookup failed", listError);
@@ -470,7 +545,8 @@ async function confirmExistingAuthUserEmail(email: string) {
 
 async function ensureProfileForSignedInUser(user: SignedInUser, locale: string) {
   try {
-    const admin = createSupabaseAdminClient();
+    const admin = await createSupabaseMutationClient();
+    if (!admin) return "";
     const { data: profile } = await admin
       .from("profiles")
       .select("role")
@@ -483,6 +559,7 @@ async function ensureProfileForSignedInUser(user: SignedInUser, locale: string) 
     const appMetadata = user.app_metadata || {};
     const firstName = typeof metadata.first_name === "string" ? metadata.first_name : "";
     const lastName = typeof metadata.last_name === "string" ? metadata.last_name : "";
+    const phone = typeof metadata.phone === "string" ? metadata.phone : user.phone || null;
     const fullName = `${firstName} ${lastName}`.trim() || user.email || "Compte Swissnaut";
     const normalizedEmail = normalizeEmail(user.email || "");
     const role =
@@ -502,7 +579,7 @@ async function ensureProfileForSignedInUser(user: SignedInUser, locale: string) 
         first_name: firstName || null,
         last_name: lastName || null,
         full_name: fullName,
-        phone: user.phone || null,
+        phone,
         preferred_locale: locale,
         updated_at: now
       },
@@ -510,7 +587,7 @@ async function ensureProfileForSignedInUser(user: SignedInUser, locale: string) 
         id: user.id,
         role,
         full_name: fullName,
-        phone: user.phone || null,
+        phone,
         preferred_locale: locale,
         updated_at: now
       }
@@ -648,7 +725,7 @@ export async function updateProfessionalProfileFormAction(formData: FormData) {
 }
 
 async function replaceBrokerRows(
-  admin: ReturnType<typeof createSupabaseAdminClient>,
+  admin: SupabaseClient,
   table: "broker_services" | "broker_specialties" | "broker_represented_brands",
   professionalProfileId: string,
   values: string[],
@@ -675,7 +752,7 @@ function parseMultiValueText(value: string) {
     .filter((item, index, all) => all.findIndex((candidate) => candidate.toLowerCase() === item.toLowerCase()) === index);
 }
 
-function authErrorMessage(locale: string, reason: "invalid" | "supabase" | "register" | "profile" | SignInFailureReason) {
+function authErrorMessage(locale: string, reason: AuthFailureReason) {
   const messages = {
     invalid: {
       fr: "Veuillez vérifier les champs obligatoires.",
@@ -694,6 +771,12 @@ function authErrorMessage(locale: string, reason: "invalid" | "supabase" | "regi
       de: "Das Konto konnte nicht erstellt werden. Prüfen Sie E-Mail, Passwort oder ob das Konto bereits existiert.",
       it: "Non è stato possibile creare l'account. Verifica email, password o se l'account esiste già.",
       en: "The account could not be created. Check the email, password or whether the account already exists."
+    },
+    existing: {
+      fr: "Ce compte existe déjà. Utilisez l'onglet Se connecter avec le même email et mot de passe.",
+      de: "Dieses Konto existiert bereits. Nutzen Sie den Tab Anmelden mit derselben E-Mail und demselben Passwort.",
+      it: "Questo account esiste già. Usa la scheda Accedi con la stessa email e password.",
+      en: "This account already exists. Use the Sign in tab with the same email and password."
     },
     profile: {
       fr: "Le compte a été créé, mais le profil n'a pas pu être finalisé. Vérifiez les migrations Supabase.",
