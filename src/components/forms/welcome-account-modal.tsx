@@ -4,36 +4,71 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LoginAccountForm } from "@/components/forms/login-account-form";
 import { RegisterAccountForm } from "@/components/forms/register-account-form";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const storageKey = "swissyacht-welcome-closed";
 const openEvent = "swissyacht:open-account-modal";
 
+type AccountModalMode = "register" | "login";
+
 export function WelcomeAccountModal({ locale, isAuthenticated = false }: { locale: string; isAuthenticated?: boolean }) {
-  const [open, setOpen] = useState(() => !isAuthenticated && shouldOpenInitially());
+  const [open, setOpen] = useState(false);
   const [publishError] = useState(shouldShowPublishError);
-  const [mode, setMode] = useState<"register" | "login">("register");
+  const [mode, setMode] = useState<AccountModalMode>("register");
   const [returnTo, setReturnTo] = useState("");
 
   useEffect(() => {
-    if (isAuthenticated) return;
+    if (isAuthenticated) {
+      setOpen(false);
+      return;
+    }
+
+    let cancelled = false;
 
     const params = new URLSearchParams(window.location.search);
+    const forcedAccountModal = params.get("account") === "1";
 
-    if (params.get("account") === "1") {
+    if (forcedAccountModal) {
+      const target = safeClientReturnTo(locale, params.get("returnTo"));
+      const initialMode = params.get("mode") === "login" ? "login" : "register";
+      setReturnTo(target);
+      setMode(initialMode);
+      setOpen(true);
       params.delete("account");
       params.delete("publishError");
+      params.delete("returnTo");
+      params.delete("mode");
       const search = params.toString();
       window.history.replaceState(null, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
     }
 
+    const hideWhenBrowserSessionExists = async () => {
+      if (forcedAccountModal) return;
+
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data } = await supabase.auth.getSession();
+        if (!cancelled) setOpen(!data.session && shouldOpenInitially());
+      } catch (error) {
+        console.error("Supabase browser session check failed", error);
+        if (!cancelled) setOpen(shouldOpenInitially());
+      }
+    };
+
+    void hideWhenBrowserSessionExists();
+
     const handleOpen = (event: Event) => {
       const detail = event instanceof CustomEvent ? event.detail : null;
-      setReturnTo(typeof detail?.returnTo === "string" ? detail.returnTo : "");
+      setReturnTo(safeClientReturnTo(locale, detail?.returnTo));
+      setMode(detail?.mode === "login" ? "login" : "register");
       setOpen(!isAuthenticated);
     };
     window.addEventListener(openEvent, handleOpen);
-    return () => window.removeEventListener(openEvent, handleOpen);
-  }, [isAuthenticated]);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(openEvent, handleOpen);
+    };
+  }, [isAuthenticated, locale]);
 
   const close = () => {
     window.localStorage.setItem(storageKey, "true");
@@ -86,8 +121,8 @@ export function WelcomeAccountModal({ locale, isAuthenticated = false }: { local
   );
 }
 
-export function openAccountModal(returnTo?: string) {
-  window.dispatchEvent(new CustomEvent(openEvent, { detail: { returnTo } }));
+export function openAccountModal(returnTo?: string, mode: AccountModalMode = "register") {
+  window.dispatchEvent(new CustomEvent(openEvent, { detail: { returnTo, mode } }));
 }
 
 function shouldOpenInitially() {
@@ -99,6 +134,13 @@ function shouldShowPublishError() {
   if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
   return params.get("publishError") === "auth_required";
+}
+
+function safeClientReturnTo(locale: string, value: unknown) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return "";
+  if (raw === `/${locale}` || raw.startsWith(`/${locale}/`)) return raw;
+  return "";
 }
 
 function welcomeLine(locale: string) {

@@ -77,25 +77,24 @@ export async function submitListingAction(_state: ListingActionState, formData: 
 }
 
 async function saveListing(values: ListingFormValues, slug: string, status: "draft" | "published", locale: string, photoFiles: File[]): Promise<SaveListingResult> {
-  const supabase = await createSupabaseServerClient();
-  const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+  const user = await getCurrentUserForListing();
 
-  if (!data.user) {
-    redirect(`/${locale}/?account=1&publishError=auth_required` as never);
+  if (!user) {
+    redirect(`/${locale}?account=1&mode=login&publishError=auth_required&returnTo=${encodeURIComponent(`/${locale}/sell`)}` as never);
   }
 
   try {
     const admin = createSupabaseAdminClient();
-    const userId = data.user.id;
+    const userId = user.id;
     const now = new Date().toISOString();
     const { data: existingProfile } = await admin
       .from("profiles")
       .select("role, full_name, phone")
       .eq("id", userId)
       .maybeSingle<{ role: string | null; full_name: string | null; phone: string | null }>();
-    const profileRole = existingProfile?.role || (data.user.user_metadata?.account_type === "professional" ? "professional" : "private");
-    const userMetadataName = [data.user.user_metadata?.first_name, data.user.user_metadata?.last_name].filter(Boolean).join(" ");
-    const fullName = existingProfile?.full_name || userMetadataName || data.user.email || "Swissnaut user";
+    const profileRole = existingProfile?.role || (user.user_metadata?.account_type === "professional" ? "professional" : "private");
+    const userMetadataName = [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(" ");
+    const fullName = existingProfile?.full_name || userMetadataName || user.email || "Swissnaut user";
     const profilePhone = existingProfile?.phone || "";
 
     const { error: profileError } = await admin.from("profiles").upsert({
@@ -122,7 +121,7 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const title = `${values.brand.trim()} ${values.model.trim()}`.trim();
     const professionalPhone = professionalProfile?.public_phone || professionalProfile?.phones?.[0] || "";
     const contactName = professionalProfile?.company_name || fullName;
-    const contactEmail = professionalProfile?.public_email || data.user.email || values.contactEmail || "";
+    const contactEmail = professionalProfile?.public_email || user.email || values.contactEmail || "";
     const contactPhone = professionalPhone || profilePhone || values.contactPhone || "";
 
     const listingPayload: ListingInsertPayload = {
@@ -204,28 +203,80 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
   }
 }
 
+async function getCurrentUserForListing() {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error("Listing session read failed", error);
+      return null;
+    }
+
+    return data.user ?? null;
+  } catch (error) {
+    console.error("Listing session read failed", error);
+    return null;
+  }
+}
+
 async function insertListingWithCompatibility(payload: ListingInsertPayload) {
   const admin = createSupabaseAdminClient();
-  let result = await admin
-    .from("listings")
-    .insert(payload)
-    .select("id, slug")
-    .single();
-
-  if (!result.error || !isSchemaCompatibilityError(result.error)) return result;
-
   const compatiblePayload = { ...payload };
-  for (const key of ["people_capacity", "cabins", "berths", "bathrooms", "kitchen", "overnight_accommodation", "allow_trade_in"]) {
-    delete compatiblePayload[key];
+  const optionalColumns = [
+    "professional_profile_id",
+    "vat_included",
+    "negotiable",
+    "financing_available",
+    "fuel_type",
+    "engine_type",
+    "engine_count",
+    "power_hp",
+    "engine_hours",
+    "length_m",
+    "beam_m",
+    "weight_kg",
+    "hull_material",
+    "color",
+    "people_capacity",
+    "cabins",
+    "berths",
+    "bathrooms",
+    "kitchen",
+    "overnight_accommodation",
+    "license_required",
+    "electric",
+    "equipment",
+    "contact_name",
+    "contact_email",
+    "contact_phone",
+    "published_at",
+    "allow_trade_in"
+  ];
+  const removed = new Set<string>();
+  let lastResult = await admin.from("listings").insert(compatiblePayload).select("id, slug").single();
+
+  for (let attempt = 0; lastResult.error && isSchemaCompatibilityError(lastResult.error) && attempt < optionalColumns.length; attempt += 1) {
+    const missingColumn = missingColumnFromError(lastResult.error);
+    const columnToRemove =
+      missingColumn && optionalColumns.includes(missingColumn) && missingColumn in compatiblePayload
+        ? missingColumn
+        : optionalColumns.find((column) => column in compatiblePayload && !removed.has(column));
+
+    if (!columnToRemove) break;
+    delete compatiblePayload[columnToRemove];
+    removed.add(columnToRemove);
+    lastResult = await admin.from("listings").insert(compatiblePayload).select("id, slug").single();
   }
 
-  result = await admin
-    .from("listings")
-    .insert(compatiblePayload)
-    .select("id, slug")
-    .single();
+  return lastResult;
+}
 
-  return result;
+function missingColumnFromError(error: unknown) {
+  const issue = error as SupabaseMutationError | null;
+  const text = `${issue?.message || ""} ${issue?.details || ""}`;
+  return text.match(/column ['"]?([a-z0-9_]+)['"]?/i)?.[1] ?? text.match(/['"]([a-z0-9_]+)['"] column/i)?.[1] ?? null;
 }
 
 function listingErrorMessage(locale: string, reason: "invalid" | "supabase") {

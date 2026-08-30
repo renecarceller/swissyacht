@@ -103,7 +103,16 @@ export async function getDirectorAccess(): Promise<DirectorAccess> {
     return { status: "unavailable", message: "Supabase n'est pas configuré sur ce déploiement." };
   }
 
-  const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
+  let sessionData;
+  let sessionError;
+  try {
+    ({ data: sessionData, error: sessionError } = await supabase.auth.getUser());
+  } catch (error) {
+    return {
+      status: "unavailable",
+      message: error instanceof Error ? error.message : "La session Supabase n'a pas pu être lue."
+    };
+  }
   if (sessionError || !sessionData.user) return { status: "unauthenticated" };
 
   try {

@@ -25,6 +25,16 @@ export async function generateMetadata({
   return {
     title: `${listing.title} - ${formatChf(listing.priceChf)}`,
     description: `${listing.brand} ${listing.model}, ${listing.year}, ${listing.lengthM} m, ${listing.lake}, ${listing.canton}.`,
+    robots: listing.demo
+      ? {
+          index: false,
+          follow: false,
+          googleBot: {
+            index: false,
+            follow: false
+          }
+        }
+      : undefined,
     openGraph: {
       title: listing.title,
       images: listing.images.map((image) => image.url)
@@ -41,16 +51,30 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
   const text = ui(locale);
   const specLabels = text.listing.specs.split("|");
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+  let isAuthenticated = false;
+  if (supabase) {
+    try {
+      const { data } = await supabase.auth.getUser();
+      isAuthenticated = Boolean(data.user);
+    } catch (error) {
+      console.error("Supabase listing session read failed", error);
+    }
+  }
 
   return (
     <main className="container-shell py-8">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(listingJsonLd(listing, appUrl, locale)) }} />
+      {!listing.demo ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(listingJsonLd(listing, appUrl, locale)) }} /> : null}
       <div className="mb-4 text-sm text-[#607085]">{text.listing.breadcrumbHome} / {text.listing.breadcrumbBoats} / {listing.brand} / {listing.title}</div>
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <section className="grid gap-6">
           <ListingGallery images={listing.images} />
           <section className="rounded-md border border-[#d9e2ec] bg-white p-6">
+            {listing.demo ? (
+              <div className="mb-5 rounded-md border border-[#8bd3ff] bg-[#eef8ff] p-4">
+                <div className="text-sm font-bold uppercase tracking-[0.08em] text-[#0f6fae]">{text.listing.demoLabel}</div>
+                <p className="mt-2 text-sm leading-6 text-[#324963]">{text.listing.demoDescription}</p>
+              </div>
+            ) : null}
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-navy">{listing.title}</h1>
@@ -119,16 +143,22 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
               </div>
             </div>
             <div className="mt-4 grid gap-2">
-              <ListingMessageBox listing={listing} locale={locale} isAuthenticated={Boolean(user)} />
-              {listing.seller.phone ? (
-                <a href={`tel:${listing.seller.phone}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />{text.listing.showPhone}</a>
-              ) : null}
-              {listing.seller.whatsapp ? (
-                <a href={`https://wa.me/${listing.seller.whatsapp.replace(/[^0-9]/g, "")}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />WhatsApp</a>
-              ) : null}
-              {listing.seller.email ? (
-                <a href={`mailto:${listing.seller.email}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Mail size={17} />Email</a>
-              ) : null}
+              {listing.demo ? (
+                <div className="rounded-md border border-[#8bd3ff] bg-[#eef8ff] p-3 text-sm leading-6 text-[#324963]">{text.listing.demoDescription}</div>
+              ) : (
+                <>
+                  <ListingMessageBox listing={listing} locale={locale} isAuthenticated={isAuthenticated} />
+                  {listing.seller.phone ? (
+                    <a href={`tel:${listing.seller.phone}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />{text.listing.showPhone}</a>
+                  ) : null}
+                  {listing.seller.whatsapp ? (
+                    <a href={`https://wa.me/${listing.seller.whatsapp.replace(/[^0-9]/g, "")}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Phone size={17} />WhatsApp</a>
+                  ) : null}
+                  {listing.seller.email ? (
+                    <a href={`mailto:${listing.seller.email}`} className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Mail size={17} />Email</a>
+                  ) : null}
+                </>
+              )}
               <FavoriteButton listingId={listing.id} label={text.listing.saveFavorite} variant="action" />
               <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-[#cbd7e4] font-bold text-navy"><Share2 size={17} />{text.listing.share}</button>
               {listing.seller.professionalSlug ? (

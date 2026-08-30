@@ -23,7 +23,7 @@ export function ListingCard({ listing, locale, view = "cards" }: { listing: List
           <div>
             <div className="mb-2 flex flex-wrap gap-2">
               {listing.featured ? <span className="rounded bg-[#fff0f1] px-2 py-1 text-xs font-bold text-swiss-red">{text.common.featured}</span> : null}
-              {listing.demo ? <span className="rounded bg-[#eef6fc] px-2 py-1 text-xs font-bold text-navy">{text.common.demo}</span> : null}
+              {listing.demo ? <span className="rounded bg-[#eef6fc] px-2 py-1 text-xs font-bold text-navy">{text.listing.demoLabel}</span> : null}
             </div>
             <Link href={`/listing/${listing.slug}`} locale={locale} className="text-lg font-bold text-navy hover:underline">
               {listing.title}

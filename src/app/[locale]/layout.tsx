@@ -55,7 +55,14 @@ async function getAccountHref(locale: string) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return undefined;
 
-  const { data } = await supabase.auth.getUser();
+  let data;
+  try {
+    ({ data } = await supabase.auth.getUser());
+  } catch (error) {
+    console.error("Supabase account session read failed", error);
+    return undefined;
+  }
+
   if (!data.user) return undefined;
 
   try {

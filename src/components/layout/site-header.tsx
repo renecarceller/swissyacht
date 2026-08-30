@@ -84,15 +84,6 @@ export function SiteHeader({
           {text.nav.publish}
         </Link>
         <div className="hidden items-center justify-end gap-2 min-[520px]:flex">
-          <Link
-            href="/pmb"
-            locale={locale}
-            title={text.pmb.navTitle}
-            aria-label={text.pmb.navTitle}
-            className="hidden h-10 items-center rounded-md border border-[#d9e2ec] bg-white px-3 text-sm font-bold text-navy transition hover:bg-[#e8f3fb] lg:inline-flex"
-          >
-            {text.pmb.navLabel}
-          </Link>
           <Link href="/dashboard/messages" locale={locale} className="relative grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={headerLabels(locale).messages}>
             <MessageCircle size={23} strokeWidth={2.1} />
             {unreadMessages > 0 ? (
@@ -100,6 +91,15 @@ export function SiteHeader({
                 {unreadMessages > 99 ? "99+" : unreadMessages}
               </span>
             ) : null}
+          </Link>
+          <Link
+            href="/pmb"
+            locale={locale}
+            title={text.pmb.navTitle}
+            aria-label={text.pmb.navTitle}
+            className="inline-flex h-10 items-center rounded-md px-3 text-sm font-bold text-navy transition hover:bg-[#e8f3fb]"
+          >
+            {text.pmb.navLabel}
           </Link>
           <Link href="/dashboard/favorites" locale={locale} className="grid size-10 place-items-center rounded-md text-[#8bd3ff] transition hover:bg-[#eef9ff]" aria-label={text.dashboard.favorites}>
             <Heart size={23} className="text-[#8bd3ff]" fill="#8bd3ff" stroke="#8bd3ff" strokeWidth={2.2} />
@@ -118,15 +118,6 @@ export function SiteHeader({
             </button>
             {languageOpen ? (
               <div className="absolute right-0 top-12 z-[90] w-24 overflow-hidden rounded-md border border-[#d9e2ec] bg-white shadow-xl">
-                <Link
-                  href="/pmb"
-                  locale={locale}
-                  onClick={() => setLanguageOpen(false)}
-                  className="block border-b border-[#d9e2ec] px-4 py-3 text-center text-sm font-bold text-navy hover:bg-[#f6fbff]"
-                  title={text.pmb.navTitle}
-                >
-                  PMB
-                </Link>
                 {["fr", "de", "it", "en"].map((item) => (
                   <Link
                     key={item}
@@ -143,12 +134,20 @@ export function SiteHeader({
           </div>
         </div>
         <div className="flex min-w-0 items-center justify-end gap-1 min-[520px]:hidden">
+          <Link href="/dashboard/messages" locale={locale} className="relative grid size-10 place-items-center rounded-md text-navy transition hover:bg-[#e8f3fb]" aria-label={headerLabels(locale).messages}>
+            <MessageCircle size={23} strokeWidth={2.1} />
+            {unreadMessages > 0 ? (
+              <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[#e51f35] px-1 text-[11px] font-bold text-white">
+                {unreadMessages > 99 ? "99+" : unreadMessages}
+              </span>
+            ) : null}
+          </Link>
           <Link
             href="/pmb"
             locale={locale}
             title={text.pmb.navTitle}
             aria-label={text.pmb.navTitle}
-            className="grid h-10 min-w-12 place-items-center rounded-md border border-[#d9e2ec] bg-[#eef9ff] px-2 text-sm font-bold text-navy"
+            className="grid h-10 min-w-12 place-items-center rounded-md px-2 text-sm font-bold text-navy"
           >
             PMB
           </Link>

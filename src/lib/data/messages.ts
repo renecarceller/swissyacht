@@ -230,8 +230,13 @@ export async function markConversationRead(conversationId: string, userId: strin
 async function getCurrentUserId() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id || null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id || null;
+  } catch (error) {
+    console.error("Message session read failed", error);
+    return null;
+  }
 }
 
 function primaryImage(listing?: ListingRow) {

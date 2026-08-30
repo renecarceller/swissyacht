@@ -4,7 +4,6 @@ import { MessageCircle, X } from "lucide-react";
 import { useActionState, useState } from "react";
 import type { Listing } from "@/types/domain";
 import { startListingConversationAction } from "@/lib/actions/messages";
-import { Link } from "@/i18n/routing";
 import { openAccountModal } from "@/components/forms/welcome-account-modal";
 
 export function ListingMessageBox({
@@ -46,10 +45,24 @@ export function ListingMessageBox({
               </div>
               <p className="mt-3 leading-6 text-[#607085]">{text.loginText}</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} locale={locale} className="flex h-11 items-center justify-center rounded-md bg-[#8bd3ff] font-bold text-[#06233f] shadow-[0_3px_0_#58b9e8]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalOpen(false);
+                    openAccountModal(returnTo, "login");
+                  }}
+                  className="flex h-11 items-center justify-center rounded-md bg-[#8bd3ff] font-bold text-[#06233f] shadow-[0_3px_0_#58b9e8]"
+                >
                   {text.login}
-                </Link>
-                <button type="button" onClick={() => openAccountModal(returnTo)} className="flex h-11 items-center justify-center rounded-md border border-[#cbd7e4] font-bold text-navy">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalOpen(false);
+                    openAccountModal(returnTo, "register");
+                  }}
+                  className="flex h-11 items-center justify-center rounded-md border border-[#cbd7e4] font-bold text-navy"
+                >
                   {text.create}
                 </button>
               </div>

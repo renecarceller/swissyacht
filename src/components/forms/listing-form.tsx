@@ -404,7 +404,6 @@ function PhotoUploadField({
       <input
         ref={finderInputRef}
         type="file"
-        name="photos"
         accept="image/jpeg,image/png,image/webp"
         multiple
         className="hidden"
@@ -416,7 +415,6 @@ function PhotoUploadField({
       <input
         ref={libraryInputRef}
         type="file"
-        name="photos"
         accept="image/*"
         multiple
         className="hidden"

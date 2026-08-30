@@ -36,7 +36,8 @@ export async function startListingConversationAction(_state: MessageActionState,
 
   const userId = await currentUserId();
   if (!userId) {
-    redirect(`/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/listing/${listingSlug}`)}` as never);
+    const returnTo = `/${locale}/listing/${listingSlug}`;
+    redirect(`/${locale}/listing/${listingSlug}?account=1&mode=login&returnTo=${encodeURIComponent(returnTo)}` as never);
   }
 
   const admin = createSupabaseAdminClient();
@@ -90,7 +91,7 @@ export async function sendConversationMessageAction(_state: MessageActionState, 
   if (!body) return { error: labels(locale).empty };
 
   const userId = await currentUserId();
-  if (!userId) redirect(`/${locale}/login` as never);
+  if (!userId) redirect(`/${locale}?account=1&mode=login&returnTo=${encodeURIComponent(`/${locale}/dashboard/messages`)}` as never);
 
   const admin = createSupabaseAdminClient();
   const { data: conversation } = await admin
@@ -149,8 +150,13 @@ async function appendMessage(conversationId: string, senderId: string, recipient
 async function currentUserId() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id || null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id || null;
+  } catch (error) {
+    console.error("Message action session read failed", error);
+    return null;
+  }
 }
 
 function normalizeBody(value: FormDataEntryValue | null) {

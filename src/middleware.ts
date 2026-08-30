@@ -8,7 +8,7 @@ const intlMiddleware = createMiddleware(routing);
 export async function middleware(request: NextRequest) {
   const response = intlMiddleware(request);
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) return response;
 
@@ -28,7 +28,11 @@ export async function middleware(request: NextRequest) {
     }
   });
 
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch (error) {
+    console.error("Supabase session refresh failed", error);
+  }
 
   return response;
 }
