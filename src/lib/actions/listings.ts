@@ -1,5 +1,6 @@
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { locales } from "@/lib/data/reference";
@@ -32,6 +33,7 @@ type SaveListingResult =
   | { ok: false; error: string };
 
 type ListingInsertPayload = Record<string, unknown>;
+type ListingDbClient = SupabaseClient;
 
 function isSchemaCompatibilityError(error: unknown) {
   const issue = error as SupabaseMutationError | null;
@@ -41,6 +43,18 @@ function isSchemaCompatibilityError(error: unknown) {
     text.includes("schema cache") ||
     text.includes("could not find") ||
     text.includes("does not exist")
+  );
+}
+
+function isPermissionError(error: unknown) {
+  const issue = error as SupabaseMutationError | null;
+  const text = `${issue?.code || ""} ${issue?.message || ""} ${issue?.details || ""}`.toLowerCase();
+  return (
+    issue?.code === "42501" ||
+    text.includes("row-level security") ||
+    text.includes("permission denied") ||
+    text.includes("violates row-level security policy") ||
+    text.includes("rls")
   );
 }
 
@@ -84,10 +98,12 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
   }
 
   try {
-    const admin = createSupabaseAdminClient();
+    const db = (await createSupabaseMutationClient()) as ListingDbClient | null;
+    if (!db) return { ok: false, error: listingErrorMessage(locale, "supabase") };
+
     const userId = user.id;
     const now = new Date().toISOString();
-    const { data: existingProfile } = await admin
+    const { data: existingProfile } = await db
       .from("profiles")
       .select("role, full_name, phone")
       .eq("id", userId)
@@ -97,7 +113,7 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     const fullName = existingProfile?.full_name || userMetadataName || user.email || "Swissnaut user";
     const profilePhone = existingProfile?.phone || "";
 
-    const { error: profileError } = await admin.from("profiles").upsert({
+    const { error: profileError } = await db.from("profiles").upsert({
       id: userId,
       role: profileRole,
       full_name: fullName,
@@ -108,15 +124,15 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     if (profileError) throw new Error(profileError.message);
 
     const [{ id: categoryId }, { id: brandId }, { id: modelId }, { id: cantonId }, { id: lakeId }] = await Promise.all([
-      findReferenceId("categories", values.category),
-      ensureBrand(values.brand),
-      ensureModel(values.brand, values.model),
-      findReferenceId("cantons", values.canton),
-      findReferenceId("lakes", values.lake)
+      findReferenceId(db, "categories", values.category),
+      ensureBrand(db, values.brand),
+      ensureModel(db, values.brand, values.model),
+      findReferenceId(db, "cantons", values.canton),
+      findReferenceId(db, "lakes", values.lake)
     ]);
-    const cityId = await ensureCity(values.city, cantonId);
-    const marinaId = values.marina ? await ensureMarina(values.marina, cityId, lakeId) : null;
-    const professionalProfile = await getProfessionalProfileForUser(userId);
+    const cityId = await ensureCity(db, values.city, cantonId);
+    const marinaId = values.marina ? await ensureMarina(db, values.marina, cityId, lakeId) : null;
+    const professionalProfile = await getProfessionalProfileForUser(db, userId);
     const sellerType = professionalProfile ? "professional" : "private";
     const title = `${values.brand.trim()} ${values.model.trim()}`.trim();
     const professionalPhone = professionalProfile?.public_phone || professionalProfile?.phones?.[0] || "";
@@ -173,14 +189,14 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
       published_at: status === "published" ? now : null
     };
 
-    const { data: listing, error } = await insertListingWithCompatibility(listingPayload);
+    const { data: listing, error } = await insertListingWithCompatibility(db, listingPayload);
 
     if (error) throw new Error(error.message);
     if (!listing?.slug) throw new Error("Supabase did not return the listing slug.");
 
     if (photoFiles.length > 0) {
       try {
-        await saveListingImages({
+        await saveListingImages(db, {
           files: photoFiles,
           listingId: listing.id as string,
           ownerId: userId,
@@ -203,6 +219,21 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
   }
 }
 
+async function createSupabaseMutationClient() {
+  const admin = tryCreateSupabaseAdminClient();
+  if (admin) return admin;
+  return createSupabaseServerClient();
+}
+
+function tryCreateSupabaseAdminClient() {
+  try {
+    return createSupabaseAdminClient();
+  } catch (error) {
+    console.error("Supabase admin client unavailable, falling back to signed-in user session", error);
+    return null;
+  }
+}
+
 async function getCurrentUserForListing() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
@@ -221,9 +252,7 @@ async function getCurrentUserForListing() {
   }
 }
 
-async function insertListingWithCompatibility(payload: ListingInsertPayload) {
-  const admin = createSupabaseAdminClient();
-  const compatiblePayload = { ...payload };
+async function insertListingWithCompatibility(db: ListingDbClient, payload: ListingInsertPayload) {
   const optionalColumns = [
     "professional_profile_id",
     "vat_included",
@@ -254,8 +283,38 @@ async function insertListingWithCompatibility(payload: ListingInsertPayload) {
     "published_at",
     "allow_trade_in"
   ];
+
+  const directInsert = await insertCompatibleListingPayload(db, payload, optionalColumns);
+  if (!directInsert.error || payload.status !== "published" || !isPermissionError(directInsert.error)) {
+    return directInsert;
+  }
+
+  const publishedAt = typeof payload.published_at === "string" ? payload.published_at : new Date().toISOString();
+  const pendingInsert = await insertCompatibleListingPayload(
+    db,
+    {
+      ...payload,
+      status: "pending_review",
+      published_at: null
+    },
+    optionalColumns
+  );
+
+  const insertedId = typeof pendingInsert.data?.id === "string" ? pendingInsert.data.id : null;
+  if (pendingInsert.error || !insertedId) return pendingInsert;
+
+  return db
+    .from("listings")
+    .update({ status: "published", published_at: publishedAt })
+    .eq("id", insertedId)
+    .select("id, slug")
+    .single();
+}
+
+async function insertCompatibleListingPayload(db: ListingDbClient, payload: ListingInsertPayload, optionalColumns: string[]) {
+  const compatiblePayload = { ...payload };
   const removed = new Set<string>();
-  let lastResult = await admin.from("listings").insert(compatiblePayload).select("id, slug").single();
+  let lastResult = await db.from("listings").insert(compatiblePayload).select("id, slug").single();
 
   for (let attempt = 0; lastResult.error && isSchemaCompatibilityError(lastResult.error) && attempt < optionalColumns.length; attempt += 1) {
     const missingColumn = missingColumnFromError(lastResult.error);
@@ -267,7 +326,7 @@ async function insertListingWithCompatibility(payload: ListingInsertPayload) {
     if (!columnToRemove) break;
     delete compatiblePayload[columnToRemove];
     removed.add(columnToRemove);
-    lastResult = await admin.from("listings").insert(compatiblePayload).select("id, slug").single();
+    lastResult = await db.from("listings").insert(compatiblePayload).select("id, slug").single();
   }
 
   return lastResult;
@@ -313,7 +372,9 @@ function getListingPhotoFiles(formData: FormData) {
     .slice(0, 8);
 }
 
-async function saveListingImages({
+async function saveListingImages(
+  db: ListingDbClient,
+  {
   files,
   listingId,
   ownerId,
@@ -326,14 +387,13 @@ async function saveListingImages({
   slug: string;
   title: string;
 }) {
-  const admin = createSupabaseAdminClient();
   const rows = [];
 
   for (const [index, file] of files.entries()) {
     validateListingImage(file);
     const extension = imageExtension(file);
     const storagePath = `${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
-    const { error: uploadError } = await admin.storage
+    const { error: uploadError } = await db.storage
       .from("listing-images")
       .upload(storagePath, file, {
         contentType: file.type,
@@ -343,7 +403,7 @@ async function saveListingImages({
 
     if (uploadError) throw new Error(uploadError.message);
 
-    const { data: signedData } = await admin.storage
+    const { data: signedData } = await db.storage
       .from("listing-images")
       .createSignedUrl(storagePath, 60 * 60 * 24 * 365 * 10);
 
@@ -358,7 +418,7 @@ async function saveListingImages({
   }
 
   if (rows.length === 0) return;
-  const { error } = await admin.from("listing_images").insert(rows);
+  const { error } = await db.from("listing_images").insert(rows);
   if (error) throw new Error(error.message);
 }
 
@@ -390,9 +450,8 @@ async function filesToDataUrls(files: File[]) {
   return urls;
 }
 
-async function findReferenceId(table: "categories" | "cantons" | "lakes", label: string) {
-  const admin = createSupabaseAdminClient();
-  const { data, error } = await admin.from(table).select("*");
+async function findReferenceId(db: ListingDbClient, table: "categories" | "cantons" | "lakes", label: string) {
+  const { data, error } = await db.from(table).select("*");
   if (error || !data) return { id: null as string | null };
 
   const slug = slugify(label);
@@ -408,64 +467,94 @@ async function findReferenceId(table: "categories" | "cantons" | "lakes", label:
   return { id: typeof row?.id === "string" ? row.id : null };
 }
 
-async function ensureBrand(name: string) {
-  const admin = createSupabaseAdminClient();
+async function ensureBrand(db: ListingDbClient, name: string) {
   const cleanName = name.trim();
   const slug = slugify(cleanName);
-  const { data, error } = await admin
+  const existing = await db.from("brands").select("id").eq("slug", slug).maybeSingle();
+  if (existing.data?.id) return { id: existing.data.id as string };
+
+  const { data, error } = await db
     .from("brands")
-    .upsert({ slug, name: cleanName }, { onConflict: "slug" })
+    .insert({ slug, name: cleanName })
     .select("id")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    const retry = await db.from("brands").select("id").eq("slug", slug).maybeSingle();
+    if (retry.data?.id) return { id: retry.data.id as string };
+    console.error("Brand reference could not be created; listing will keep brand_name text", error);
+    return { id: null as string | null };
+  }
   return { id: data.id as string };
 }
 
-async function ensureModel(brandName: string, modelName: string) {
-  const admin = createSupabaseAdminClient();
-  const { id: brandId } = await ensureBrand(brandName);
+async function ensureModel(db: ListingDbClient, brandName: string, modelName: string) {
+  const { id: brandId } = await ensureBrand(db, brandName);
+  if (!brandId) return { id: null as string | null };
   const cleanName = modelName.trim();
   const slug = slugify(cleanName);
-  const { data, error } = await admin
+  const existing = await db.from("models").select("id").eq("brand_id", brandId).eq("slug", slug).maybeSingle();
+  if (existing.data?.id) return { id: existing.data.id as string };
+
+  const { data, error } = await db
     .from("models")
-    .upsert({ brand_id: brandId, slug, name: cleanName }, { onConflict: "brand_id,slug" })
+    .insert({ brand_id: brandId, slug, name: cleanName })
     .select("id")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    const retry = await db.from("models").select("id").eq("brand_id", brandId).eq("slug", slug).maybeSingle();
+    if (retry.data?.id) return { id: retry.data.id as string };
+    console.error("Model reference could not be created; listing will keep model_name text", error);
+    return { id: null as string | null };
+  }
   return { id: data.id as string };
 }
 
-async function ensureCity(name: string, cantonId: string | null) {
+async function ensureCity(db: ListingDbClient, name: string, cantonId: string | null) {
   if (!name.trim() || !cantonId) return null;
-  const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
+  const slug = slugify(name);
+  const existing = await db.from("cities").select("id").eq("canton_id", cantonId).eq("slug", slug).maybeSingle();
+  if (existing.data?.id) return existing.data.id as string;
+
+  const { data, error } = await db
     .from("cities")
-    .upsert({ canton_id: cantonId, slug: slugify(name), name: name.trim() }, { onConflict: "canton_id,slug" })
+    .insert({ canton_id: cantonId, slug, name: name.trim() })
     .select("id")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    const retry = await db.from("cities").select("id").eq("canton_id", cantonId).eq("slug", slug).maybeSingle();
+    if (retry.data?.id) return retry.data.id as string;
+    console.error("City reference could not be created; listing will keep city text unavailable as relation", error);
+    return null;
+  }
   return data.id as string;
 }
 
-async function ensureMarina(name: string, cityId: string | null, lakeId: string | null) {
+async function ensureMarina(db: ListingDbClient, name: string, cityId: string | null, lakeId: string | null) {
   if (!name.trim() || !cityId) return null;
-  const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
+  const slug = slugify(name);
+  const existing = await db.from("marinas").select("id").eq("city_id", cityId).eq("slug", slug).maybeSingle();
+  if (existing.data?.id) return existing.data.id as string;
+
+  const { data, error } = await db
     .from("marinas")
-    .upsert({ city_id: cityId, lake_id: lakeId, slug: slugify(name), name: name.trim() }, { onConflict: "city_id,slug" })
+    .insert({ city_id: cityId, lake_id: lakeId, slug, name: name.trim() })
     .select("id")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    const retry = await db.from("marinas").select("id").eq("city_id", cityId).eq("slug", slug).maybeSingle();
+    if (retry.data?.id) return retry.data.id as string;
+    console.error("Marina reference could not be created; listing will keep marina text unavailable as relation", error);
+    return null;
+  }
   return data.id as string;
 }
 
-async function getProfessionalProfileForUser(userId: string): Promise<ProfessionalProfileOwner | null> {
-  const admin = createSupabaseAdminClient();
-  const { data } = await admin
+async function getProfessionalProfileForUser(db: ListingDbClient, userId: string): Promise<ProfessionalProfileOwner | null> {
+  const { data } = await db
     .from("professional_profiles")
     .select("id, company_name, public_email, public_phone, phones")
     .eq("user_id", userId)
@@ -475,7 +564,7 @@ async function getProfessionalProfileForUser(userId: string): Promise<Profession
 
   if (data) return data as ProfessionalProfileOwner;
 
-  const { data: membership, error: membershipError } = await admin
+  const { data: membership, error: membershipError } = await db
     .from("professional_members")
     .select("professional_profile_id")
     .eq("user_id", userId)
@@ -490,7 +579,7 @@ async function getProfessionalProfileForUser(userId: string): Promise<Profession
   const professionalProfileId = typeof membership?.professional_profile_id === "string" ? membership.professional_profile_id : null;
   if (!professionalProfileId) return null;
 
-  const { data: memberProfile } = await admin
+  const { data: memberProfile } = await db
     .from("professional_profiles")
     .select("id, company_name, public_email, public_phone, phones")
     .eq("id", professionalProfileId)

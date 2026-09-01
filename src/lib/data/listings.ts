@@ -3,6 +3,7 @@ import { brands } from "./reference";
 import { demoBoatImages, demoListings } from "./demo";
 import { getUserListings } from "./user-listing-storage";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const PAGE_SIZE = 9;
 
@@ -395,7 +396,9 @@ export async function getPublicListingsAsync() {
 
 async function getSupabaseListings() {
   try {
-    const supabase = createSupabaseAdminClient();
+    const supabase = await createSupabaseListingReadClient();
+    if (!supabase) return [];
+
     let { data, error } = await supabase
       .from("listings")
       .select(`
@@ -407,7 +410,7 @@ async function getSupabaseListings() {
         lakes(name),
         cities(name),
         marinas(name),
-        professional_profiles(id, slug, company_name, logo_path, city, canton, phones, website),
+        professional_profiles(id, slug, company_name, logo_path, city, canton, phones, website, public_email, public_phone, whatsapp_phone, whatsapp_enabled),
         listing_images(id, public_url, storage_path, alt_text, is_primary, sort_order)
       `)
       .is("deleted_at", null)
@@ -432,6 +435,14 @@ async function getSupabaseListings() {
     return (data as SupabaseListingRow[]).map(toListing).filter(Boolean) as Listing[];
   } catch {
     return [];
+  }
+}
+
+async function createSupabaseListingReadClient() {
+  try {
+    return createSupabaseAdminClient();
+  } catch {
+    return createSupabaseServerClient();
   }
 }
 
