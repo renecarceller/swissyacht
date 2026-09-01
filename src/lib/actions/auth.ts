@@ -470,7 +470,13 @@ async function createConfirmedAuthUser(locale: string, email: string, password: 
     return { ok: false, reason, error: authErrorMessage(locale, reason) };
   }
 
-  return { ok: true as const, user: data.user };
+  const createdUser = data.user as SignedInUser;
+  if (!data.session && !createdUser.email_confirmed_at) {
+    console.error("Auth user signup requires email confirmation. Add SUPABASE_SERVICE_ROLE_KEY to create confirmed users directly.");
+    return { ok: false, reason: "confirm", error: authErrorMessage(locale, "confirm") };
+  }
+
+  return { ok: true as const, user: createdUser };
 }
 
 async function signInConfirmedAccount(email: string, password: string) {
@@ -485,15 +491,17 @@ async function signInConfirmedAccount(email: string, password: string) {
     return { ok: false, reason: "supabase" as const, data: { user: null }, error };
   }
 
-  if (result.error && !result.data.user && isEmailConfirmationError(result.error)) {
-    const confirmed = await confirmExistingAuthUserEmail(email);
-    if (confirmed) {
+  if (result.error && !result.data.user) {
+    const repair = await repairExistingAuthUserEmail(email);
+    if (repair === "confirmed") {
       try {
         result = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
       } catch (error) {
         console.error("Login retry after confirmation failed", error);
         return { ok: false, reason: "supabase" as const, data: { user: null }, error };
       }
+    } else if (repair === "needsConfirmation") {
+      return { ok: false, reason: "confirm" as const, ...result };
     }
   }
 
@@ -516,30 +524,31 @@ function isAuthUserAlreadyExistsError(error: unknown) {
   return text.includes("already") || text.includes("exists") || text.includes("registered") || text.includes("duplicate");
 }
 
-async function confirmExistingAuthUserEmail(email: string) {
+async function repairExistingAuthUserEmail(email: string): Promise<"confirmed" | "needsConfirmation" | "notFound" | "unavailable" | "alreadyConfirmed"> {
   try {
     const admin = tryCreateSupabaseAdminClient();
-    if (!admin) return false;
+    if (!admin) return "unavailable";
     const { data: users, error: listError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (listError) {
       console.error("Auth user lookup failed", listError);
-      return false;
+      return "unavailable";
     }
 
     const normalized = normalizeEmail(email);
     const user = users.users.find((candidate) => candidate.email?.toLowerCase() === normalized);
-    if (!user || user.email_confirmed_at) return false;
+    if (!user) return "notFound";
+    if (user.email_confirmed_at) return "alreadyConfirmed";
 
     const { error: confirmError } = await admin.auth.admin.updateUserById(user.id, { email_confirm: true });
     if (confirmError) {
       console.error("Auth user confirmation failed", confirmError);
-      return false;
+      return "needsConfirmation";
     }
 
-    return true;
+    return "confirmed";
   } catch (error) {
     console.error("Auth user confirmation failed", error);
-    return false;
+    return "unavailable";
   }
 }
 
@@ -755,16 +764,16 @@ function parseMultiValueText(value: string) {
 function authErrorMessage(locale: string, reason: AuthFailureReason) {
   const messages = {
     invalid: {
-      fr: "Veuillez vérifier les champs obligatoires.",
-      de: "Bitte prüfen Sie die Pflichtfelder.",
-      it: "Controlla i campi obbligatori.",
-      en: "Please check the required fields."
+      fr: "Veuillez vérifier tous les champs obligatoires, le mot de passe et l'acceptation des conditions.",
+      de: "Bitte prüfen Sie alle Pflichtfelder, das Passwort und die Zustimmung zu den Bedingungen.",
+      it: "Controlla tutti i campi obbligatori, la password e l'accettazione delle condizioni.",
+      en: "Please check all required fields, the password and the acceptance of the terms."
     },
     supabase: {
-      fr: "Supabase n'est pas encore correctement connecté.",
-      de: "Supabase ist noch nicht korrekt verbunden.",
-      it: "Supabase non è ancora collegato correttamente.",
-      en: "Supabase is not connected correctly yet."
+      fr: "Supabase n'est pas correctement connecté. Vérifiez les variables Supabase du projet.",
+      de: "Supabase ist nicht korrekt verbunden. Prüfen Sie die Supabase-Variablen des Projekts.",
+      it: "Supabase non è collegato correttamente. Verifica le variabili Supabase del progetto.",
+      en: "Supabase is not connected correctly. Check the project's Supabase variables."
     },
     register: {
       fr: "Le compte n'a pas pu être créé. Vérifiez l'email, le mot de passe ou si le compte existe déjà.",
@@ -791,10 +800,10 @@ function authErrorMessage(locale: string, reason: AuthFailureReason) {
       en: "Sign in failed. Check your email and password."
     },
     confirm: {
-      fr: "Ce compte existe, mais il doit encore être confirmé dans Supabase avant la connexion.",
-      de: "Dieses Konto existiert, muss aber in Supabase noch bestätigt werden, bevor die Anmeldung möglich ist.",
-      it: "Questo account esiste, ma deve ancora essere confermato in Supabase prima dell'accesso.",
-      en: "This account exists, but it still needs to be confirmed in Supabase before sign in."
+      fr: "Ce compte existe, mais il n'est pas encore activé. Vérifiez l'email de confirmation ou la clé serveur Supabase.",
+      de: "Dieses Konto existiert, ist aber noch nicht aktiviert. Prüfen Sie die Bestätigungs-E-Mail oder den Supabase-Serverschlüssel.",
+      it: "Questo account esiste, ma non è ancora attivo. Controlla l'email di conferma o la chiave server Supabase.",
+      en: "This account exists, but it is not active yet. Check the confirmation email or the Supabase server key."
     }
   };
 

@@ -2,13 +2,13 @@ import createMiddleware from "next-intl/middleware";
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
+import { getSupabaseServerConfig } from "./lib/supabase/env";
 
 const intlMiddleware = createMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
   const response = intlMiddleware(request);
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { url: supabaseUrl, publicKey: supabaseKey } = getSupabaseServerConfig();
 
   if (!supabaseUrl || !supabaseKey) return response;
 
