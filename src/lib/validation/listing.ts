@@ -1,6 +1,54 @@
 import { z } from "zod";
 
-const booleanStringSchema = z.preprocess((value) => value === true || value === "true", z.boolean());
+const booleanStringSchema = z.preprocess(
+  (value) => value === true || value === "true" || value === "on" || value === "1",
+  z.boolean()
+);
+
+const optionalTextSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim() : ""),
+  z.string().max(1000).default("")
+);
+
+const textWithFallback = (fallback: string, max = 1000) =>
+  z.preprocess((value) => {
+    const text = typeof value === "string" ? value.trim() : "";
+    return text || fallback;
+  }, z.string().max(max));
+
+const intWithDefault = (defaultValue: number, max: number) =>
+  z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? defaultValue : value),
+    z.coerce.number().int().min(0).max(max)
+  );
+
+const intRangeWithDefault = (defaultValue: number, min: number, max: number) =>
+  z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? defaultValue : value),
+    z.coerce.number().int().min(min).max(max)
+  );
+
+const positiveIntWithDefault = (defaultValue: number, max: number) =>
+  z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? defaultValue : value),
+    z.coerce.number().int().positive().max(max)
+  );
+
+const positiveNumberWithDefault = (defaultValue: number, max: number) =>
+  z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? defaultValue : value),
+    z.coerce.number().positive().max(max)
+  );
+
+const conditionWithDefaultSchema = z.preprocess((value) => {
+  const condition = typeof value === "string" ? value : "";
+  return ["new", "used", "parts", "classic", "refit"].includes(condition) ? condition : "used";
+}, z.enum(["new", "used", "parts", "classic", "refit"]));
+
+const legalAcceptedSchema = z.preprocess(
+  (value) => value === true || value === "true" || value === "on" || value === "1",
+  z.literal(true)
+);
 
 const optionalSmallIntSchema = z.preprocess(
   (value) => (value === "" || value === null ? undefined : value),
@@ -19,28 +67,28 @@ export const listingStatusSchema = z.enum([
 ]);
 
 export const listingFormSchema = z.object({
-  boatType: z.string().min(2),
-  category: z.string().min(2),
-  brand: z.string().trim().min(1),
-  model: z.string().trim().min(1),
-  year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
-  condition: z.enum(["new", "used", "parts", "classic", "refit"]),
-  priceChf: z.coerce.number().int().positive().max(100_000_000),
+  boatType: textWithFallback("Bateau", 120),
+  category: textWithFallback("Bateaux à moteur", 120),
+  brand: textWithFallback("Marque non renseignée", 120),
+  model: textWithFallback("Modèle non renseigné", 120),
+  year: intRangeWithDefault(new Date().getFullYear(), 1900, new Date().getFullYear() + 1),
+  condition: conditionWithDefaultSchema,
+  priceChf: positiveIntWithDefault(1, 100_000_000),
   vatIncluded: booleanStringSchema.default(false),
   negotiable: booleanStringSchema.default(false),
   financingAvailable: booleanStringSchema.default(false),
-  fuelType: z.string().min(2),
-  engineType: z.string().min(2),
-  powerHp: z.coerce.number().int().min(0).max(5000),
-  engineCount: z.coerce.number().int().min(0).max(8),
-  engineHours: z.coerce.number().int().min(0).max(100000),
-  lengthM: z.coerce.number().positive().max(80),
-  beamM: z.coerce.number().positive().max(30),
-  weightKg: z.coerce.number().positive().max(500000),
-  hullMaterial: z.string().min(2),
-  canton: z.string().min(2),
-  lake: z.string().min(2),
-  city: z.string().min(1),
+  fuelType: optionalTextSchema,
+  engineType: optionalTextSchema,
+  powerHp: intWithDefault(0, 5000),
+  engineCount: intWithDefault(0, 8),
+  engineHours: intWithDefault(0, 100000),
+  lengthM: positiveNumberWithDefault(1, 80),
+  beamM: positiveNumberWithDefault(1, 30),
+  weightKg: intWithDefault(0, 500000),
+  hullMaterial: optionalTextSchema,
+  canton: optionalTextSchema,
+  lake: optionalTextSchema,
+  city: optionalTextSchema,
   marina: z.string().optional().default(""),
   peopleCapacity: optionalSmallIntSchema.default(0),
   cabins: optionalSmallIntSchema.default(0),
@@ -49,7 +97,7 @@ export const listingFormSchema = z.object({
   kitchen: booleanStringSchema.default(false),
   color: z.string().optional().default(""),
   overnightAccommodation: booleanStringSchema.default(false),
-  description: z.string().min(80).max(8000),
+  description: textWithFallback("Annonce publiée sur Swissnaut.", 8000),
   equipment: z.string().optional().default(""),
   contactName: z.string().optional().default(""),
   contactEmail: z.string().optional().default(""),
@@ -82,7 +130,7 @@ export const privateRegisterSchema = z.object({
   email: z.string().email().max(180),
   phone: z.string().trim().min(4).max(60),
   password: z.string().min(8).max(160),
-  legalAccepted: z.literal("on")
+  legalAccepted: legalAcceptedSchema
 });
 
 export const professionalRegisterSchema = z.object({
@@ -111,7 +159,7 @@ export const professionalRegisterSchema = z.object({
   specialties: z.array(z.string()).default([]),
   representedBrands: z.string().trim().max(1000).optional().default(""),
   galleryUrls: z.string().trim().max(3000).optional().default(""),
-  legalAccepted: z.literal("on")
+  legalAccepted: legalAcceptedSchema
 });
 
 export const professionalProfileUpdateSchema = z.object({

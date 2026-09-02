@@ -103,11 +103,29 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
 
     const userId = user.id;
     const now = new Date().toISOString();
-    const { data: existingProfile } = await db
+    const cleanBrand = values.brand.trim() || "Marque non renseignée";
+    const cleanModel = values.model.trim() || "Modèle non renseigné";
+    const cleanCategory = values.category.trim() || "Bateaux à moteur";
+    const cleanBoatType = values.boatType.trim() || cleanCategory || "Bateau";
+    const cleanCanton = values.canton.trim();
+    const cleanLake = values.lake.trim();
+    const cleanCity = values.city.trim();
+    const cleanMarina = values.marina.trim();
+    const cleanFuelType = values.fuelType.trim();
+    const cleanEngineType = values.engineType.trim();
+    const cleanHullMaterial = values.hullMaterial.trim();
+    const cleanColor = values.color.trim();
+    const cleanDescription =
+      values.description.trim() || `Annonce publiée sur Swissnaut pour ${cleanBrand} ${cleanModel}.`;
+    const { data: existingProfile, error: profileReadError } = await db
       .from("profiles")
       .select("role, full_name, phone")
       .eq("id", userId)
       .maybeSingle<{ role: string | null; full_name: string | null; phone: string | null }>();
+
+    if (profileReadError) {
+      console.error("Profile could not be read before listing publish", profileReadError);
+    }
     const profileRole = existingProfile?.role || (user.user_metadata?.account_type === "professional" ? "professional" : "private");
     const userMetadataName = [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(" ");
     const fullName = existingProfile?.full_name || userMetadataName || user.email || "Swissnaut user";
@@ -121,20 +139,22 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
       preferred_locale: locale,
       updated_at: now
     });
-    if (profileError) throw new Error(profileError.message);
+    if (profileError) {
+      console.error("Profile could not be refreshed before listing publish", profileError);
+    }
 
     const [{ id: categoryId }, { id: brandId }, { id: modelId }, { id: cantonId }, { id: lakeId }] = await Promise.all([
-      findReferenceId(db, "categories", values.category),
-      ensureBrand(db, values.brand),
-      ensureModel(db, values.brand, values.model),
-      findReferenceId(db, "cantons", values.canton),
-      findReferenceId(db, "lakes", values.lake)
+      findReferenceId(db, "categories", cleanCategory),
+      ensureBrand(db, cleanBrand),
+      ensureModel(db, cleanBrand, cleanModel),
+      findReferenceId(db, "cantons", cleanCanton),
+      findReferenceId(db, "lakes", cleanLake)
     ]);
-    const cityId = await ensureCity(db, values.city, cantonId);
-    const marinaId = values.marina ? await ensureMarina(db, values.marina, cityId, lakeId) : null;
+    const cityId = await ensureCity(db, cleanCity, cantonId);
+    const marinaId = cleanMarina ? await ensureMarina(db, cleanMarina, cityId, lakeId) : null;
     const professionalProfile = await getProfessionalProfileForUser(db, userId);
     const sellerType = professionalProfile ? "professional" : "private";
-    const title = `${values.brand.trim()} ${values.model.trim()}`.trim();
+    const title = `${cleanBrand} ${cleanModel}`.trim();
     const professionalPhone = professionalProfile?.public_phone || professionalProfile?.phones?.[0] || "";
     const contactName = professionalProfile?.company_name || fullName;
     const contactEmail = professionalProfile?.public_email || user.email || values.contactEmail || "";
@@ -154,25 +174,25 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
       title,
       status,
       seller_type: sellerType,
-      boat_type: values.boatType || values.category,
-      brand_name: values.brand.trim(),
-      model_name: values.model.trim(),
+      boat_type: cleanBoatType,
+      brand_name: cleanBrand,
+      model_name: cleanModel,
       year: values.year,
       condition: values.condition,
       price_chf: values.priceChf,
       vat_included: values.vatIncluded,
       negotiable: values.negotiable,
       financing_available: values.financingAvailable,
-      fuel_type: values.fuelType,
-      engine_type: values.engineType,
+      fuel_type: cleanFuelType,
+      engine_type: cleanEngineType,
       engine_count: values.engineCount,
       power_hp: values.powerHp,
       engine_hours: values.engineHours,
       length_m: values.lengthM,
       beam_m: values.beamM,
       weight_kg: values.weightKg,
-      hull_material: values.hullMaterial,
-      color: values.color,
+      hull_material: cleanHullMaterial,
+      color: cleanColor,
       people_capacity: values.peopleCapacity,
       cabins: values.cabins,
       berths: values.berths,
@@ -180,8 +200,8 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
       kitchen: values.kitchen,
       overnight_accommodation: values.overnightAccommodation,
       license_required: values.powerHp > 8,
-      electric: values.fuelType === "Electric",
-      description: values.description,
+      electric: cleanFuelType === "Electric",
+      description: cleanDescription,
       equipment: values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [],
       contact_name: contactName,
       contact_email: contactEmail,
@@ -208,7 +228,7 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
       }
     }
 
-    return { ok: true, slug: listing.slug as string, brand: values.brand, model: values.model };
+    return { ok: true, slug: listing.slug as string, brand: cleanBrand, model: cleanModel };
   } catch (error) {
     console.error("Supabase listing save failed; using local fallback", error);
     if (process.env.VERCEL || process.env.NODE_ENV === "production") {
@@ -255,6 +275,17 @@ async function getCurrentUserForListing() {
 async function insertListingWithCompatibility(db: ListingDbClient, payload: ListingInsertPayload) {
   const optionalColumns = [
     "professional_profile_id",
+    "category_id",
+    "brand_id",
+    "model_id",
+    "canton_id",
+    "lake_id",
+    "city_id",
+    "marina_id",
+    "seller_type",
+    "boat_type",
+    "brand_name",
+    "model_name",
     "vat_included",
     "negotiable",
     "financing_available",
@@ -274,6 +305,8 @@ async function insertListingWithCompatibility(db: ListingDbClient, payload: List
     "bathrooms",
     "kitchen",
     "overnight_accommodation",
+    "trailer_included",
+    "berth_included",
     "license_required",
     "electric",
     "equipment",
@@ -285,10 +318,24 @@ async function insertListingWithCompatibility(db: ListingDbClient, payload: List
   ];
 
   const directInsert = await insertCompatibleListingPayload(db, payload, optionalColumns);
-  if (!directInsert.error || payload.status !== "published" || !isPermissionError(directInsert.error)) {
+  if (!directInsert.error) return directInsert;
+
+  if (isSchemaCompatibilityError(directInsert.error)) {
+    const minimalInsert = await insertCompatibleListingPayload(db, minimalListingPayload(payload), optionalColumns);
+    if (!minimalInsert.error || payload.status !== "published" || !isPermissionError(minimalInsert.error)) {
+      return minimalInsert;
+    }
+    return publishThroughPendingReview(db, minimalListingPayload(payload), optionalColumns);
+  }
+
+  if (payload.status !== "published" || !isPermissionError(directInsert.error)) {
     return directInsert;
   }
 
+  return publishThroughPendingReview(db, payload, optionalColumns);
+}
+
+async function publishThroughPendingReview(db: ListingDbClient, payload: ListingInsertPayload, optionalColumns: string[]) {
   const publishedAt = typeof payload.published_at === "string" ? payload.published_at : new Date().toISOString();
   const pendingInsert = await insertCompatibleListingPayload(
     db,
@@ -303,12 +350,46 @@ async function insertListingWithCompatibility(db: ListingDbClient, payload: List
   const insertedId = typeof pendingInsert.data?.id === "string" ? pendingInsert.data.id : null;
   if (pendingInsert.error || !insertedId) return pendingInsert;
 
-  return db
+  const publishedUpdate = await db
     .from("listings")
     .update({ status: "published", published_at: publishedAt })
     .eq("id", insertedId)
     .select("id, slug")
     .single();
+
+  if (!publishedUpdate.error || !isSchemaCompatibilityError(publishedUpdate.error)) {
+    return publishedUpdate;
+  }
+
+  return db
+    .from("listings")
+    .update({ status: "published" })
+    .eq("id", insertedId)
+    .select("id, slug")
+    .single();
+}
+
+function minimalListingPayload(payload: ListingInsertPayload) {
+  return {
+    owner_id: payload.owner_id,
+    slug: payload.slug,
+    title: payload.title,
+    status: payload.status,
+    seller_type: payload.seller_type,
+    boat_type: payload.boat_type,
+    brand_name: payload.brand_name,
+    model_name: payload.model_name,
+    year: payload.year,
+    condition: payload.condition,
+    price_chf: payload.price_chf,
+    length_m: payload.length_m,
+    beam_m: payload.beam_m,
+    description: payload.description,
+    contact_name: payload.contact_name,
+    contact_email: payload.contact_email,
+    contact_phone: payload.contact_phone,
+    published_at: payload.published_at
+  };
 }
 
 async function insertCompatibleListingPayload(db: ListingDbClient, payload: ListingInsertPayload, optionalColumns: string[]) {
@@ -554,13 +635,27 @@ async function ensureMarina(db: ListingDbClient, name: string, cityId: string | 
 }
 
 async function getProfessionalProfileForUser(db: ListingDbClient, userId: string): Promise<ProfessionalProfileOwner | null> {
-  const { data } = await db
+  const { data, error } = await db
     .from("professional_profiles")
     .select("id, company_name, public_email, public_phone, phones")
     .eq("user_id", userId)
     .is("deleted_at", null)
     .is("suspended_at", null)
     .maybeSingle();
+
+  if (error && isSchemaCompatibilityError(error)) {
+    const fallback = await db
+      .from("professional_profiles")
+      .select("id, company_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return (fallback.data as ProfessionalProfileOwner | null) ?? null;
+  }
+
+  if (error) {
+    console.error("Professional profile could not be read", error);
+    return null;
+  }
 
   if (data) return data as ProfessionalProfileOwner;
 
@@ -579,13 +674,27 @@ async function getProfessionalProfileForUser(db: ListingDbClient, userId: string
   const professionalProfileId = typeof membership?.professional_profile_id === "string" ? membership.professional_profile_id : null;
   if (!professionalProfileId) return null;
 
-  const { data: memberProfile } = await db
+  const { data: memberProfile, error: memberProfileError } = await db
     .from("professional_profiles")
     .select("id, company_name, public_email, public_phone, phones")
     .eq("id", professionalProfileId)
     .is("deleted_at", null)
     .is("suspended_at", null)
     .maybeSingle();
+
+  if (memberProfileError && isSchemaCompatibilityError(memberProfileError)) {
+    const fallback = await db
+      .from("professional_profiles")
+      .select("id, company_name")
+      .eq("id", professionalProfileId)
+      .maybeSingle();
+    return (fallback.data as ProfessionalProfileOwner | null) ?? null;
+  }
+
+  if (memberProfileError) {
+    console.error("Professional member profile could not be read", memberProfileError);
+    return null;
+  }
 
   return (memberProfile as ProfessionalProfileOwner | null) ?? null;
 }
