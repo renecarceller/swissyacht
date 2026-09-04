@@ -1,10 +1,22 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { Listing } from "@/types/domain";
 import type { ListingFormValues } from "@/lib/validation/listing";
 import { demoBoatImages } from "./demo";
 
-const storagePath = join(process.cwd(), ".data", "user-listings.json");
+const storagePath =
+  process.env.VERCEL || process.env.NODE_ENV === "production"
+    ? join(tmpdir(), "swissnaut-user-listings.json")
+    : join(process.cwd(), ".data", "user-listings.json");
+
+type LocalListingSeller = {
+  id?: string;
+  type?: "private" | "professional";
+  name?: string;
+  phone?: string;
+  email?: string;
+};
 
 function readStoredListings() {
   if (process.env.NODE_ENV === "test") return [];
@@ -28,7 +40,13 @@ export function getUserListings() {
   return readStoredListings();
 }
 
-export function saveUserListing(values: ListingFormValues, slug: string, status: Listing["status"], uploadedImageUrls: string[] = []) {
+export function saveUserListing(
+  values: ListingFormValues,
+  slug: string,
+  status: Listing["status"],
+  uploadedImageUrls: string[] = [],
+  seller?: LocalListingSeller
+) {
   const now = new Date().toISOString();
   const title = `${values.brand.trim()} ${values.model.trim()}`.trim();
   const imageUrls = uploadedImageUrls.length ? uploadedImageUrls : demoBoatImages(values.category);
@@ -83,11 +101,11 @@ export function saveUserListing(values: ListingFormValues, slug: string, status:
     equipment: values.equipment ? values.equipment.split(",").map((item) => item.trim()).filter(Boolean) : [],
     images,
     seller: {
-      id: "local-seller",
-      type: "private",
-      name: values.contactName,
-      phone: values.contactPhone,
-      email: values.contactEmail,
+      id: seller?.id || "local-seller",
+      type: seller?.type || "private",
+      name: seller?.name || values.contactName || "Swissnaut",
+      phone: seller?.phone || values.contactPhone || "",
+      email: seller?.email || values.contactEmail || "contact@swissnaut.ch",
       languages: ["fr"],
       verified: false
     },

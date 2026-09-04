@@ -128,8 +128,18 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
     return () => photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.url));
   }, []);
 
+  useEffect(() => {
+    if (actionState.publishedSlug) {
+      window.location.assign(`/${locale}/boats?published=${encodeURIComponent(actionState.publishedSlug)}`);
+    }
+
+    if (actionState.draftSaved) {
+      window.location.assign(`/${locale}/dashboard/listings`);
+    }
+  }, [actionState.draftSaved, actionState.publishedSlug, locale]);
+
   return (
-    <form action={formAction} className="grid gap-5">
+    <form action={formAction} encType="multipart/form-data" className="grid gap-5">
       <HiddenDraftInputs draft={draft} />
       <input type="hidden" name="locale" value={locale} />
       <input ref={photoInputRef} type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple className="hidden" tabIndex={-1} />
@@ -323,7 +333,63 @@ type PhotoPreview = {
   id: string;
   file: File;
   url: string;
+  dataUrl: string;
 };
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function preparePhotoFile(file: File) {
+  const fallback = async () => ({
+    file,
+    url: URL.createObjectURL(file),
+    dataUrl: await readFileAsDataUrl(file)
+  });
+
+  if (!file.type.startsWith("image/")) return fallback();
+
+  try {
+    const image = await createImageBitmap(file);
+    const maxSide = 1800;
+    const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      image.close();
+      return fallback();
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+    image.close();
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+    if (!blob) return fallback();
+
+    const preparedFile = new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), {
+      type: "image/jpeg",
+      lastModified: file.lastModified
+    });
+
+    return {
+      file: preparedFile,
+      url: URL.createObjectURL(preparedFile),
+      dataUrl: await readFileAsDataUrl(preparedFile)
+    };
+  } catch {
+    return fallback();
+  }
+}
 
 function PhotoUploadField({
   labels,
@@ -363,7 +429,7 @@ function PhotoUploadField({
     syncInputFiles(nextPhotos);
   };
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     setError("");
 
@@ -381,11 +447,17 @@ function PhotoUploadField({
         continue;
       }
 
-      incoming.push({
-        id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
-        file,
-        url: URL.createObjectURL(file)
-      });
+      try {
+        const prepared = await preparePhotoFile(file);
+        incoming.push({
+          id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+          file: prepared.file,
+          url: prepared.url,
+          dataUrl: prepared.dataUrl
+        });
+      } catch {
+        setError(labels.photoReadError);
+      }
     }
 
     updatePhotos([...photos, ...incoming].slice(0, 8));
@@ -551,10 +623,10 @@ function CompactSelectField({
 
 function stepFormLabels(locale: string) {
   const dictionary = {
-    fr: { back: "Retour", continue: "Continuer", publishing: "Publication...", step: "Étape", habitabilityTitle: "Étape 5 · Capacité et habitabilité", descriptionTitle: "Étape 6 · Description et équipement", photosTitle: "Étape 7 · Photos", contactTitle: "Étape 8 · Publication", contactAccountNotice: "Les coordonnées de contact seront reprises automatiquement depuis le compte connecté.", people: "Nombre de personnes", cabins: "Nombre de cabines", berths: "Nombre de couchettes", bathrooms: "Salles de bain", kitchen: "Cuisine", exteriorColor: "Couleur extérieure", overnight: "Hébergement de nuit", yes: "Oui", no: "Non", photoUploadTitle: "Photos du bateau", photoUploadText: "Ajoutez jusqu'à 8 images JPG, PNG ou WebP. La première photo sera l'image principale de l'annonce.", addPhotosButton: "Ajouter des photos", photoSourceFinder: "Finder", photoSourceFinderHint: "Choisir des fichiers sur l'appareil.", photoSourceLibrary: "Photothèque", photoSourceLibraryHint: "Choisir depuis les photos.", photoInvalidType: "Format non accepté. Utilisez JPG, PNG ou WebP.", photoTooLarge: "Une photo dépasse 10 MB.", primaryPhoto: "Photo principale", photo: "Photo", removePhoto: "Supprimer", makePrimary: "Mettre en principal" },
-    de: { back: "Zurück", continue: "Weiter", publishing: "Wird veröffentlicht...", step: "Schritt", habitabilityTitle: "Schritt 5 · Kapazität und Wohnen", descriptionTitle: "Schritt 6 · Beschreibung und Ausstattung", photosTitle: "Schritt 7 · Fotos", contactTitle: "Schritt 8 · Veröffentlichung", contactAccountNotice: "Die Kontaktdaten werden automatisch aus dem verbundenen Konto übernommen.", people: "Anzahl Personen", cabins: "Anzahl Kabinen", berths: "Anzahl Kojen", bathrooms: "Bäder", kitchen: "Küche", exteriorColor: "Außenfarbe", overnight: "Übernachtung", yes: "Ja", no: "Nein", photoUploadTitle: "Bootsfotos", photoUploadText: "Fügen Sie bis zu 8 Bilder als JPG, PNG oder WebP hinzu. Das erste Foto wird das Hauptbild des Inserats.", addPhotosButton: "Fotos hinzufügen", photoSourceFinder: "Finder", photoSourceFinderHint: "Dateien vom Gerät wählen.", photoSourceLibrary: "Fotomediathek", photoSourceLibraryHint: "Aus den Fotos wählen.", photoInvalidType: "Dieses Format wird nicht akzeptiert. Nutzen Sie JPG, PNG oder WebP.", photoTooLarge: "Ein Foto ist größer als 10 MB.", primaryPhoto: "Hauptfoto", photo: "Foto", removePhoto: "Entfernen", makePrimary: "Als Hauptfoto setzen" },
-    it: { back: "Indietro", continue: "Continua", publishing: "Pubblicazione...", step: "Passo", habitabilityTitle: "Passo 5 · Capacità e abitabilità", descriptionTitle: "Passo 6 · Descrizione e dotazioni", photosTitle: "Passo 7 · Foto", contactTitle: "Passo 8 · Pubblicazione", contactAccountNotice: "I dati di contatto saranno ripresi automaticamente dall'account collegato.", people: "Numero di persone", cabins: "Numero cabine", berths: "Numero cuccette", bathrooms: "Bagni", kitchen: "Cucina", exteriorColor: "Colore esterno", overnight: "Pernottamento", yes: "Sì", no: "No", photoUploadTitle: "Foto della barca", photoUploadText: "Aggiungi fino a 8 immagini JPG, PNG o WebP. La prima foto sarà l'immagine principale dell'annuncio.", addPhotosButton: "Aggiungi foto", photoSourceFinder: "Finder", photoSourceFinderHint: "Scegli file dal dispositivo.", photoSourceLibrary: "Libreria foto", photoSourceLibraryHint: "Scegli dalle foto.", photoInvalidType: "Formato non accettato. Usa JPG, PNG o WebP.", photoTooLarge: "Una foto supera 10 MB.", primaryPhoto: "Foto principale", photo: "Foto", removePhoto: "Elimina", makePrimary: "Imposta come principale" },
-    en: { back: "Back", continue: "Continue", publishing: "Publishing...", step: "Step", habitabilityTitle: "Step 5 · Capacity and accommodation", descriptionTitle: "Step 6 · Description and equipment", photosTitle: "Step 7 · Photos", contactTitle: "Step 8 · Publishing", contactAccountNotice: "Contact details will be taken automatically from the connected account.", people: "Number of people", cabins: "Number of cabins", berths: "Number of berths", bathrooms: "Bathrooms", kitchen: "Kitchen", exteriorColor: "Exterior color", overnight: "Overnight accommodation", yes: "Yes", no: "No", photoUploadTitle: "Boat photos", photoUploadText: "Add up to 8 JPG, PNG or WebP images. The first photo will be the main listing image.", addPhotosButton: "Add photos", photoSourceFinder: "Finder", photoSourceFinderHint: "Choose files from the device.", photoSourceLibrary: "Photo library", photoSourceLibraryHint: "Choose from photos.", photoInvalidType: "Unsupported format. Use JPG, PNG or WebP.", photoTooLarge: "One photo is larger than 10 MB.", primaryPhoto: "Main photo", photo: "Photo", removePhoto: "Remove", makePrimary: "Make main" }
+    fr: { back: "Retour", continue: "Continuer", publishing: "Publication...", step: "Étape", habitabilityTitle: "Étape 5 · Capacité et habitabilité", descriptionTitle: "Étape 6 · Description et équipement", photosTitle: "Étape 7 · Photos", contactTitle: "Étape 8 · Publication", contactAccountNotice: "Les coordonnées de contact seront reprises automatiquement depuis le compte connecté.", people: "Nombre de personnes", cabins: "Nombre de cabines", berths: "Nombre de couchettes", bathrooms: "Salles de bain", kitchen: "Cuisine", exteriorColor: "Couleur extérieure", overnight: "Hébergement de nuit", yes: "Oui", no: "Non", photoUploadTitle: "Photos du bateau", photoUploadText: "Ajoutez jusqu'à 8 images JPG, PNG ou WebP. La première photo sera l'image principale de l'annonce.", addPhotosButton: "Ajouter des photos", photoSourceFinder: "Finder", photoSourceFinderHint: "Choisir des fichiers sur l'appareil.", photoSourceLibrary: "Photothèque", photoSourceLibraryHint: "Choisir depuis les photos.", photoInvalidType: "Format non accepté. Utilisez JPG, PNG ou WebP.", photoTooLarge: "Une photo dépasse 10 MB.", photoReadError: "Une photo n'a pas pu être préparée. Essayez de l'ajouter à nouveau.", primaryPhoto: "Photo principale", photo: "Photo", removePhoto: "Supprimer", makePrimary: "Mettre en principal" },
+    de: { back: "Zurück", continue: "Weiter", publishing: "Wird veröffentlicht...", step: "Schritt", habitabilityTitle: "Schritt 5 · Kapazität und Wohnen", descriptionTitle: "Schritt 6 · Beschreibung und Ausstattung", photosTitle: "Schritt 7 · Fotos", contactTitle: "Schritt 8 · Veröffentlichung", contactAccountNotice: "Die Kontaktdaten werden automatisch aus dem verbundenen Konto übernommen.", people: "Anzahl Personen", cabins: "Anzahl Kabinen", berths: "Anzahl Kojen", bathrooms: "Bäder", kitchen: "Küche", exteriorColor: "Außenfarbe", overnight: "Übernachtung", yes: "Ja", no: "Nein", photoUploadTitle: "Bootsfotos", photoUploadText: "Fügen Sie bis zu 8 Bilder als JPG, PNG oder WebP hinzu. Das erste Foto wird das Hauptbild des Inserats.", addPhotosButton: "Fotos hinzufügen", photoSourceFinder: "Finder", photoSourceFinderHint: "Dateien vom Gerät wählen.", photoSourceLibrary: "Fotomediathek", photoSourceLibraryHint: "Aus den Fotos wählen.", photoInvalidType: "Dieses Format wird nicht akzeptiert. Nutzen Sie JPG, PNG oder WebP.", photoTooLarge: "Ein Foto ist größer als 10 MB.", photoReadError: "Ein Foto konnte nicht vorbereitet werden. Fügen Sie es bitte erneut hinzu.", primaryPhoto: "Hauptfoto", photo: "Foto", removePhoto: "Entfernen", makePrimary: "Als Hauptfoto setzen" },
+    it: { back: "Indietro", continue: "Continua", publishing: "Pubblicazione...", step: "Passo", habitabilityTitle: "Passo 5 · Capacità e abitabilità", descriptionTitle: "Passo 6 · Descrizione e dotazioni", photosTitle: "Passo 7 · Foto", contactTitle: "Passo 8 · Pubblicazione", contactAccountNotice: "I dati di contatto saranno ripresi automaticamente dall'account collegato.", people: "Numero di persone", cabins: "Numero cabine", berths: "Numero cuccette", bathrooms: "Bagni", kitchen: "Cucina", exteriorColor: "Colore esterno", overnight: "Pernottamento", yes: "Sì", no: "No", photoUploadTitle: "Foto della barca", photoUploadText: "Aggiungi fino a 8 immagini JPG, PNG o WebP. La prima foto sarà l'immagine principale dell'annuncio.", addPhotosButton: "Aggiungi foto", photoSourceFinder: "Finder", photoSourceFinderHint: "Scegli file dal dispositivo.", photoSourceLibrary: "Libreria foto", photoSourceLibraryHint: "Scegli dalle foto.", photoInvalidType: "Formato non accettato. Usa JPG, PNG o WebP.", photoTooLarge: "Una foto supera 10 MB.", photoReadError: "Non è stato possibile preparare una foto. Prova ad aggiungerla di nuovo.", primaryPhoto: "Foto principale", photo: "Foto", removePhoto: "Elimina", makePrimary: "Imposta come principale" },
+    en: { back: "Back", continue: "Continue", publishing: "Publishing...", step: "Step", habitabilityTitle: "Step 5 · Capacity and accommodation", descriptionTitle: "Step 6 · Description and equipment", photosTitle: "Step 7 · Photos", contactTitle: "Step 8 · Publishing", contactAccountNotice: "Contact details will be taken automatically from the connected account.", people: "Number of people", cabins: "Number of cabins", berths: "Number of berths", bathrooms: "Bathrooms", kitchen: "Kitchen", exteriorColor: "Exterior color", overnight: "Overnight accommodation", yes: "Yes", no: "No", photoUploadTitle: "Boat photos", photoUploadText: "Add up to 8 JPG, PNG or WebP images. The first photo will be the main listing image.", addPhotosButton: "Add photos", photoSourceFinder: "Finder", photoSourceFinderHint: "Choose files from the device.", photoSourceLibrary: "Photo library", photoSourceLibraryHint: "Choose from photos.", photoInvalidType: "Unsupported format. Use JPG, PNG or WebP.", photoTooLarge: "One photo is larger than 10 MB.", photoReadError: "One photo could not be prepared. Try adding it again.", primaryPhoto: "Main photo", photo: "Photo", removePhoto: "Remove", makePrimary: "Make main" }
   };
 
   return dictionary[locale as keyof typeof dictionary] ?? dictionary.fr;

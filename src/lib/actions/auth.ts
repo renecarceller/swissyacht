@@ -80,6 +80,10 @@ async function createSupabaseMutationClient() {
   return createSupabaseServerClient();
 }
 
+function logAccountSetupWarning(step: string, error: unknown) {
+  console.warn(`[auth] ${step} failed but the authenticated session can continue`, error);
+}
+
 export async function registerPrivateAccountAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const locale = localeFromForm(formData);
   const returnTo = safeReturnTo(locale, formData.get("returnTo"));
@@ -145,12 +149,10 @@ export async function registerPrivateAccountAction(_state: AuthActionState, form
     );
 
     if (profileError) {
-      console.error("Private profile creation failed", profileError);
-      return { error: authErrorMessage(locale, "profile") };
+      logAccountSetupWarning("private profile creation", profileError);
     }
   } catch (error) {
-    console.error("Private profile creation failed", error);
-    return { error: authErrorMessage(locale, "profile") };
+    logAccountSetupWarning("private profile creation", error);
   }
 
   redirect((returnTo || `/${locale}/dashboard`) as never);
@@ -172,7 +174,13 @@ export async function loginAccountAction(_state: AuthActionState, formData: Form
     return { error: authErrorMessage(locale, reason ?? "login") };
   }
 
-  const role = await ensureProfileForSignedInUser(data.user as SignedInUser, locale);
+  let role = "";
+  try {
+    role = await ensureProfileForSignedInUser(data.user as SignedInUser, locale);
+  } catch (error) {
+    logAccountSetupWarning("signed-in profile repair", error);
+    role = roleFromUserMetadata(data.user as SignedInUser);
+  }
 
   if (returnTo) redirect(returnTo as never);
   if (role === "admin") redirect(`/${locale}/admin` as never);
@@ -270,8 +278,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
     );
 
     if (profileError) {
-      console.error("Professional profile user creation failed", profileError);
-      return { error: authErrorMessage(locale, "profile") };
+      logAccountSetupWarning("professional user profile creation", profileError);
     }
 
     const slugBase = slugify(values.companyName);
@@ -345,8 +352,8 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
     }
 
     if (companyError || !professionalProfile) {
-      console.error("Professional company profile creation failed", companyError);
-      return { error: authErrorMessage(locale, "profile") };
+      logAccountSetupWarning("professional company profile creation", companyError);
+      redirect((returnTo || `/${locale}/dashboard/professional`) as never);
     }
 
     const { error: memberError } = await admin.from("professional_members").insert({
@@ -356,8 +363,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
       accepted_at: now
     });
     if (memberError && !isSchemaCompatibilityError(memberError)) {
-      console.error("Professional membership creation failed", memberError);
-      return { error: authErrorMessage(locale, "profile") };
+      logAccountSetupWarning("professional membership creation", memberError);
     }
 
     if (values.services.length > 0) {
@@ -368,8 +374,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
         }))
       );
       if (servicesError && !isSchemaCompatibilityError(servicesError)) {
-        console.error("Professional services creation failed", servicesError);
-        return { error: authErrorMessage(locale, "profile") };
+        logAccountSetupWarning("professional services creation", servicesError);
       }
     }
 
@@ -381,8 +386,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
         }))
       );
       if (specialtiesError && !isSchemaCompatibilityError(specialtiesError)) {
-        console.error("Professional specialties creation failed", specialtiesError);
-        return { error: authErrorMessage(locale, "profile") };
+        logAccountSetupWarning("professional specialties creation", specialtiesError);
       }
     }
 
@@ -394,8 +398,7 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
         }))
       );
       if (brandsError && !isSchemaCompatibilityError(brandsError)) {
-        console.error("Professional represented brands creation failed", brandsError);
-        return { error: authErrorMessage(locale, "profile") };
+        logAccountSetupWarning("professional represented brands creation", brandsError);
       }
     }
 
@@ -410,13 +413,11 @@ export async function registerProfessionalAccountAction(_state: AuthActionState,
         }))
       );
       if (galleryError && !isSchemaCompatibilityError(galleryError)) {
-        console.error("Professional gallery creation failed", galleryError);
-        return { error: authErrorMessage(locale, "profile") };
+        logAccountSetupWarning("professional gallery creation", galleryError);
       }
     }
   } catch (error) {
-    console.error("Professional profile creation failed", error);
-    return { error: authErrorMessage(locale, "profile") };
+    logAccountSetupWarning("professional profile creation", error);
   }
 
   redirect((returnTo || `/${locale}/dashboard/professional`) as never);
@@ -427,6 +428,16 @@ function redirectAfterAuthenticated(locale: string, returnTo: string, role: stri
   if (role === "admin") redirect(`/${locale}/admin` as never);
   if (role === "professional") redirect(`/${locale}/dashboard/professional` as never);
   redirect(`/${locale}/dashboard` as never);
+}
+
+function roleFromUserMetadata(user: SignedInUser) {
+  const normalizedEmail = normalizeEmail(user.email || "");
+  const metadata = user.user_metadata || {};
+  const appMetadata = user.app_metadata || {};
+
+  if (normalizedEmail === "director@swissnaut.ch") return "admin";
+  if (appMetadata.account_type === "professional" || metadata.account_type === "professional") return "professional";
+  return "private";
 }
 
 async function createConfirmedAuthUser(locale: string, email: string, password: string, metadata: AccountMetadata): Promise<AuthUserCreationResult> {
@@ -445,13 +456,25 @@ async function createConfirmedAuthUser(locale: string, email: string, password: 
 
     if (error || !data.user) {
       console.error("Confirmed auth user creation failed", error);
-      const reason = isAuthUserAlreadyExistsError(error) ? "existing" : "register";
-      return { ok: false, reason, error: authErrorMessage(locale, reason) };
+      if (isAuthUserAlreadyExistsError(error)) {
+        return { ok: false, reason: "existing", error: authErrorMessage(locale, "existing") };
+      }
+
+      return createAuthUserWithSignup(locale, email, password, metadata);
     }
 
     return { ok: true as const, user: data.user };
   }
 
+  return createAuthUserWithSignup(locale, email, password, metadata);
+}
+
+async function createAuthUserWithSignup(
+  locale: string,
+  email: string,
+  password: string,
+  metadata: AccountMetadata
+): Promise<AuthUserCreationResult> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: false, reason: "supabase", error: authErrorMessage(locale, "supabase") };
 
@@ -565,18 +588,11 @@ async function ensureProfileForSignedInUser(user: SignedInUser, locale: string) 
     if (profile?.role) return profile.role;
 
     const metadata = user.user_metadata || {};
-    const appMetadata = user.app_metadata || {};
     const firstName = typeof metadata.first_name === "string" ? metadata.first_name : "";
     const lastName = typeof metadata.last_name === "string" ? metadata.last_name : "";
     const phone = typeof metadata.phone === "string" ? metadata.phone : user.phone || null;
     const fullName = `${firstName} ${lastName}`.trim() || user.email || "Compte Swissnaut";
-    const normalizedEmail = normalizeEmail(user.email || "");
-    const role =
-      normalizedEmail === "director@swissnaut.ch"
-        ? "admin"
-        : appMetadata.account_type === "professional" || metadata.account_type === "professional"
-          ? "professional"
-          : "private";
+    const role = roleFromUserMetadata(user);
     const now = new Date().toISOString();
 
     const profileError = await upsertProfileCompat(

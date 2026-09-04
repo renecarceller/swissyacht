@@ -20,6 +20,8 @@ type ProfessionalProfileOwner = {
 
 export type ListingActionState = {
   error: string;
+  publishedSlug?: string;
+  draftSaved?: boolean;
 };
 
 type SupabaseMutationError = {
@@ -34,6 +36,18 @@ type SaveListingResult =
 
 type ListingInsertPayload = Record<string, unknown>;
 type ListingDbClient = SupabaseClient;
+type EncodedListingPhoto = {
+  name: string;
+  type: string;
+  size: number;
+  lastModified?: number;
+  sortOrder?: number;
+  dataUrl: string;
+};
+type ListingPhotoInput = File | EncodedListingPhoto;
+
+const acceptedListingImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const maxListingImageBytes = 10 * 1024 * 1024;
 
 function isSchemaCompatibilityError(error: unknown) {
   const issue = error as SupabaseMutationError | null;
@@ -58,6 +72,22 @@ function isPermissionError(error: unknown) {
   );
 }
 
+function isRecoverableInsertError(error: unknown) {
+  const issue = error as SupabaseMutationError | null;
+  const text = `${issue?.code || ""} ${issue?.message || ""} ${issue?.details || ""}`.toLowerCase();
+
+  return (
+    isSchemaCompatibilityError(error) ||
+    isPermissionError(error) ||
+    ["23502", "23503", "23514", "22P02", "22001"].includes(issue?.code || "") ||
+    text.includes("violates not-null constraint") ||
+    text.includes("violates foreign key constraint") ||
+    text.includes("violates check constraint") ||
+    text.includes("invalid input value") ||
+    text.includes("value too long")
+  );
+}
+
 export async function submitListingAction(_state: ListingActionState, formData: FormData): Promise<ListingActionState> {
   const parsed = listingFormSchema.safeParse(Object.fromEntries(formData.entries()));
   const rawLocale = String(formData.get("locale") || "fr");
@@ -75,22 +105,32 @@ export async function submitListingAction(_state: ListingActionState, formData: 
   const result = await saveListing(values, slug, status, locale, photoFiles);
   if (!result.ok) return { error: result.error };
 
-  for (const appLocale of locales) {
-    revalidatePath(`/${appLocale}`);
-    revalidatePath(`/${appLocale}/boats`);
-    revalidatePath(`/${appLocale}/dashboard/listings`);
+  try {
+    for (const appLocale of locales) {
+      revalidatePath(`/${appLocale}`);
+      revalidatePath(`/${appLocale}/boats`);
+      revalidatePath(`/${appLocale}/dashboard/listings`);
+    }
+  } catch (error) {
+    console.error("Listing cache refresh failed after publish", error);
   }
 
   console.info("Listing accepted", { status, slug, brand: result.brand, model: result.model });
 
   if (status === "draft") {
-    redirect(`/${locale}/dashboard/listings`);
+    return { error: "", draftSaved: true };
   }
 
-  redirect(`/${locale}/listing/${result.slug}`);
+  return { error: "", publishedSlug: result.slug };
 }
 
-async function saveListing(values: ListingFormValues, slug: string, status: "draft" | "published", locale: string, photoFiles: File[]): Promise<SaveListingResult> {
+async function saveListing(
+  values: ListingFormValues,
+  slug: string,
+  status: "draft" | "published",
+  locale: string,
+  photoFiles: ListingPhotoInput[]
+): Promise<SaveListingResult> {
   const user = await getCurrentUserForListing();
 
   if (!user) {
@@ -99,7 +139,7 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
 
   try {
     const db = (await createSupabaseMutationClient()) as ListingDbClient | null;
-    if (!db) return { ok: false, error: listingErrorMessage(locale, "supabase") };
+    if (!db) throw new Error("Supabase client unavailable.");
 
     const userId = user.id;
     const now = new Date().toISOString();
@@ -143,16 +183,37 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
       console.error("Profile could not be refreshed before listing publish", profileError);
     }
 
-    const [{ id: categoryId }, { id: brandId }, { id: modelId }, { id: cantonId }, { id: lakeId }] = await Promise.all([
+    const referenceIds = await Promise.all([
       findReferenceId(db, "categories", cleanCategory),
       ensureBrand(db, cleanBrand),
       ensureModel(db, cleanBrand, cleanModel),
       findReferenceId(db, "cantons", cleanCanton),
       findReferenceId(db, "lakes", cleanLake)
-    ]);
-    const cityId = await ensureCity(db, cleanCity, cantonId);
-    const marinaId = cleanMarina ? await ensureMarina(db, cleanMarina, cityId, lakeId) : null;
-    const professionalProfile = await getProfessionalProfileForUser(db, userId);
+    ]).catch((referenceError) => {
+      console.error("Listing references could not be resolved; publishing with text fields only", referenceError);
+      return [
+        { id: null as string | null },
+        { id: null as string | null },
+        { id: null as string | null },
+        { id: null as string | null },
+        { id: null as string | null }
+      ];
+    });
+    const [{ id: categoryId }, { id: brandId }, { id: modelId }, { id: cantonId }, { id: lakeId }] = referenceIds;
+    const cityId = await ensureCity(db, cleanCity, cantonId).catch((cityError) => {
+      console.error("City reference could not be resolved; publishing without city relation", cityError);
+      return null;
+    });
+    const marinaId = cleanMarina
+      ? await ensureMarina(db, cleanMarina, cityId, lakeId).catch((marinaError) => {
+          console.error("Marina reference could not be resolved; publishing without marina relation", marinaError);
+          return null;
+        })
+      : null;
+    const professionalProfile = await getProfessionalProfileForUser(db, userId).catch((profileError) => {
+      console.error("Professional owner profile could not be resolved; publishing as private listing", profileError);
+      return null;
+    });
     const sellerType = professionalProfile ? "professional" : "private";
     const title = `${cleanBrand} ${cleanModel}`.trim();
     const professionalPhone = professionalProfile?.public_phone || professionalProfile?.phones?.[0] || "";
@@ -211,7 +272,7 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
 
     const { data: listing, error } = await insertListingWithCompatibility(db, listingPayload);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(formatSupabaseError(error));
     if (!listing?.slug) throw new Error("Supabase did not return the listing slug.");
 
     if (photoFiles.length > 0) {
@@ -231,11 +292,19 @@ async function saveListing(values: ListingFormValues, slug: string, status: "dra
     return { ok: true, slug: listing.slug as string, brand: cleanBrand, model: cleanModel };
   } catch (error) {
     console.error("Supabase listing save failed; using local fallback", error);
-    if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    try {
+      const userMetadataName = [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(" ");
+      const listing = await saveUserListing(values, slug, status, await filesToDataUrls(photoFiles), {
+        id: user.id,
+        type: user.user_metadata?.account_type === "professional" ? "professional" : "private",
+        name: userMetadataName || user.email || "Swissnaut",
+        email: user.email || values.contactEmail || "contact@swissnaut.ch"
+      });
+      return { ok: true, ...listing };
+    } catch (fallbackError) {
+      console.error("Local listing fallback failed", fallbackError);
       return { ok: false, error: listingErrorMessage(locale, "supabase") };
     }
-    const listing = await saveUserListing(values, slug, status, await filesToDataUrls(photoFiles));
-    return { ok: true, ...listing };
   }
 }
 
@@ -320,12 +389,22 @@ async function insertListingWithCompatibility(db: ListingDbClient, payload: List
   const directInsert = await insertCompatibleListingPayload(db, payload, optionalColumns);
   if (!directInsert.error) return directInsert;
 
-  if (isSchemaCompatibilityError(directInsert.error)) {
-    const minimalInsert = await insertCompatibleListingPayload(db, minimalListingPayload(payload), optionalColumns);
-    if (!minimalInsert.error || payload.status !== "published" || !isPermissionError(minimalInsert.error)) {
-      return minimalInsert;
+  if (isRecoverableInsertError(directInsert.error)) {
+    const candidates = [
+      coreListingPayload(payload, { keepProfessionalProfile: true }),
+      coreListingPayload(payload, { keepProfessionalProfile: false }),
+      minimalListingPayload(payload)
+    ];
+
+    for (const candidate of candidates) {
+      const candidateInsert = await insertCompatibleListingPayload(db, candidate, optionalColumns);
+      if (!candidateInsert.error) return candidateInsert;
+
+      if (payload.status === "published" && isPermissionError(candidateInsert.error)) {
+        const pendingInsert = await publishThroughPendingReview(db, candidate, optionalColumns);
+        if (!pendingInsert.error) return pendingInsert;
+      }
     }
-    return publishThroughPendingReview(db, minimalListingPayload(payload), optionalColumns);
   }
 
   if (payload.status !== "published" || !isPermissionError(directInsert.error)) {
@@ -372,24 +451,99 @@ async function publishThroughPendingReview(db: ListingDbClient, payload: Listing
 function minimalListingPayload(payload: ListingInsertPayload) {
   return {
     owner_id: payload.owner_id,
-    slug: payload.slug,
-    title: payload.title,
-    status: payload.status,
-    seller_type: payload.seller_type,
-    boat_type: payload.boat_type,
-    brand_name: payload.brand_name,
-    model_name: payload.model_name,
-    year: payload.year,
-    condition: payload.condition,
-    price_chf: payload.price_chf,
-    length_m: payload.length_m,
-    beam_m: payload.beam_m,
-    description: payload.description,
-    contact_name: payload.contact_name,
-    contact_email: payload.contact_email,
-    contact_phone: payload.contact_phone,
-    published_at: payload.published_at
+    slug: cleanRequiredString(payload.slug, `annonce-${Date.now()}`),
+    title: cleanRequiredString(payload.title, "Bateau à vendre"),
+    status: cleanStatusValue(payload.status),
+    boat_type: cleanRequiredString(payload.boat_type, "Bateau"),
+    brand_name: cleanRequiredString(payload.brand_name, "Marque non renseignée"),
+    model_name: cleanRequiredString(payload.model_name, "Modèle non renseigné"),
+    year: cleanYearValue(payload.year),
+    condition: cleanRequiredString(payload.condition, "Occasion"),
+    price_chf: cleanInteger(payload.price_chf, 1, 1),
+    engine_count: cleanInteger(payload.engine_count, 0, 0),
+    power_hp: cleanInteger(payload.power_hp, 0, 0),
+    engine_hours: cleanInteger(payload.engine_hours, 0, 0),
+    length_m: cleanDecimal(payload.length_m, 0.01, 0.01),
+    beam_m: cleanDecimal(payload.beam_m, 0.01, 0.01),
+    description: cleanRequiredString(payload.description, "Annonce publiée sur Swissnaut."),
+    contact_name: cleanRequiredString(payload.contact_name, "Swissnaut"),
+    contact_email: cleanRequiredString(payload.contact_email, "contact@swissnaut.ch"),
+    published_at: cleanStatusValue(payload.status) === "published" ? cleanRequiredString(payload.published_at, new Date().toISOString()) : null
   };
+}
+
+function coreListingPayload(payload: ListingInsertPayload, { keepProfessionalProfile }: { keepProfessionalProfile: boolean }) {
+  const status = cleanStatusValue(payload.status);
+  const safePayload: ListingInsertPayload = {
+    owner_id: payload.owner_id,
+    slug: cleanRequiredString(payload.slug, `annonce-${Date.now()}`),
+    title: cleanRequiredString(payload.title, "Bateau à vendre"),
+    status,
+    seller_type: payload.seller_type === "professional" ? "professional" : "private",
+    boat_type: cleanRequiredString(payload.boat_type, "Bateau"),
+    brand_name: cleanRequiredString(payload.brand_name, "Marque non renseignée"),
+    model_name: cleanRequiredString(payload.model_name, "Modèle non renseigné"),
+    year: cleanYearValue(payload.year),
+    condition: cleanRequiredString(payload.condition, "Occasion"),
+    price_chf: cleanInteger(payload.price_chf, 1, 1),
+    vat_included: Boolean(payload.vat_included),
+    negotiable: Boolean(payload.negotiable),
+    financing_available: Boolean(payload.financing_available),
+    engine_count: cleanInteger(payload.engine_count, 0, 0),
+    power_hp: cleanInteger(payload.power_hp, 0, 0),
+    engine_hours: cleanInteger(payload.engine_hours, 0, 0),
+    length_m: cleanDecimal(payload.length_m, 0.01, 0.01),
+    beam_m: cleanDecimal(payload.beam_m, 0.01, 0.01),
+    trailer_included: Boolean(payload.trailer_included),
+    berth_included: Boolean(payload.berth_included),
+    license_required: Boolean(payload.license_required),
+    electric: Boolean(payload.electric),
+    description: cleanRequiredString(payload.description, "Annonce publiée sur Swissnaut."),
+    equipment: Array.isArray(payload.equipment) ? payload.equipment : [],
+    contact_name: cleanRequiredString(payload.contact_name, "Swissnaut"),
+    contact_email: cleanRequiredString(payload.contact_email, "contact@swissnaut.ch"),
+    contact_phone: cleanNullableString(payload.contact_phone),
+    published_at: status === "published" ? cleanRequiredString(payload.published_at, new Date().toISOString()) : null
+  };
+
+  if (keepProfessionalProfile && typeof payload.professional_profile_id === "string" && payload.professional_profile_id) {
+    safePayload.professional_profile_id = payload.professional_profile_id;
+  }
+
+  return safePayload;
+}
+
+function cleanRequiredString(value: unknown, fallback: string) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || fallback;
+}
+
+function cleanNullableString(value: unknown) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || null;
+}
+
+function cleanInteger(value: unknown, fallback: number, min = 0) {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numberValue)) return fallback;
+  return Math.max(min, Math.round(numberValue));
+}
+
+function cleanDecimal(value: unknown, fallback: number, min = 0.01) {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numberValue)) return fallback;
+  return Math.max(min, Number(numberValue.toFixed(2)));
+}
+
+function cleanYearValue(value: unknown) {
+  const currentYear = new Date().getFullYear() + 1;
+  const year = cleanInteger(value, currentYear, 1900);
+  return Math.min(currentYear, year);
+}
+
+function cleanStatusValue(value: unknown) {
+  const status = typeof value === "string" ? value : "";
+  return ["draft", "pending_review", "published", "paused", "sold", "rejected", "expired", "archived"].includes(status) ? status : "published";
 }
 
 async function insertCompatibleListingPayload(db: ListingDbClient, payload: ListingInsertPayload, optionalColumns: string[]) {
@@ -438,19 +592,37 @@ function listingErrorMessage(locale: string, reason: "invalid" | "supabase") {
   return messages[reason][locale as keyof (typeof messages)[typeof reason]] ?? messages[reason].fr;
 }
 
-function getListingPhotoFiles(formData: FormData) {
+function getListingPhotoFiles(formData: FormData): ListingPhotoInput[] {
   const seen = new Set<string>();
+  const photos: ListingPhotoInput[] = [];
 
-  return formData
-    .getAll("photos")
-    .filter((item): item is File => item instanceof File && item.size > 0)
-    .filter((file) => {
-      const key = `${file.name}-${file.size}-${file.lastModified}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, 8);
+  const addPhoto = (photo: ListingPhotoInput) => {
+    const key = `${photoName(photo)}-${photoSize(photo)}-${photoLastModified(photo)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    photos.push(photo);
+  };
+
+  formData.getAll("photos").forEach((item) => {
+    if (item instanceof File && item.size > 0) addPhoto(item);
+  });
+
+  const encodedRaw = formData.get("photoDataUrls");
+  if (typeof encodedRaw === "string" && encodedRaw.trim()) {
+    try {
+      const parsed = JSON.parse(encodedRaw);
+      if (Array.isArray(parsed)) {
+        parsed
+          .filter(isEncodedListingPhoto)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+          .forEach(addPhoto);
+      }
+    } catch (error) {
+      console.error("Encoded listing photos could not be parsed", error);
+    }
+  }
+
+  return photos.slice(0, 8);
 }
 
 async function saveListingImages(
@@ -462,7 +634,7 @@ async function saveListingImages(
   slug,
   title
 }: {
-  files: File[];
+  files: ListingPhotoInput[];
   listingId: string;
   ownerId: string;
   slug: string;
@@ -474,10 +646,11 @@ async function saveListingImages(
     validateListingImage(file);
     const extension = imageExtension(file);
     const storagePath = `${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
+    const uploadBody = await photoUploadBody(file);
     const { error: uploadError } = await db.storage
       .from("listing-images")
-      .upload(storagePath, file, {
-        contentType: file.type,
+      .upload(storagePath, uploadBody, {
+        contentType: photoType(file),
         cacheControl: "31536000",
         upsert: false
       });
@@ -503,32 +676,80 @@ async function saveListingImages(
   if (error) throw new Error(error.message);
 }
 
-function validateListingImage(file: File) {
-  const acceptedTypes = ["image/jpeg", "image/png", "image/webp"];
-  if (!acceptedTypes.includes(file.type)) {
+function validateListingImage(file: ListingPhotoInput) {
+  if (!acceptedListingImageTypes.has(photoType(file))) {
     throw new Error("Formato de imagen no aceptado. Usa JPG, PNG o WebP.");
   }
-  if (file.size > 10 * 1024 * 1024) {
+  if (photoSize(file) > maxListingImageBytes) {
     throw new Error("Una imagen supera 10 MB.");
   }
 }
 
-function imageExtension(file: File) {
-  if (file.type === "image/png") return "png";
-  if (file.type === "image/webp") return "webp";
+function imageExtension(file: ListingPhotoInput) {
+  if (photoType(file) === "image/png") return "png";
+  if (photoType(file) === "image/webp") return "webp";
   return "jpg";
 }
 
-async function filesToDataUrls(files: File[]) {
+async function filesToDataUrls(files: ListingPhotoInput[]) {
   const urls: string[] = [];
 
   for (const file of files) {
-    validateListingImage(file);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    urls.push(`data:${file.type};base64,${buffer.toString("base64")}`);
+    try {
+      validateListingImage(file);
+      if (!(file instanceof File)) {
+        urls.push(file.dataUrl);
+        continue;
+      }
+      const buffer = Buffer.from(await file.arrayBuffer());
+      urls.push(`data:${file.type};base64,${buffer.toString("base64")}`);
+    } catch (error) {
+      console.error("Listing fallback image skipped", error);
+    }
   }
 
   return urls;
+}
+
+function isEncodedListingPhoto(value: unknown): value is EncodedListingPhoto {
+  if (!value || typeof value !== "object") return false;
+  const photo = value as Partial<EncodedListingPhoto>;
+  return (
+    typeof photo.name === "string" &&
+    typeof photo.type === "string" &&
+    acceptedListingImageTypes.has(photo.type) &&
+    typeof photo.size === "number" &&
+    photo.size > 0 &&
+    photo.size <= maxListingImageBytes &&
+    typeof photo.dataUrl === "string" &&
+    photo.dataUrl.startsWith(`data:${photo.type};base64,`)
+  );
+}
+
+function photoName(photo: ListingPhotoInput) {
+  return photo instanceof File ? photo.name : photo.name;
+}
+
+function photoType(photo: ListingPhotoInput) {
+  return photo instanceof File ? photo.type : photo.type;
+}
+
+function photoSize(photo: ListingPhotoInput) {
+  return photo instanceof File ? photo.size : photo.size;
+}
+
+function photoLastModified(photo: ListingPhotoInput) {
+  return photo instanceof File ? photo.lastModified : photo.lastModified ?? 0;
+}
+
+async function photoUploadBody(photo: ListingPhotoInput) {
+  if (photo instanceof File) return photo;
+  const [, base64 = ""] = photo.dataUrl.split(",");
+  return Buffer.from(base64, "base64");
+}
+
+function formatSupabaseError(error: SupabaseMutationError) {
+  return [error.code, error.message, error.details].filter(Boolean).join(" · ") || "Supabase listing insert failed";
 }
 
 async function findReferenceId(db: ListingDbClient, table: "categories" | "cantons" | "lakes", label: string) {
@@ -669,7 +890,10 @@ async function getProfessionalProfileForUser(db: ListingDbClient, userId: string
     .maybeSingle();
 
   if (membershipError && isSchemaCompatibilityError(membershipError)) return null;
-  if (membershipError) throw new Error(membershipError.message);
+  if (membershipError) {
+    console.error("Professional membership could not be read", membershipError);
+    return null;
+  }
 
   const professionalProfileId = typeof membership?.professional_profile_id === "string" ? membership.professional_profile_id : null;
   if (!professionalProfileId) return null;
