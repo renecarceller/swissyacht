@@ -48,6 +48,21 @@ type ListingPhotoInput = File | EncodedListingPhoto;
 
 const acceptedListingImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxListingImageBytes = 10 * 1024 * 1024;
+const listingFieldLabels: Record<string, { fr: string; de: string; it: string; en: string }> = {
+  boatType: { fr: "Type", de: "Typ", it: "Tipo", en: "Type" },
+  category: { fr: "Catégorie", de: "Kategorie", it: "Categoria", en: "Category" },
+  brand: { fr: "Marque", de: "Marke", it: "Marca", en: "Brand" },
+  model: { fr: "Modèle", de: "Modell", it: "Modello", en: "Model" },
+  year: { fr: "Année", de: "Jahr", it: "Anno", en: "Year" },
+  condition: { fr: "État", de: "Zustand", it: "Stato", en: "Condition" },
+  priceChf: { fr: "Prix", de: "Preis", it: "Prezzo", en: "Price" },
+  lengthM: { fr: "Longueur", de: "Länge", it: "Lunghezza", en: "Length" },
+  beamM: { fr: "Largeur", de: "Breite", it: "Larghezza", en: "Beam" },
+  canton: { fr: "Canton", de: "Kanton", it: "Cantone", en: "Canton" },
+  lake: { fr: "Lac", de: "See", it: "Lago", en: "Lake" },
+  city: { fr: "Ville", de: "Ort", it: "Città", en: "City" },
+  description: { fr: "Description", de: "Beschreibung", it: "Descrizione", en: "Description" }
+};
 
 function isSchemaCompatibilityError(error: unknown) {
   const issue = error as SupabaseMutationError | null;
@@ -89,13 +104,14 @@ function isRecoverableInsertError(error: unknown) {
 }
 
 export async function submitListingAction(_state: ListingActionState, formData: FormData): Promise<ListingActionState> {
-  const parsed = listingFormSchema.safeParse(Object.fromEntries(formData.entries()));
+  const rawValues = Object.fromEntries(Array.from(formData.entries()).filter(([, value]) => !(value instanceof File)));
+  const parsed = listingFormSchema.safeParse(rawValues);
   const rawLocale = String(formData.get("locale") || "fr");
   const locale = locales.includes(rawLocale as (typeof locales)[number]) ? rawLocale : "fr";
 
   if (!parsed.success) {
     console.error("Invalid listing", parsed.error.flatten().fieldErrors);
-    return { error: listingErrorMessage(locale, "invalid") };
+    return { error: listingInvalidMessage(locale, parsed.error.issues.map((issue) => String(issue.path[0] || "")).filter(Boolean)) };
   }
 
   const values = parsed.data;
@@ -122,6 +138,23 @@ export async function submitListingAction(_state: ListingActionState, formData: 
   }
 
   return { error: "", publishedSlug: result.slug };
+}
+
+function listingInvalidMessage(locale: string, fields: string[]) {
+  const uniqueFields = Array.from(new Set(fields))
+    .map((field) => listingFieldLabels[field]?.[locale as keyof (typeof listingFieldLabels)[string]] ?? listingFieldLabels[field]?.fr ?? field)
+    .filter(Boolean);
+
+  if (uniqueFields.length === 0) return listingErrorMessage(locale, "invalid");
+
+  const messages = {
+    fr: `Veuillez compléter : ${uniqueFields.join(", ")}.`,
+    de: `Bitte ausfüllen: ${uniqueFields.join(", ")}.`,
+    it: `Completa: ${uniqueFields.join(", ")}.`,
+    en: `Please complete: ${uniqueFields.join(", ")}.`
+  };
+
+  return messages[locale as keyof typeof messages] ?? messages.fr;
 }
 
 async function saveListing(
@@ -294,7 +327,11 @@ async function saveListing(
     console.error("Supabase listing save failed; using local fallback", error);
     try {
       const userMetadataName = [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(" ");
-      const listing = await saveUserListing(values, slug, status, await filesToDataUrls(photoFiles), {
+      const fallbackImageUrls = await filesToDataUrls(photoFiles).catch((imageError) => {
+        console.error("Listing fallback images could not be prepared", imageError);
+        return [];
+      });
+      const listing = await saveUserListing(values, slug, status, fallbackImageUrls, {
         id: user.id,
         type: user.user_metadata?.account_type === "professional" ? "professional" : "private",
         name: userMetadataName || user.email || "Swissnaut",

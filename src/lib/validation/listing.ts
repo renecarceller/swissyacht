@@ -10,6 +10,12 @@ const optionalTextSchema = z.preprocess(
   z.string().max(1000).default("")
 );
 
+const normalizeNumberInput = (value: unknown) => {
+  if (typeof value !== "string") return value;
+  const normalized = value.trim().replace(/[\s']/g, "").replace(",", ".");
+  return normalized === "" ? "" : normalized;
+};
+
 const textWithFallback = (fallback: string, max = 1000) =>
   z.preprocess((value) => {
     const text = typeof value === "string" ? value.trim() : "";
@@ -18,25 +24,37 @@ const textWithFallback = (fallback: string, max = 1000) =>
 
 const intWithDefault = (defaultValue: number, max: number) =>
   z.preprocess(
-    (value) => (value === "" || value === null || value === undefined ? defaultValue : value),
+    (value) => {
+      const normalized = normalizeNumberInput(value);
+      return normalized === "" || normalized === null || normalized === undefined ? defaultValue : normalized;
+    },
     z.coerce.number().int().min(0).max(max)
   );
 
 const intRangeWithDefault = (defaultValue: number, min: number, max: number) =>
   z.preprocess(
-    (value) => (value === "" || value === null || value === undefined ? defaultValue : value),
+    (value) => {
+      const normalized = normalizeNumberInput(value);
+      return normalized === "" || normalized === null || normalized === undefined ? defaultValue : normalized;
+    },
     z.coerce.number().int().min(min).max(max)
   );
 
 const positiveIntWithDefault = (defaultValue: number, max: number) =>
   z.preprocess(
-    (value) => (value === "" || value === null || value === undefined ? defaultValue : value),
+    (value) => {
+      const normalized = normalizeNumberInput(value);
+      return normalized === "" || normalized === null || normalized === undefined ? defaultValue : normalized;
+    },
     z.coerce.number().int().positive().max(max)
   );
 
 const positiveNumberWithDefault = (defaultValue: number, max: number) =>
   z.preprocess(
-    (value) => (value === "" || value === null || value === undefined ? defaultValue : value),
+    (value) => {
+      const normalized = normalizeNumberInput(value);
+      return normalized === "" || normalized === null || normalized === undefined ? defaultValue : normalized;
+    },
     z.coerce.number().positive().max(max)
   );
 
@@ -51,7 +69,10 @@ const legalAcceptedSchema = z.preprocess(
 );
 
 const optionalSmallIntSchema = z.preprocess(
-  (value) => (value === "" || value === null ? undefined : value),
+  (value) => {
+    const normalized = normalizeNumberInput(value);
+    return normalized === "" || normalized === null ? undefined : normalized;
+  },
   z.coerce.number().int().min(0).max(50).optional()
 );
 

@@ -38,6 +38,26 @@ describe("listing validation", () => {
     expect(listingFormSchema.safeParse(validListing).success).toBe(true);
   });
 
+  it("accepts publishing with account contact data and browser string numbers", () => {
+    const parsed = listingFormSchema.safeParse({
+      ...validListing,
+      year: "2022",
+      priceChf: "85000",
+      lengthM: "7,55",
+      beamM: "2.59",
+      weightKg: "",
+      contactName: "",
+      contactEmail: "",
+      contactPhone: ""
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.priceChf).toBe(85000);
+      expect(parsed.data.lengthM).toBe(7.55);
+    }
+  });
+
   it("rejects impossible prices", () => {
     expect(listingFormSchema.safeParse({ ...validListing, priceChf: -10 }).success).toBe(false);
   });
