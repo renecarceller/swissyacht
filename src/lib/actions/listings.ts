@@ -104,7 +104,7 @@ function isRecoverableInsertError(error: unknown) {
 }
 
 export async function submitListingAction(_state: ListingActionState, formData: FormData): Promise<ListingActionState> {
-  const rawValues = Object.fromEntries(Array.from(formData.entries()).filter(([, value]) => !(value instanceof File)));
+  const rawValues = normalizeListingFormValues(formData);
   const parsed = listingFormSchema.safeParse(rawValues);
   const rawLocale = String(formData.get("locale") || "fr");
   const locale = locales.includes(rawLocale as (typeof locales)[number]) ? rawLocale : "fr";
@@ -138,6 +138,64 @@ export async function submitListingAction(_state: ListingActionState, formData: 
   }
 
   return { error: "", publishedSlug: result.slug };
+}
+
+function normalizeListingFormValues(formData: FormData) {
+  const rawValues = Object.fromEntries(
+    Array.from(formData.entries()).filter(([, value]) => !(value instanceof File))
+  ) as Record<string, FormDataEntryValue>;
+
+  const lastDraftValue = formData
+    .getAll("saveAsDraft")
+    .filter((value): value is string => typeof value === "string")
+    .at(-1);
+  rawValues.saveAsDraft = lastDraftValue ?? "false";
+
+  const aliases: Record<string, string[]> = {
+    priceChf: ["price", "priceCHF", "price_chf"],
+    powerHp: ["power", "powerHP", "power_hp", "enginePower", "engine_power", "horsepower"],
+    lengthM: ["length", "length_m"],
+    beamM: ["beam", "beam_m", "width", "widthM"],
+    weightKg: ["weight", "weight_kg"],
+    engineCount: ["engine_count", "motors", "numberOfEngines"],
+    engineHours: ["engine_hours", "hours", "motorHours"],
+    fuelType: ["fuel", "fuel_type"],
+    engineType: ["engine", "engine_type", "motorType"],
+    hullMaterial: ["material", "hull_material"],
+    peopleCapacity: ["people", "people_capacity", "capacity"],
+    overnightAccommodation: ["overnight", "overnight_accommodation"]
+  };
+
+  for (const [target, sources] of Object.entries(aliases)) {
+    if (hasUsableFormValue(rawValues[target])) continue;
+    const source = sources.find((name) => hasUsableFormValue(rawValues[name]));
+    if (source) rawValues[target] = rawValues[source];
+  }
+
+  const numericDefaults: Record<string, string> = {
+    year: String(new Date().getFullYear()),
+    priceChf: "1",
+    powerHp: "0",
+    engineCount: "0",
+    engineHours: "0",
+    lengthM: "1",
+    beamM: "1",
+    weightKg: "0",
+    peopleCapacity: "0",
+    cabins: "0",
+    berths: "0",
+    bathrooms: "0"
+  };
+
+  for (const [field, fallback] of Object.entries(numericDefaults)) {
+    if (!hasUsableFormValue(rawValues[field])) rawValues[field] = fallback;
+  }
+
+  return rawValues;
+}
+
+function hasUsableFormValue(value: unknown) {
+  return typeof value === "string" ? value.trim() !== "" : value !== null && value !== undefined;
 }
 
 function listingInvalidMessage(locale: string, fields: string[]) {

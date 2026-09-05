@@ -142,6 +142,20 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
     <form action={formAction} encType="multipart/form-data" className="grid gap-5">
       <HiddenDraftInputs draft={draft} />
       <input type="hidden" name="locale" value={locale} />
+      <input
+        type="hidden"
+        name="photoDataUrls"
+        value={JSON.stringify(
+          photos.map((photo, index) => ({
+            name: photo.file.name,
+            type: photo.file.type,
+            size: photo.file.size,
+            lastModified: photo.file.lastModified,
+            sortOrder: index,
+            dataUrl: photo.dataUrl
+          }))
+        )}
+      />
       <input ref={photoInputRef} type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple className="hidden" tabIndex={-1} />
       {actionState.error ? (
         <div className="rounded-md border border-[#8bd3ff] bg-[#e8f6ff] px-4 py-3 text-sm font-semibold text-navy">
