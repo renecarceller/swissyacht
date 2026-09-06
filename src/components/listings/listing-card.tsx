@@ -11,12 +11,22 @@ import { refLabel, ui } from "@/i18n/ui";
 export function ListingCard({ listing, locale, view = "cards" }: { listing: Listing; locale: string; view?: "cards" | "list" }) {
   const text = ui(locale);
   const primary = listing.images.find((image) => image.isPrimary) || listing.images[0];
+  const imageClass = view === "list" ? "h-56 w-full md:h-full" : "h-52 w-full";
+  const noPhotoLabel = locale === "de" ? "Ohne Foto" : locale === "it" ? "Senza foto" : locale === "en" ? "No photo" : "Sans photo";
+  const mainLocation = [listing.marina, listing.lake, listing.city, listing.canton].map((part) => part?.trim()).find(Boolean);
+  const footerLocation = [listing.city, listing.canton].map((part) => part?.trim()).filter(Boolean).join(", ");
 
   return (
     <article className={view === "list" ? "relative grid overflow-hidden rounded-md border border-[#d9e2ec] bg-white md:grid-cols-[280px_1fr]" : "relative overflow-hidden rounded-md border border-[#d9e2ec] bg-white"}>
       <FavoriteButton listingId={listing.id} label={text.listing.saveFavorite} className="absolute right-3 top-3 z-10" />
       <Link href={`/listing/${listing.slug}`} locale={locale} className="block">
-        <img src={primary.url} alt={primary.alt} className={view === "list" ? "h-56 w-full object-cover md:h-full" : "h-52 w-full object-cover"} />
+        {primary ? (
+          <img src={primary.url} alt={primary.alt || listing.title} className={`${imageClass} object-cover`} />
+        ) : (
+          <div className={`${imageClass} flex items-center justify-center bg-[#eef7fc] text-sm font-bold text-[#607085]`}>
+            {noPhotoLabel}
+          </div>
+        )}
       </Link>
       <div className="grid gap-4 p-5">
         <div className="flex items-start justify-between gap-4">
@@ -38,7 +48,7 @@ export function ListingCard({ listing, locale, view = "cards" }: { listing: List
           <span className="flex items-center gap-2"><Calendar size={16} />{listing.year}</span>
           <span className="flex items-center gap-2"><Ruler size={16} />{listing.lengthM} m</span>
           <span className="flex items-center gap-2"><Gauge size={16} />{listing.powerHp} hp</span>
-          <span className="flex items-center gap-2"><MapPin size={16} />{refLabel(locale, listing.lake)}</span>
+          <span className="flex items-center gap-2"><MapPin size={16} />{mainLocation ? refLabel(locale, mainLocation) : "-"}</span>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf2f7] pt-4 text-sm">
           <span className="flex items-center gap-2 text-[#607085]">
@@ -51,7 +61,7 @@ export function ListingCard({ listing, locale, view = "cards" }: { listing: List
               listing.seller.companyName || listing.seller.name
             )}
           </span>
-          <span className="text-[#607085]">{listing.city}, {listing.canton}</span>
+          <span className="text-[#607085]">{footerLocation || mainLocation || ""}</span>
         </div>
       </div>
     </article>

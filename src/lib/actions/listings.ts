@@ -141,9 +141,7 @@ export async function submitListingAction(_state: ListingActionState, formData: 
 }
 
 function normalizeListingFormValues(formData: FormData) {
-  const rawValues = Object.fromEntries(
-    Array.from(formData.entries()).filter(([, value]) => !(value instanceof File))
-  ) as Record<string, FormDataEntryValue>;
+  const rawValues = collectStringFormValues(formData);
 
   const lastDraftValue = formData
     .getAll("saveAsDraft")
@@ -192,6 +190,24 @@ function normalizeListingFormValues(formData: FormData) {
   }
 
   return rawValues;
+}
+
+function collectStringFormValues(formData: FormData) {
+  const keys = new Set<string>();
+  formData.forEach((value, key) => {
+    if (!(value instanceof File)) keys.add(key);
+  });
+
+  return Array.from(keys).reduce<Record<string, FormDataEntryValue>>((values, key) => {
+    values[key] = lastNonEmptyFormValue(formData, key);
+    return values;
+  }, {});
+}
+
+function lastNonEmptyFormValue(formData: FormData, key: string) {
+  const values = formData.getAll(key).filter((value): value is string => typeof value === "string");
+  const lastNonEmpty = values.slice().reverse().find((value) => value.trim() !== "");
+  return lastNonEmpty ?? values.at(-1) ?? "";
 }
 
 function hasUsableFormValue(value: unknown) {
@@ -322,6 +338,10 @@ async function saveListing(
       lake_id: lakeId,
       city_id: cityId,
       marina_id: marinaId,
+      canton_name: cleanCanton || null,
+      lake_name: cleanLake || null,
+      city_name: cleanCity || null,
+      marina_name: cleanMarina || null,
       slug,
       title,
       status,
@@ -446,6 +466,10 @@ async function insertListingWithCompatibility(db: ListingDbClient, payload: List
     "lake_id",
     "city_id",
     "marina_id",
+    "canton_name",
+    "lake_name",
+    "city_name",
+    "marina_name",
     "seller_type",
     "boat_type",
     "brand_name",
@@ -544,27 +568,7 @@ async function publishThroughPendingReview(db: ListingDbClient, payload: Listing
 }
 
 function minimalListingPayload(payload: ListingInsertPayload) {
-  return {
-    owner_id: payload.owner_id,
-    slug: cleanRequiredString(payload.slug, `annonce-${Date.now()}`),
-    title: cleanRequiredString(payload.title, "Bateau à vendre"),
-    status: cleanStatusValue(payload.status),
-    boat_type: cleanRequiredString(payload.boat_type, "Bateau"),
-    brand_name: cleanRequiredString(payload.brand_name, "Marque non renseignée"),
-    model_name: cleanRequiredString(payload.model_name, "Modèle non renseigné"),
-    year: cleanYearValue(payload.year),
-    condition: cleanRequiredString(payload.condition, "Occasion"),
-    price_chf: cleanInteger(payload.price_chf, 1, 1),
-    engine_count: cleanInteger(payload.engine_count, 0, 0),
-    power_hp: cleanInteger(payload.power_hp, 0, 0),
-    engine_hours: cleanInteger(payload.engine_hours, 0, 0),
-    length_m: cleanDecimal(payload.length_m, 0.01, 0.01),
-    beam_m: cleanDecimal(payload.beam_m, 0.01, 0.01),
-    description: cleanRequiredString(payload.description, "Annonce publiée sur Swissnaut."),
-    contact_name: cleanRequiredString(payload.contact_name, "Swissnaut"),
-    contact_email: cleanRequiredString(payload.contact_email, "contact@swissnaut.ch"),
-    published_at: cleanStatusValue(payload.status) === "published" ? cleanRequiredString(payload.published_at, new Date().toISOString()) : null
-  };
+  return coreListingPayload(payload, { keepProfessionalProfile: false });
 }
 
 function coreListingPayload(payload: ListingInsertPayload, { keepProfessionalProfile }: { keepProfessionalProfile: boolean }) {
@@ -584,15 +588,30 @@ function coreListingPayload(payload: ListingInsertPayload, { keepProfessionalPro
     vat_included: Boolean(payload.vat_included),
     negotiable: Boolean(payload.negotiable),
     financing_available: Boolean(payload.financing_available),
+    fuel_type: cleanNullableString(payload.fuel_type),
+    engine_type: cleanNullableString(payload.engine_type),
     engine_count: cleanInteger(payload.engine_count, 0, 0),
     power_hp: cleanInteger(payload.power_hp, 0, 0),
     engine_hours: cleanInteger(payload.engine_hours, 0, 0),
     length_m: cleanDecimal(payload.length_m, 0.01, 0.01),
     beam_m: cleanDecimal(payload.beam_m, 0.01, 0.01),
+    weight_kg: cleanInteger(payload.weight_kg, 0, 0),
+    hull_material: cleanNullableString(payload.hull_material),
+    color: cleanNullableString(payload.color),
+    people_capacity: cleanInteger(payload.people_capacity, 0, 0),
+    cabins: cleanInteger(payload.cabins, 0, 0),
+    berths: cleanInteger(payload.berths, 0, 0),
+    bathrooms: cleanInteger(payload.bathrooms, 0, 0),
+    kitchen: Boolean(payload.kitchen),
+    overnight_accommodation: Boolean(payload.overnight_accommodation),
     trailer_included: Boolean(payload.trailer_included),
     berth_included: Boolean(payload.berth_included),
     license_required: Boolean(payload.license_required),
     electric: Boolean(payload.electric),
+    canton_name: cleanNullableString(payload.canton_name),
+    lake_name: cleanNullableString(payload.lake_name),
+    city_name: cleanNullableString(payload.city_name),
+    marina_name: cleanNullableString(payload.marina_name),
     description: cleanRequiredString(payload.description, "Annonce publiée sur Swissnaut."),
     equipment: Array.isArray(payload.equipment) ? payload.equipment : [],
     contact_name: cleanRequiredString(payload.contact_name, "Swissnaut"),
@@ -603,6 +622,12 @@ function coreListingPayload(payload: ListingInsertPayload, { keepProfessionalPro
 
   if (keepProfessionalProfile && typeof payload.professional_profile_id === "string" && payload.professional_profile_id) {
     safePayload.professional_profile_id = payload.professional_profile_id;
+  }
+
+  for (const key of ["category_id", "brand_id", "model_id", "canton_id", "lake_id", "city_id", "marina_id"] as const) {
+    if (typeof payload[key] === "string" && payload[key]) {
+      safePayload[key] = payload[key];
+    }
   }
 
   return safePayload;
@@ -698,12 +723,8 @@ function getListingPhotoFiles(formData: FormData): ListingPhotoInput[] {
     photos.push(photo);
   };
 
-  formData.getAll("photos").forEach((item) => {
-    if (item instanceof File && item.size > 0) addPhoto(item);
-  });
-
-  const encodedRaw = formData.get("photoDataUrls");
-  if (typeof encodedRaw === "string" && encodedRaw.trim()) {
+  formData.getAll("photoDataUrls").forEach((encodedRaw) => {
+    if (typeof encodedRaw !== "string" || !encodedRaw.trim()) return;
     try {
       const parsed = JSON.parse(encodedRaw);
       if (Array.isArray(parsed)) {
@@ -715,7 +736,11 @@ function getListingPhotoFiles(formData: FormData): ListingPhotoInput[] {
     } catch (error) {
       console.error("Encoded listing photos could not be parsed", error);
     }
-  }
+  });
+
+  formData.getAll("photos").forEach((item) => {
+    if (item instanceof File && item.size > 0) addPhoto(item);
+  });
 
   return photos.slice(0, 8);
 }
@@ -740,26 +765,38 @@ async function saveListingImages(
   for (const [index, file] of files.entries()) {
     validateListingImage(file);
     const extension = imageExtension(file);
-    const storagePath = `${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
-    const uploadBody = await photoUploadBody(file);
-    const { error: uploadError } = await db.storage
-      .from("listing-images")
-      .upload(storagePath, uploadBody, {
-        contentType: photoType(file),
-        cacheControl: "31536000",
-        upsert: false
-      });
+    let storagePath = `${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
+    let publicUrl: string | null = null;
 
-    if (uploadError) throw new Error(uploadError.message);
+    try {
+      const uploadBody = await photoUploadBody(file);
+      const { error: uploadError } = await db.storage
+        .from("listing-images")
+        .upload(storagePath, uploadBody, {
+          contentType: photoType(file),
+          cacheControl: "31536000",
+          upsert: false
+        });
 
-    const { data: signedData } = await db.storage
-      .from("listing-images")
-      .createSignedUrl(storagePath, 60 * 60 * 24 * 365 * 10);
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data: signedData } = await db.storage
+        .from("listing-images")
+        .createSignedUrl(storagePath, 60 * 60 * 24 * 365 * 10);
+
+      publicUrl = signedData?.signedUrl || null;
+    } catch (storageError) {
+      console.error("Supabase Storage upload failed; preserving listing image inline", storageError);
+      const [inlineUrl] = await filesToDataUrls([file]);
+      if (!inlineUrl) throw storageError instanceof Error ? storageError : new Error("Image upload failed");
+      storagePath = `inline/${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
+      publicUrl = inlineUrl;
+    }
 
     rows.push({
       listing_id: listingId,
       storage_path: storagePath,
-      public_url: signedData?.signedUrl || null,
+      public_url: publicUrl,
       alt_text: `${title} photo ${index + 1}`,
       is_primary: index === 0,
       sort_order: index

@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { Listing } from "@/types/domain";
 import type { ListingFormValues } from "@/lib/validation/listing";
-import { demoBoatImages } from "./demo";
 
 const storagePath =
   process.env.VERCEL || process.env.NODE_ENV === "production"
@@ -49,7 +48,7 @@ export function saveUserListing(
 ) {
   const now = new Date().toISOString();
   const title = `${values.brand.trim()} ${values.model.trim()}`.trim();
-  const imageUrls = uploadedImageUrls.length ? uploadedImageUrls : demoBoatImages(values.category);
+  const imageUrls = uploadedImageUrls;
   const images = imageUrls.map((url, index) => ({
     id: `${slug}-image-${index + 1}`,
     url,

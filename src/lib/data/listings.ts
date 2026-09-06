@@ -62,6 +62,10 @@ type SupabaseListingRow = Record<string, unknown> & {
   contact_name?: string | null;
   contact_email: string;
   contact_phone?: string | null;
+  canton_name?: string | null;
+  lake_name?: string | null;
+  city_name?: string | null;
+  marina_name?: string | null;
   featured?: boolean | null;
   demo?: boolean | null;
   published_at?: string | null;
@@ -459,20 +463,22 @@ function toListing(item: SupabaseListingRow) {
     ? item.listing_images
         .map((image) => ({
           id: image.id,
-          url: image.public_url || image.storage_path || "",
+          url: image.public_url || assetUrl(image.storage_path) || "",
           alt: image.alt_text || title,
           isPrimary: Boolean(image.is_primary),
           sortOrder: image.sort_order || 0
         }))
         .filter((image: { url: string }) => image.url)
-        .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
-    : demoBoatImages(category).map((url, index) => ({
+        .sort((a: { isPrimary: boolean; sortOrder: number }, b: { isPrimary: boolean; sortOrder: number }) =>
+          Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder
+        )
+    : item.demo ? demoBoatImages(category).map((url, index) => ({
         id: `${item.id}-fallback-image-${index + 1}`,
         url,
         alt: `${title} boat photo ${index + 1}`,
         isPrimary: index === 0,
         sortOrder: index
-      }));
+      })) : [];
   const sellerType = item.seller_type === "professional" ? "professional" : "private";
   const primaryBrokerPhone = Array.isArray(broker?.phones) ? broker?.phones?.[0] : undefined;
   const sellerPhone = sellerType === "professional" ? broker?.public_phone || primaryBrokerPhone || item.contact_phone : item.contact_phone;
@@ -510,10 +516,10 @@ function toListing(item: SupabaseListingRow) {
     bathrooms: Number(item.bathrooms || 0),
     kitchen: Boolean(item.kitchen),
     overnightAccommodation: Boolean(item.overnight_accommodation),
-    canton: item.cantons?.name || broker?.canton || "",
-    lake: item.lakes?.name || "",
-    city: item.cities?.name || broker?.city || "",
-    marina: item.marinas?.name || "",
+    canton: item.canton_name || item.cantons?.name || broker?.canton || "",
+    lake: item.lake_name || item.lakes?.name || "",
+    city: item.city_name || item.cities?.name || broker?.city || "",
+    marina: item.marina_name || item.marinas?.name || "",
     trailerIncluded: Boolean(item.trailer_included),
     berthIncluded: Boolean(item.berth_included),
     licenseRequired: Boolean(item.license_required),

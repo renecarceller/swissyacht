@@ -13,6 +13,10 @@ import { formatChf } from "@/lib/utils";
 import { refLabel, ui } from "@/i18n/ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+function compactText(parts: Array<unknown>) {
+  return parts.map((part) => String(part ?? "").trim()).filter(Boolean);
+}
+
 export async function generateMetadata({
   params
 }: {
@@ -21,10 +25,17 @@ export async function generateMetadata({
   const { slug } = await params;
   const listing = await getListingBySlugAsync(slug);
   if (!listing) return {};
+  const description = compactText([
+    `${listing.brand} ${listing.model}`,
+    listing.year,
+    listing.lengthM ? `${listing.lengthM} m` : "",
+    listing.lake,
+    listing.canton
+  ]).join(", ");
 
   return {
     title: `${listing.title} - ${formatChf(listing.priceChf)}`,
-    description: `${listing.brand} ${listing.model}, ${listing.year}, ${listing.lengthM} m, ${listing.lake}, ${listing.canton}.`,
+    description: `${description}.`,
     robots: listing.demo
       ? {
           index: false,
@@ -50,6 +61,21 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const text = ui(locale);
   const specLabels = text.listing.specs.split("|");
+  const listingLocation = compactText([listing.city, listing.canton]).join(", ") || listing.marina || listing.lake || listing.canton;
+  const technicalRows = [
+    [specLabels[0], listing.brand],
+    [specLabels[1], listing.model],
+    [specLabels[2], refLabel(locale, listing.fuelType)],
+    [specLabels[3], refLabel(locale, listing.engineType)],
+    [specLabels[4], listing.engineCount ? String(listing.engineCount) : ""],
+    [specLabels[5], listing.powerHp ? `${listing.powerHp} hp` : ""],
+    [specLabels[6], Number.isFinite(listing.engineHours) ? `${listing.engineHours} h` : ""],
+    [specLabels[7], listing.beamM ? `${listing.beamM} m` : ""],
+    [specLabels[8], Number.isFinite(listing.weightKg) && listing.weightKg > 0 ? `${listing.weightKg} kg` : ""],
+    [specLabels[9], refLabel(locale, listing.hullMaterial)],
+    [specLabels[10], refLabel(locale, listing.lake)],
+    [specLabels[11], listing.marina]
+  ].filter(([, value]) => String(value ?? "").trim().length > 0);
   const supabase = await createSupabaseServerClient();
   let isAuthenticated = false;
   if (supabase) {
@@ -85,27 +111,14 @@ export default async function ListingPage({ params }: { params: Promise<{ locale
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Spec icon={<Calendar size={18} />} label={text.common.year} value={listing.year} />
               <Spec icon={<Ruler size={18} />} label={text.common.length} value={`${listing.lengthM} m`} />
-              <Spec icon={<MapPin size={18} />} label={text.common.location} value={`${listing.city}, ${listing.canton}`} />
+              <Spec icon={<MapPin size={18} />} label={text.common.location} value={listingLocation || "-"} />
               <Spec icon={<Eye size={18} />} label={text.common.views} value={listing.views} />
             </div>
           </section>
           <section className="rounded-md border border-[#d9e2ec] bg-white p-6">
             <h2 className="mb-4 text-xl font-bold text-navy">{text.listing.technical}</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                [specLabels[0], listing.brand],
-                [specLabels[1], listing.model],
-                [specLabels[2], refLabel(locale, listing.fuelType)],
-                [specLabels[3], refLabel(locale, listing.engineType)],
-                [specLabels[4], listing.engineCount],
-                [specLabels[5], `${listing.powerHp} hp`],
-                [specLabels[6], `${listing.engineHours} h`],
-                [specLabels[7], `${listing.beamM} m`],
-                [specLabels[8], `${listing.weightKg} kg`],
-                [specLabels[9], refLabel(locale, listing.hullMaterial)],
-                [specLabels[10], refLabel(locale, listing.lake)],
-                [specLabels[11], listing.marina]
-              ].map(([label, value]) => (
+              {technicalRows.map(([label, value]) => (
                 <div key={label} className="rounded-md bg-[#f6f8fb] p-3">
                   <div className="text-xs font-bold uppercase text-[#607085]">{label}</div>
                   <div className="mt-1 font-semibold">{value}</div>
