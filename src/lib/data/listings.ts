@@ -62,6 +62,7 @@ type SupabaseListingRow = Record<string, unknown> & {
   contact_name?: string | null;
   contact_email: string;
   contact_phone?: string | null;
+  image_url?: string | null;
   canton_name?: string | null;
   lake_name?: string | null;
   city_name?: string | null;
@@ -472,7 +473,13 @@ function toListing(item: SupabaseListingRow) {
         .sort((a: { isPrimary: boolean; sortOrder: number }, b: { isPrimary: boolean; sortOrder: number }) =>
           Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder
         )
-    : item.demo ? demoBoatImages(category).map((url, index) => ({
+    : item.image_url ? [{
+        id: `${item.id}-image`,
+        url: item.image_url,
+        alt: title,
+        isPrimary: true,
+        sortOrder: 0
+      }] : item.demo ? demoBoatImages(category).map((url, index) => ({
         id: `${item.id}-fallback-image-${index + 1}`,
         url,
         alt: `${title} boat photo ${index + 1}`,

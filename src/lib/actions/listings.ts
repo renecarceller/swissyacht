@@ -4,7 +4,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { locales } from "@/lib/data/reference";
-import { saveUserListing } from "@/lib/data/user-listing-storage";
 import { listingFormSchema, type ListingFormValues } from "@/lib/validation/listing";
 import { slugify } from "@/lib/utils";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -87,22 +86,6 @@ function isPermissionError(error: unknown) {
   );
 }
 
-function isRecoverableInsertError(error: unknown) {
-  const issue = error as SupabaseMutationError | null;
-  const text = `${issue?.code || ""} ${issue?.message || ""} ${issue?.details || ""}`.toLowerCase();
-
-  return (
-    isSchemaCompatibilityError(error) ||
-    isPermissionError(error) ||
-    ["23502", "23503", "23514", "22P02", "22001"].includes(issue?.code || "") ||
-    text.includes("violates not-null constraint") ||
-    text.includes("violates foreign key constraint") ||
-    text.includes("violates check constraint") ||
-    text.includes("invalid input value") ||
-    text.includes("value too long")
-  );
-}
-
 export async function submitListingAction(_state: ListingActionState, formData: FormData): Promise<ListingActionState> {
   const rawValues = normalizeListingFormValues(formData);
   const parsed = listingFormSchema.safeParse(rawValues);
@@ -141,7 +124,14 @@ export async function submitListingAction(_state: ListingActionState, formData: 
 }
 
 function normalizeListingFormValues(formData: FormData) {
-  const rawValues = collectStringFormValues(formData);
+  const payloadValues = collectListingPayloadFormValues(formData);
+  const formValues = collectStringFormValues(formData);
+  const rawValues: Record<string, FormDataEntryValue> = { ...payloadValues };
+
+  for (const [key, value] of Object.entries(formValues)) {
+    if (key === "listingPayload" || key === "photoDataUrls") continue;
+    if (!hasUsableFormValue(rawValues[key]) && hasUsableFormValue(value)) rawValues[key] = value;
+  }
 
   const lastDraftValue = formData
     .getAll("saveAsDraft")
@@ -150,6 +140,11 @@ function normalizeListingFormValues(formData: FormData) {
   rawValues.saveAsDraft = lastDraftValue ?? "false";
 
   const aliases: Record<string, string[]> = {
+    boatType: ["type", "boat_type"],
+    brand: ["brandName", "brand_name", "make"],
+    model: ["modelName", "model_name"],
+    category: ["categoryName", "category_name"],
+    condition: ["state"],
     priceChf: ["price", "priceCHF", "price_chf"],
     powerHp: ["power", "powerHP", "power_hp", "enginePower", "engine_power", "horsepower"],
     lengthM: ["length", "length_m"],
@@ -160,8 +155,16 @@ function normalizeListingFormValues(formData: FormData) {
     fuelType: ["fuel", "fuel_type"],
     engineType: ["engine", "engine_type", "motorType"],
     hullMaterial: ["material", "hull_material"],
+    color: ["exteriorColor", "exterior_color"],
     peopleCapacity: ["people", "people_capacity", "capacity"],
-    overnightAccommodation: ["overnight", "overnight_accommodation"]
+    overnightAccommodation: ["overnight", "overnight_accommodation"],
+    canton: ["cantonName", "canton_name"],
+    lake: ["lakeName", "lake_name"],
+    city: ["cityName", "city_name"],
+    marina: ["port", "marinaName", "marina_name"],
+    vatIncluded: ["vat_included"],
+    financingAvailable: ["financing_available"],
+    kitchen: ["hasKitchen"]
   };
 
   for (const [target, sources] of Object.entries(aliases)) {
@@ -190,6 +193,30 @@ function normalizeListingFormValues(formData: FormData) {
   }
 
   return rawValues;
+}
+
+function collectListingPayloadFormValues(formData: FormData) {
+  const payload = formData
+    .getAll("listingPayload")
+    .filter((value): value is string => typeof value === "string")
+    .at(-1);
+
+  if (!payload) return {};
+
+  try {
+    const parsed: unknown = JSON.parse(payload);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+
+    return Object.entries(parsed).reduce<Record<string, string>>((values, [key, value]) => {
+      if (typeof value === "string") values[key] = value;
+      else if (typeof value === "number" || typeof value === "boolean") values[key] = String(value);
+      else if (value === null || value === undefined) values[key] = "";
+      return values;
+    }, {});
+  } catch (error) {
+    console.error("Listing payload could not be parsed", error);
+    return {};
+  }
 }
 
 function collectStringFormValues(formData: FormData) {
@@ -388,38 +415,37 @@ async function saveListing(
 
     if (photoFiles.length > 0) {
       try {
-        await saveListingImages(db, {
+        const savedImages = await saveListingImages(db, {
           files: photoFiles,
           listingId: listing.id as string,
           ownerId: userId,
           slug,
           title
         });
+        const primaryImageUrl = savedImages.find((image) => image.is_primary)?.public_url;
+        if (!primaryImageUrl) {
+          throw new Error("Primary listing image missing after upload.");
+        }
+
+        const { error: primaryImageError } = await db
+          .from("listings")
+          .update({ image_url: primaryImageUrl })
+          .eq("id", listing.id as string);
+
+        if (primaryImageError && !isSchemaCompatibilityError(primaryImageError)) {
+          throw new Error(formatSupabaseError(primaryImageError));
+        }
       } catch (imageError) {
         console.error("Listing images could not be saved", imageError);
+        await rollbackFailedListingPublish(db, listing.id as string);
+        return { ok: false, error: listingErrorMessage(locale, "supabase") };
       }
     }
 
     return { ok: true, slug: listing.slug as string, brand: cleanBrand, model: cleanModel };
   } catch (error) {
-    console.error("Supabase listing save failed; using local fallback", error);
-    try {
-      const userMetadataName = [user.user_metadata?.first_name, user.user_metadata?.last_name].filter(Boolean).join(" ");
-      const fallbackImageUrls = await filesToDataUrls(photoFiles).catch((imageError) => {
-        console.error("Listing fallback images could not be prepared", imageError);
-        return [];
-      });
-      const listing = await saveUserListing(values, slug, status, fallbackImageUrls, {
-        id: user.id,
-        type: user.user_metadata?.account_type === "professional" ? "professional" : "private",
-        name: userMetadataName || user.email || "Swissnaut",
-        email: user.email || values.contactEmail || "contact@swissnaut.ch"
-      });
-      return { ok: true, ...listing };
-    } catch (fallbackError) {
-      console.error("Local listing fallback failed", fallbackError);
-      return { ok: false, error: listingErrorMessage(locale, "supabase") };
-    }
+    console.error("Supabase listing save failed", error);
+    return { ok: false, error: listingErrorMessage(locale, "supabase") };
   }
 }
 
@@ -453,6 +479,20 @@ async function getCurrentUserForListing() {
   } catch (error) {
     console.error("Listing session read failed", error);
     return null;
+  }
+}
+
+async function rollbackFailedListingPublish(db: ListingDbClient, listingId: string) {
+  try {
+    await db.from("listing_images").delete().eq("listing_id", listingId);
+  } catch (error) {
+    console.error("Listing image rollback failed", error);
+  }
+
+  try {
+    await db.from("listings").delete().eq("id", listingId);
+  } catch (error) {
+    console.error("Listing rollback failed", error);
   }
 }
 
@@ -508,24 +548,6 @@ async function insertListingWithCompatibility(db: ListingDbClient, payload: List
   const directInsert = await insertCompatibleListingPayload(db, payload, optionalColumns);
   if (!directInsert.error) return directInsert;
 
-  if (isRecoverableInsertError(directInsert.error)) {
-    const candidates = [
-      coreListingPayload(payload, { keepProfessionalProfile: true }),
-      coreListingPayload(payload, { keepProfessionalProfile: false }),
-      minimalListingPayload(payload)
-    ];
-
-    for (const candidate of candidates) {
-      const candidateInsert = await insertCompatibleListingPayload(db, candidate, optionalColumns);
-      if (!candidateInsert.error) return candidateInsert;
-
-      if (payload.status === "published" && isPermissionError(candidateInsert.error)) {
-        const pendingInsert = await publishThroughPendingReview(db, candidate, optionalColumns);
-        if (!pendingInsert.error) return pendingInsert;
-      }
-    }
-  }
-
   if (payload.status !== "published" || !isPermissionError(directInsert.error)) {
     return directInsert;
   }
@@ -565,105 +587,6 @@ async function publishThroughPendingReview(db: ListingDbClient, payload: Listing
     .eq("id", insertedId)
     .select("id, slug")
     .single();
-}
-
-function minimalListingPayload(payload: ListingInsertPayload) {
-  return coreListingPayload(payload, { keepProfessionalProfile: false });
-}
-
-function coreListingPayload(payload: ListingInsertPayload, { keepProfessionalProfile }: { keepProfessionalProfile: boolean }) {
-  const status = cleanStatusValue(payload.status);
-  const safePayload: ListingInsertPayload = {
-    owner_id: payload.owner_id,
-    slug: cleanRequiredString(payload.slug, `annonce-${Date.now()}`),
-    title: cleanRequiredString(payload.title, "Bateau à vendre"),
-    status,
-    seller_type: payload.seller_type === "professional" ? "professional" : "private",
-    boat_type: cleanRequiredString(payload.boat_type, "Bateau"),
-    brand_name: cleanRequiredString(payload.brand_name, "Marque non renseignée"),
-    model_name: cleanRequiredString(payload.model_name, "Modèle non renseigné"),
-    year: cleanYearValue(payload.year),
-    condition: cleanRequiredString(payload.condition, "Occasion"),
-    price_chf: cleanInteger(payload.price_chf, 1, 1),
-    vat_included: Boolean(payload.vat_included),
-    negotiable: Boolean(payload.negotiable),
-    financing_available: Boolean(payload.financing_available),
-    fuel_type: cleanNullableString(payload.fuel_type),
-    engine_type: cleanNullableString(payload.engine_type),
-    engine_count: cleanInteger(payload.engine_count, 0, 0),
-    power_hp: cleanInteger(payload.power_hp, 0, 0),
-    engine_hours: cleanInteger(payload.engine_hours, 0, 0),
-    length_m: cleanDecimal(payload.length_m, 0.01, 0.01),
-    beam_m: cleanDecimal(payload.beam_m, 0.01, 0.01),
-    weight_kg: cleanInteger(payload.weight_kg, 0, 0),
-    hull_material: cleanNullableString(payload.hull_material),
-    color: cleanNullableString(payload.color),
-    people_capacity: cleanInteger(payload.people_capacity, 0, 0),
-    cabins: cleanInteger(payload.cabins, 0, 0),
-    berths: cleanInteger(payload.berths, 0, 0),
-    bathrooms: cleanInteger(payload.bathrooms, 0, 0),
-    kitchen: Boolean(payload.kitchen),
-    overnight_accommodation: Boolean(payload.overnight_accommodation),
-    trailer_included: Boolean(payload.trailer_included),
-    berth_included: Boolean(payload.berth_included),
-    license_required: Boolean(payload.license_required),
-    electric: Boolean(payload.electric),
-    canton_name: cleanNullableString(payload.canton_name),
-    lake_name: cleanNullableString(payload.lake_name),
-    city_name: cleanNullableString(payload.city_name),
-    marina_name: cleanNullableString(payload.marina_name),
-    description: cleanRequiredString(payload.description, "Annonce publiée sur Swissnaut."),
-    equipment: Array.isArray(payload.equipment) ? payload.equipment : [],
-    contact_name: cleanRequiredString(payload.contact_name, "Swissnaut"),
-    contact_email: cleanRequiredString(payload.contact_email, "contact@swissnaut.ch"),
-    contact_phone: cleanNullableString(payload.contact_phone),
-    published_at: status === "published" ? cleanRequiredString(payload.published_at, new Date().toISOString()) : null
-  };
-
-  if (keepProfessionalProfile && typeof payload.professional_profile_id === "string" && payload.professional_profile_id) {
-    safePayload.professional_profile_id = payload.professional_profile_id;
-  }
-
-  for (const key of ["category_id", "brand_id", "model_id", "canton_id", "lake_id", "city_id", "marina_id"] as const) {
-    if (typeof payload[key] === "string" && payload[key]) {
-      safePayload[key] = payload[key];
-    }
-  }
-
-  return safePayload;
-}
-
-function cleanRequiredString(value: unknown, fallback: string) {
-  const text = typeof value === "string" ? value.trim() : "";
-  return text || fallback;
-}
-
-function cleanNullableString(value: unknown) {
-  const text = typeof value === "string" ? value.trim() : "";
-  return text || null;
-}
-
-function cleanInteger(value: unknown, fallback: number, min = 0) {
-  const numberValue = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(numberValue)) return fallback;
-  return Math.max(min, Math.round(numberValue));
-}
-
-function cleanDecimal(value: unknown, fallback: number, min = 0.01) {
-  const numberValue = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(numberValue)) return fallback;
-  return Math.max(min, Number(numberValue.toFixed(2)));
-}
-
-function cleanYearValue(value: unknown) {
-  const currentYear = new Date().getFullYear() + 1;
-  const year = cleanInteger(value, currentYear, 1900);
-  return Math.min(currentYear, year);
-}
-
-function cleanStatusValue(value: unknown) {
-  const status = typeof value === "string" ? value : "";
-  return ["draft", "pending_review", "published", "paused", "sold", "rejected", "expired", "archived"].includes(status) ? status : "published";
 }
 
 async function insertCompatibleListingPayload(db: ListingDbClient, payload: ListingInsertPayload, optionalColumns: string[]) {
@@ -738,6 +661,10 @@ function getListingPhotoFiles(formData: FormData): ListingPhotoInput[] {
     }
   });
 
+  if (photos.length > 0) {
+    return photos.slice(0, 8);
+  }
+
   formData.getAll("photos").forEach((item) => {
     if (item instanceof File && item.size > 0) addPhoto(item);
   });
@@ -765,7 +692,7 @@ async function saveListingImages(
   for (const [index, file] of files.entries()) {
     validateListingImage(file);
     const extension = imageExtension(file);
-    let storagePath = `${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
+    const storagePath = `${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
     let publicUrl: string | null = null;
 
     try {
@@ -786,11 +713,8 @@ async function saveListingImages(
 
       publicUrl = signedData?.signedUrl || null;
     } catch (storageError) {
-      console.error("Supabase Storage upload failed; preserving listing image inline", storageError);
-      const [inlineUrl] = await filesToDataUrls([file]);
-      if (!inlineUrl) throw storageError instanceof Error ? storageError : new Error("Image upload failed");
-      storagePath = `inline/${ownerId}/${slug}/${index + 1}-${Date.now()}.${extension}`;
-      publicUrl = inlineUrl;
+      console.error("Supabase Storage upload failed", storageError);
+      throw storageError instanceof Error ? storageError : new Error("Image upload failed");
     }
 
     rows.push({
@@ -803,9 +727,10 @@ async function saveListingImages(
     });
   }
 
-  if (rows.length === 0) return;
+  if (rows.length === 0) return [];
   const { error } = await db.from("listing_images").insert(rows);
   if (error) throw new Error(error.message);
+  return rows;
 }
 
 function validateListingImage(file: ListingPhotoInput) {
@@ -823,25 +748,6 @@ function imageExtension(file: ListingPhotoInput) {
   return "jpg";
 }
 
-async function filesToDataUrls(files: ListingPhotoInput[]) {
-  const urls: string[] = [];
-
-  for (const file of files) {
-    try {
-      validateListingImage(file);
-      if (!(file instanceof File)) {
-        urls.push(file.dataUrl);
-        continue;
-      }
-      const buffer = Buffer.from(await file.arrayBuffer());
-      urls.push(`data:${file.type};base64,${buffer.toString("base64")}`);
-    } catch (error) {
-      console.error("Listing fallback image skipped", error);
-    }
-  }
-
-  return urls;
-}
 
 function isEncodedListingPhoto(value: unknown): value is EncodedListingPhoto {
   if (!value || typeof value !== "object") return false;

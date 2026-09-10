@@ -92,7 +92,6 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
   const [actionState, formAction, pending] = useActionState(submitListingAction, { error: "" });
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<ListingDraft>(initialDraft);
-  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const photosRef = useRef<PhotoPreview[]>([]);
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const stepTitles = [
@@ -114,14 +113,6 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
 
   useEffect(() => {
     photosRef.current = photos;
-    if (!photoInputRef.current) return;
-    try {
-      const transfer = new DataTransfer();
-      photos.forEach((photo) => transfer.items.add(photo.file));
-      photoInputRef.current.files = transfer.files;
-    } catch {
-      // Some mobile browsers do not allow rebuilding a file input programmatically.
-    }
   }, [photos]);
 
   useEffect(() => {
@@ -140,6 +131,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
 
   return (
     <form action={formAction} encType="multipart/form-data" className="grid gap-5">
+      <input type="hidden" name="listingPayload" value={JSON.stringify(draft)} />
       <HiddenDraftInputs draft={draft} />
       <input type="hidden" name="locale" value={locale} />
       <input
@@ -156,7 +148,6 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
           }))
         )}
       />
-      <input ref={photoInputRef} type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple className="hidden" tabIndex={-1} />
       {actionState.error ? (
         <div className="rounded-md border border-[#8bd3ff] bg-[#e8f6ff] px-4 py-3 text-sm font-semibold text-navy">
           {actionState.error}
@@ -244,7 +235,7 @@ export function ListingForm({ locale, availableBrands = [...brands] }: { locale:
 
       <div className={step === 6 ? "block" : "hidden"} aria-hidden={step !== 6}>
         <StepCard title={labels.photosTitle}>
-          <PhotoUploadField labels={labels} photos={photos} setPhotos={setPhotos} inputRef={photoInputRef} />
+          <PhotoUploadField labels={labels} photos={photos} setPhotos={setPhotos} />
         </StepCard>
       </div>
 
@@ -408,29 +399,16 @@ async function preparePhotoFile(file: File) {
 function PhotoUploadField({
   labels,
   photos,
-  setPhotos,
-  inputRef
+  setPhotos
 }: {
   labels: ReturnType<typeof stepFormLabels>;
   photos: PhotoPreview[];
   setPhotos: React.Dispatch<React.SetStateAction<PhotoPreview[]>>;
-  inputRef: React.RefObject<HTMLInputElement | null>;
 }) {
   const finderInputRef = useRef<HTMLInputElement | null>(null);
   const libraryInputRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState("");
   const [showSources, setShowSources] = useState(false);
-
-  const syncInputFiles = (nextPhotos: PhotoPreview[]) => {
-    if (!inputRef.current) return;
-    try {
-      const transfer = new DataTransfer();
-      nextPhotos.forEach((photo) => transfer.items.add(photo.file));
-      inputRef.current.files = transfer.files;
-    } catch {
-      // Keeping the original file inputs mounted preserves selected files on iOS/Safari.
-    }
-  };
 
   const updatePhotos = (nextPhotos: PhotoPreview[]) => {
     setPhotos((current) => {
@@ -440,7 +418,6 @@ function PhotoUploadField({
       });
       return nextPhotos;
     });
-    syncInputFiles(nextPhotos);
   };
 
   const handleFiles = async (files: FileList | null) => {
