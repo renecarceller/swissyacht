@@ -372,6 +372,7 @@ async function saveListing(
       slug,
       title,
       status,
+      demo: false,
       seller_type: sellerType,
       boat_type: cleanBoatType,
       brand_name: cleanBrand,
@@ -510,6 +511,7 @@ async function insertListingWithCompatibility(db: ListingDbClient, payload: List
     "lake_name",
     "city_name",
     "marina_name",
+    "demo",
     "seller_type",
     "boat_type",
     "brand_name",
@@ -752,16 +754,11 @@ function imageExtension(file: ListingPhotoInput) {
 function isEncodedListingPhoto(value: unknown): value is EncodedListingPhoto {
   if (!value || typeof value !== "object") return false;
   const photo = value as Partial<EncodedListingPhoto>;
-  return (
-    typeof photo.name === "string" &&
-    typeof photo.type === "string" &&
-    acceptedListingImageTypes.has(photo.type) &&
-    typeof photo.size === "number" &&
-    photo.size > 0 &&
-    photo.size <= maxListingImageBytes &&
-    typeof photo.dataUrl === "string" &&
-    photo.dataUrl.startsWith(`data:${photo.type};base64,`)
-  );
+  if (typeof photo.name !== "string") return false;
+  if (typeof photo.type !== "string" || !acceptedListingImageTypes.has(photo.type)) return false;
+  if (typeof photo.size !== "number" || photo.size <= 0 || photo.size > maxListingImageBytes) return false;
+  if (typeof photo.dataUrl !== "string") return false;
+  return /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(photo.dataUrl);
 }
 
 function photoName(photo: ListingPhotoInput) {

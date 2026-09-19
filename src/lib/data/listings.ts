@@ -460,6 +460,7 @@ function toListing(item: SupabaseListingRow) {
   const brokerBadges = Array.isArray(broker?.broker_badges)
     ? broker.broker_badges.map((badge) => badge.badge_code).filter(isBrokerBadge)
     : [];
+  const isDemo = item.demo === true;
   const images = Array.isArray(item.listing_images) && item.listing_images.length
     ? item.listing_images
         .map((image) => ({
@@ -479,7 +480,7 @@ function toListing(item: SupabaseListingRow) {
         alt: title,
         isPrimary: true,
         sortOrder: 0
-      }] : item.demo ? demoBoatImages(category).map((url, index) => ({
+      }] : isDemo ? demoBoatImages(category).map((url, index) => ({
         id: `${item.id}-fallback-image-${index + 1}`,
         url,
         alt: `${title} boat photo ${index + 1}`,
@@ -564,7 +565,7 @@ function toListing(item: SupabaseListingRow) {
     publishedAt: item.published_at || item.created_at,
     views: 0,
     featured: Boolean(item.featured),
-    demo: Boolean(item.demo)
+    demo: isDemo
   } satisfies Listing;
 }
 
